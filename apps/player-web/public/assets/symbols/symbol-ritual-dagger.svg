@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 470) rotate(90) scale(450)">
+      <stop stop-color="#311F24"/>
+      <stop offset="1" stop-color="#100F13"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="512" y1="234" x2="512" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D8DBE3"/>
+      <stop offset="1" stop-color="#5B5F68"/>
+    </linearGradient>
+    <linearGradient id="hilt" x1="414" y1="610" x2="610" y2="790" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0D79D"/>
+      <stop offset="0.55" stop-color="#C6903C"/>
+      <stop offset="1" stop-color="#7E5520"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#3A3025" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#161318" stroke="#5A462F" stroke-width="8"/>
+  <path d="M512 230L614 446L542 658H482L410 446L512 230Z" fill="url(#blade)" stroke="#C2C6CE" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M430 654H594L628 700H396L430 654Z" fill="url(#hilt)"/>
+  <rect x="470" y="698" width="84" height="150" rx="34" fill="#2B1D14" stroke="#D1A04D" stroke-width="16"/>
+  <path d="M512 704V834" stroke="#F3D899" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="512" cy="774" r="18" fill="#E7C574"/>
+  <path d="M432 376L512 452L592 376" stroke="#F2D9A3" stroke-width="12" stroke-linecap="round" opacity="0.8"/>
+</svg>

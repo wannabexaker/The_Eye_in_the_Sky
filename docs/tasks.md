@@ -1,0 +1,108 @@
+# Tasks
+
+## Status Legend
+- `todo`
+- `in_progress`
+- `done`
+- `blocked`
+
+## Active Tasks
+- `in_progress` Move player state into a fuller Zustand-driven store
+- `in_progress` Produce painted production art pack from approved SVG first-pass assets
+- `done` Wire public art assets into the player runtime with PNG-first and SVG fallback preview support
+- `todo` Add Tailwind integration
+- `todo` Add admin config shell
+- `todo` Add NestJS module shells
+- `todo` Add Prisma schema migrations setup
+
+## Completed Tasks
+- `done` Create root workspace and initial player-web prototype
+- `done` Add first game-engine implementation
+- `done` Add fake balance, spin, history, reset balance
+- `done` Add phase-based frontend spin feedback
+- `done` Create living docs set
+- `done` Align monorepo structure with api/admin/shared/ui packages
+- `done` Add first DB schema draft
+- `done` Add first REST API draft in architecture notes
+- `done` Add api NestJS + Swagger bootstrap skeleton
+- `done` Add admin-web shell
+- `done` Add PixiJS ambient board shell
+- `done` Add Zustand UI settings shell
+- `done` Add symbol-weights, payout-engine, bonus-engine, and math-report module shells
+- `done` Add modular player-web layout with header, board zone, control panel, recent rounds, and debug panel
+- `done` Promote PixiJS board to the main gameplay presentation layer
+- `done` Add presentation-only spin state machine
+- `done` Add sound feedback manager
+- `done` Expand engine round contract to required audit-friendly shape
+- `done` Implement documented math-report and simulation output contract
+- `done` Lock first target RTP and volatility profile in config versioning
+- `done` Add deterministic seeded regression tests for engine contract and simulation shape
+- `done` Refactor player-web to a no-scroll responsive viewport layout
+- `done` Replace oversized prototype shell with compact premium gameplay dashboard
+- `done` Create first-pass original SVG asset pack manifest and core symbol/UI assets
+- `done` Refactor gameplay shell typography and group controls directly under the board
+- `done` Add fullscreen mode and direct win-path visualization to the board
+- `done` Add simulated wallet system with deposits, withdrawals, methods, and wallet history
+- `done` Add first-run welcome overlay with bonus credits
+- `done` Add pooled particle system and layered Pixi board effects
+- `done` Add stronger board interaction feedback for hover, drops, wins, cascades, and bonus moments
+- `done` Upgrade synthetic sound manager for richer game feedback
+
+## Risks
+- Current prototype math is in a professional target band, but still needs longer `500k` to `1M` signoff runs before being treated as final.
+- API and admin apps are not yet runtime-wired.
+
+## Change Log
+- `2026-03-15`
+  - Created initial task register
+- `2026-03-16`
+  - Completed engine round contract expansion, config version propagation, simulation reporting, and seeded regression coverage
+  - Refactored player-web UI into a compact no-scroll gameplay shell with compressed HUD, tighter controls, and secondary panels moved to overlays
+  - Added art production manifest and delivered first-pass SVG symbol/UI/background/logo asset set
+  - Started a board-centered UX pass for typography, fullscreen shell behavior, and clearer win communication on the Pixi board
+  - Completed the board-centered UX pass with themed fonts, integrated fullscreen controls, under-board control strip, and sacred path overlays for winning clusters
+  - Added a local simulation wallet flow with deposit/withdraw modals, payment method management, wallet ledger updates from bets and wins, and a welcome bonus overlay
+  - Added a reusable particle system, layered board atmosphere, stronger symbol interactivity, and richer synthetic audio cues for the Pixi presentation layer
+  - Wired background, frame, logo, meter icon, and symbol asset paths into the live player runtime so new art can be previewed immediately
+  - Tightened primary controls by moving deposit and withdraw to the balance area and keeping bet plus autospin inside the main spin interaction cluster
+  - Reworked logo scaling and shell background/frame blending so the provided production art is visible and readable in the live layout
+  - Moved the production logo to the top of the welcome overlay for a stronger branded entry screen
+  - Added a dedicated bonus-entry announcement overlay with awarded free-spin messaging and stronger bonus-state visual emphasis
+  - Completed a desktop-first layout and layering cleanup pass with z-index tokens, larger board presentation, improved icon fit, and denser side-panel organization
+  - Added a dedicated win presentation overlay and pause controller so winnings remain visible before play resumes, including final bonus-total summaries
+  - Refactored betting and autospin controls with balance-based bet validation, high-risk warning messaging, manual inputs, wallet validation, and autospin lock rules
+  - Added manual bet entry plus fixed `+ / -` ladder controls from `0.10` through `10000`, including sub-euro minimum betting and direct typed entry for any other amount
+  - Removed the visible ladder helper text from the bet bar while keeping the ladder behavior intact
+  - Reskinned the spin button into an ouroboros ring with centered `Spin` copy
+  - Anchored the spin button so it protrudes above and below the bottom control bar without changing the dock height
+  - Caught fullscreen, audio, and Pixi initialization promise rejections to prevent Next.js dev overlays from browser-level async failures
+  - Removed the redundant bet apply button and committed manual bet values automatically on blur, Enter, and spin/autoplay start
+  - Removed the redundant autospin set button, committed typed autoplay counts automatically, and added clearer spacing between the bet and autoplay sections
+  - Moved the bet-adjust controls next to the spin button by giving them a dedicated bottom-bar column ahead of autoplay
+  - Lowered the bet-adjust zone inside the bottom bar for better vertical alignment against the spin CTA
+  - Stretched the right-rail brand logo to `x1.5` width for stronger panel branding
+  - Tightened the left support rail width, padding, and spacing and lifted it above the center-stage stack so it stays visible and compact
+  - Replaced the bottom-bar `Info` and `Menu` copy with classic icon buttons rendered via inline SVG so utility actions remain clean and encoding-safe
+  - Added dedicated bonus payout presentation states for bonus entry win, visible running bonus total, and final bonus-total acknowledgement before returning to base play
+  - Completed a math audit of `eye-sky-math-v1` and confirmed the current live config is severely under-tuned: measured RTP is roughly `9.39%`, bonus cadence is far too frequent, and average bonus completion value is too weak for a credible slot profile
+  - Fixed the first-load board visibility bug by moving the initial Pixi tile paint into the async board-init lifecycle and enforcing explicit in-board layer ordering
+  - Refactored the desktop shell into left rail / center stage / operator rail, keeping only bet plus spin under the board and moving autoplay and utility actions into the right-side column
+  - Fixed the post-refactor desktop overflow by making board sizing height-aware, compressing the top shell, shortening the side rails, and improving the central stage background composition
+  - Reorganized the page into explicit left-support, center-gameplay, and right-operator components so board ownership, autoplay placement, and utility placement are structurally separated instead of mixed in one center stack
+  - Refactored the board control deck into a compact horizontal strip with a dense bet zone, centered spin CTA, and lightweight summary/validation zone
+  - Rebuilt the player shell around a slot-style `left support | center board | right branding` structure with a full-width bottom gameplay bar for fixed desktop-first hierarchy
+  - Calibrated desktop sizing so the board stays dominant while the left support modules, right branding rail, and bottom machine controls remain compact and proportional in windowed and fullscreen play
+  - Restored board-frame art and corrected scenic crop behavior so key visual areas of the background and side-scene art remain visible and cohesive across desktop widths
+  - Increased in-cell symbol scale with per-symbol presentation tuning and masking so PNG/SVG symbol assets fill the board tiles more strongly with less empty margin
+  - Fixed runtime symbol loading so every board symbol now tries `PNG` first and falls back to `SVG` only when the production image is missing or fails
+  - Moved the provided `Big win glow plate2` art into the public runtime asset pipeline as `big-win-glow-plate.png` and wired it into the `big_win` presentation overlay
+  - Applied a screenshot-driven symbol and backdrop calibration pass so the SVG-backed board symbols render larger and the scenic background reveals more of its intended focal area
+  - Reverted the unstable SVG mask/crop experiment and rebuilt the bottom control bar as balanced left/right clusters around the centered spin button to remove the oversized utility gap
+- `2026-03-17`
+  - Retuned the live engine profile to `eye-sky-math-v1.1`, moving the game into a professional medium-volatility band near the documented `94% to 96%` RTP target with healthier bonus cadence and materially stronger bonus quality
+  - Added regression coverage for default-config RTP and bonus-quality sanity so future math edits are less likely to regress silently
+  - Added low-balance entry prompting in the player shell so users below the minimum stake are asked to deposit instead of landing in a confusing blocked state
+  - Added cumulative simulation-wallet treasury totals so the player can always see total deposited and total withdrawn amounts, independent of the truncated transaction history view
+  - Fixed wallet-to-spin balance synchronization so deposits and withdrawals immediately affect spin eligibility and no longer leave the player stuck behind stale balance validation
+  - Fixed small-win presentation formatting so valid low-value wins no longer appear as misleading `+0` labels in history or board feedback
+  - Retuned the live engine again to `eye-sky-math-v1.2`, replacing the over-chaining profile with a capped-cascade cluster model, visible-value paytable at minimum bet, and in-game paytable disclosure through the menu

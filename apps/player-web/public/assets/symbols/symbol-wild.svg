@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 460) rotate(90) scale(468)">
+      <stop stop-color="#4C2126"/>
+      <stop offset="1" stop-color="#110F12"/>
+    </radialGradient>
+    <linearGradient id="star" x1="340" y1="276" x2="688" y2="752" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF1C6"/>
+      <stop offset="0.5" stop-color="#E1BB6A"/>
+      <stop offset="1" stop-color="#915F29"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#55332D" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#191316" stroke="#6B4A3B" stroke-width="8"/>
+  <path d="M512 260L578 410L738 430L616 534L652 694L512 612L372 694L408 534L286 430L446 410L512 260Z" fill="url(#star)" stroke="#F8E0A4" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M352 512C402 444 454 410 512 410C570 410 622 444 672 512C622 580 570 614 512 614C454 614 402 580 352 512Z" fill="#191317" stroke="#8A2B32" stroke-width="12"/>
+  <circle cx="512" cy="512" r="42" fill="#A8363C"/>
+  <circle cx="512" cy="512" r="18" fill="#FFF0C9"/>
+</svg>

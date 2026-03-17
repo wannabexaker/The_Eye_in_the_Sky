@@ -1,0 +1,222 @@
+/*
+Purpose: plays lightweight synthetic game audio with optional stereo pan
+Layer: frontend (player-web)
+Uses: slot hook and board presentation events
+*/
+
+type SoundEvent =
+  | "spin"
+  | "drop"
+  | "win"
+  | "cascade"
+  | "multiplier"
+  | "bonus"
+  | "big_win";
+
+type SoundOptions = {
+  pan?: number;
+};
+
+type SoundPreset = {
+  baseFrequency: number;
+  duration: number;
+  volume: number;
+  sweep?: number;
+  type: OscillatorType;
+  harmonics?: number[];
+  noise?: boolean;
+};
+
+class SoundManager {
+  private audioContext: AudioContext | null = null;
+
+  private noiseBuffer: AudioBuffer | null = null;
+
+  private getContext() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    if (!this.audioContext) {
+      const Context =
+        window.AudioContext ||
+        (window as typeof window & {
+          webkitAudioContext?: typeof AudioContext;
+        }).webkitAudioContext;
+      this.audioContext = Context ? new Context() : null;
+    }
+
+    return this.audioContext;
+  }
+
+  prime() {
+    const context = this.getContext();
+    if (context?.state === "suspended") {
+      void context.resume().catch(() => {
+        // ignore browser-level resume rejections from autoplay policies
+      });
+    }
+  }
+
+  /*
+  Purpose: plays a named game sound preset
+  Layer: frontend (player-web)
+  Uses: UI interactions and board feedback
+  */
+  play(event: SoundEvent, enabled: boolean, options: SoundOptions = {}) {
+    if (!enabled) {
+      return;
+    }
+
+    const context = this.getContext();
+    if (!context) {
+      return;
+    }
+
+    const preset = this.getPreset(event);
+    const now = context.currentTime;
+    const output = context.createGain();
+    const panner = typeof StereoPannerNode !== "undefined"
+      ? new StereoPannerNode(context, { pan: options.pan ?? 0 })
+      : null;
+
+    output.gain.setValueAtTime(0.0001, now);
+    output.gain.exponentialRampToValueAtTime(preset.volume, now + 0.02);
+    output.gain.exponentialRampToValueAtTime(0.0001, now + preset.duration);
+
+    if (panner) {
+      output.connect(panner);
+      panner.connect(context.destination);
+    } else {
+      output.connect(context.destination);
+    }
+
+    // add a small harmonic stack for richer tone
+    [0, ...(preset.harmonics ?? [])].forEach((ratio, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+
+      oscillator.type = preset.type;
+      oscillator.frequency.setValueAtTime(preset.baseFrequency * (ratio || 1), now);
+
+      if (preset.sweep) {
+        oscillator.frequency.linearRampToValueAtTime(
+          preset.baseFrequency * (ratio || 1) + preset.sweep,
+          now + preset.duration
+        );
+      }
+
+      gain.gain.setValueAtTime(index === 0 ? 0.9 : 0.25, now);
+      oscillator.connect(gain);
+      gain.connect(output);
+      oscillator.start(now);
+      oscillator.stop(now + preset.duration);
+    });
+
+    if (preset.noise) {
+      this.playNoiseBurst(context, output, now, preset.duration);
+    }
+  }
+
+  private getPreset(event: SoundEvent): SoundPreset {
+    const presets: Record<SoundEvent, SoundPreset> = {
+      spin: {
+        baseFrequency: 112,
+        duration: 0.16,
+        volume: 0.055,
+        sweep: 24,
+        type: "triangle",
+        harmonics: [2]
+      },
+      drop: {
+        baseFrequency: 180,
+        duration: 0.11,
+        volume: 0.04,
+        sweep: -16,
+        type: "sine",
+        noise: true
+      },
+      win: {
+        baseFrequency: 620,
+        duration: 0.28,
+        volume: 0.055,
+        sweep: 74,
+        type: "triangle",
+        harmonics: [1.5, 2]
+      },
+      cascade: {
+        baseFrequency: 330,
+        duration: 0.22,
+        volume: 0.04,
+        sweep: 56,
+        type: "sine",
+        noise: true
+      },
+      multiplier: {
+        baseFrequency: 860,
+        duration: 0.28,
+        volume: 0.052,
+        sweep: 150,
+        type: "triangle",
+        harmonics: [2, 3]
+      },
+      bonus: {
+        baseFrequency: 520,
+        duration: 0.88,
+        volume: 0.05,
+        sweep: 240,
+        type: "sine",
+        harmonics: [1.25, 1.5]
+      },
+      big_win: {
+        baseFrequency: 430,
+        duration: 1.1,
+        volume: 0.064,
+        sweep: 280,
+        type: "triangle",
+        harmonics: [1.5, 2, 3],
+        noise: true
+      }
+    };
+
+    return presets[event];
+  }
+
+  private playNoiseBurst(
+    context: AudioContext,
+    destination: GainNode,
+    now: number,
+    duration: number
+  ) {
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+
+    source.buffer = this.getNoiseBuffer(context);
+    source.connect(gain);
+    gain.connect(destination);
+
+    gain.gain.setValueAtTime(0.14, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    source.start(now);
+    source.stop(now + duration);
+  }
+
+  private getNoiseBuffer(context: AudioContext) {
+    if (this.noiseBuffer) {
+      return this.noiseBuffer;
+    }
+
+    const buffer = context.createBuffer(1, context.sampleRate * 0.35, context.sampleRate);
+    const channel = buffer.getChannelData(0);
+
+    for (let index = 0; index < channel.length; index += 1) {
+      channel[index] = Math.random() * 2 - 1;
+    }
+
+    this.noiseBuffer = buffer;
+    return buffer;
+  }
+}
+
+export const soundManager = new SoundManager();

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 460) rotate(90) scale(460)">
+      <stop stop-color="#1F2A26"/>
+      <stop offset="1" stop-color="#101114"/>
+    </radialGradient>
+    <linearGradient id="relic" x1="356" y1="290" x2="664" y2="746" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ECD59A"/>
+      <stop offset="0.58" stop-color="#AE8A4B"/>
+      <stop offset="1" stop-color="#5F6E58"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#334236" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#151A18" stroke="#52604B" stroke-width="8"/>
+  <path d="M430 286C562 286 650 364 650 466C650 524 612 566 554 592C482 624 448 654 448 702C448 732 464 756 490 776" stroke="url(#relic)" stroke-width="40" stroke-linecap="round"/>
+  <path d="M494 780C560 780 612 742 612 688C612 636 566 612 516 612" stroke="url(#relic)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M632 292L704 334L650 372" stroke="#E9D59E" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="558" cy="452" r="16" fill="#F0DFB1"/>
+  <path d="M392 346C432 320 474 308 530 308" stroke="#A7BE97" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+</svg>

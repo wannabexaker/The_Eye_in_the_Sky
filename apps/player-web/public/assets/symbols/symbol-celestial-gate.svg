@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 458) rotate(90) scale(468)">
+      <stop stop-color="#202A35"/>
+      <stop offset="1" stop-color="#0F1114"/>
+    </radialGradient>
+    <linearGradient id="gate" x1="364" y1="266" x2="664" y2="772" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4DFAD"/>
+      <stop offset="0.48" stop-color="#D2A04C"/>
+      <stop offset="1" stop-color="#557C9D"/>
+    </linearGradient>
+    <radialGradient id="inner" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 528) rotate(90) scale(192 140)">
+      <stop stop-color="#E9F8FF"/>
+      <stop offset="1" stop-color="#6EA6D3" stop-opacity="0.2"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#395067" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#15191D" stroke="#536473" stroke-width="8"/>
+  <path d="M356 736V430C356 298 430 232 512 232C594 232 668 298 668 430V736H356Z" fill="#12161A" stroke="url(#gate)" stroke-width="20"/>
+  <path d="M430 736V456C430 368 474 320 512 320C550 320 594 368 594 456V736H430Z" fill="url(#inner)" stroke="#D7B36D" stroke-width="12"/>
+  <path d="M512 232V736" stroke="#E4CB90" stroke-width="10" opacity="0.85"/>
+  <path d="M356 736H668" stroke="#D1A14A" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="512" cy="536" r="18" fill="#F1E4BF"/>
+</svg>

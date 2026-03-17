@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <radialGradient id="rift" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(960 248) rotate(90) scale(340 720)">
+      <stop stop-color="#FFF2C9"/>
+      <stop offset="0.35" stop-color="#E7C26F" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#E7C26F" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sky" x1="960" y1="0" x2="960" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17151A"/>
+      <stop offset="1" stop-color="#070708"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <ellipse cx="960" cy="180" rx="360" ry="110" fill="rgba(231,194,111,0.14)"/>
+  <path d="M828 0L898 460H1022L1092 0H828Z" fill="url(#rift)"/>
+  <path d="M648 878L770 640H1150L1272 878H648Z" fill="#141317" stroke="#3D3227" stroke-width="6"/>
+  <path d="M780 878V682L960 530L1140 682V878" fill="#19181D" stroke="#5B462F" stroke-width="5"/>
+  <path d="M960 120L1014 208L1122 246L1038 302L1060 410L960 374L860 410L882 302L798 246L906 208L960 120Z" fill="#E7C26F" fill-opacity="0.22"/>
+  <path d="M960 92C1044 92 1124 146 1202 254C1124 362 1044 416 960 416C876 416 796 362 718 254C796 146 876 92 960 92Z" fill="#E7C26F" fill-opacity="0.1" stroke="#E7C26F" stroke-opacity="0.18" stroke-width="6"/>
+  <circle cx="960" cy="254" r="34" fill="#E7C26F" fill-opacity="0.18"/>
+  <path d="M884 504L960 292L1036 504" stroke="#F2D9A2" stroke-width="10" stroke-linecap="round"/>
+  <text x="960" y="986" text-anchor="middle" fill="#E7C26F" font-size="72" font-family="Georgia, serif" letter-spacing="8">SKY OPENS</text>
+</svg>

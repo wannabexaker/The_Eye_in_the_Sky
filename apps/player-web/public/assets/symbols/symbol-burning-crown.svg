@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 458) rotate(90) scale(470)">
+      <stop stop-color="#341B1F"/>
+      <stop offset="1" stop-color="#100F13"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="344" y1="368" x2="680" y2="714" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6DEAA"/>
+      <stop offset="0.55" stop-color="#D19942"/>
+      <stop offset="1" stop-color="#7D4F18"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="512" y1="272" x2="512" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF2C3"/>
+      <stop offset="0.45" stop-color="#F4BA56"/>
+      <stop offset="1" stop-color="#8E2C24"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#3A3025" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#181317" stroke="#5A462F" stroke-width="8"/>
+  <path d="M346 648L390 420L482 520L566 352L640 508L688 420L726 648H346Z" fill="url(#gold)" stroke="#E7C77F" stroke-width="14" stroke-linejoin="round"/>
+  <rect x="356" y="646" width="312" height="58" rx="18" fill="#2D1B13" stroke="#D39E4A" stroke-width="14"/>
+  <path d="M452 410C432 368 462 322 498 298C500 346 486 380 452 410Z" fill="url(#fire)"/>
+  <path d="M566 332C592 372 576 420 548 446C534 400 542 366 566 332Z" fill="url(#fire)"/>
+  <path d="M632 424C662 446 672 484 662 524C626 504 612 470 632 424Z" fill="url(#fire)"/>
+</svg>

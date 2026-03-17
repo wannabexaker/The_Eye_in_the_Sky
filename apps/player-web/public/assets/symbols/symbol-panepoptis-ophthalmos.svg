@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 456) rotate(90) scale(468)">
+      <stop stop-color="#3E2B18"/>
+      <stop offset="1" stop-color="#101012"/>
+    </radialGradient>
+    <linearGradient id="eye" x1="256" y1="320" x2="768" y2="704" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE7B5"/>
+      <stop offset="0.52" stop-color="#D6A757"/>
+      <stop offset="1" stop-color="#6F4B1D"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#5B4529" stroke-width="6"/>
+  <circle cx="512" cy="512" r="302" fill="#181514" stroke="#6A5334" stroke-width="8"/>
+  <circle cx="512" cy="512" r="232" stroke="#C79949" stroke-width="8" opacity="0.45"/>
+  <circle cx="512" cy="512" r="176" stroke="#E2BF73" stroke-width="8" opacity="0.55"/>
+  <path d="M228 512C306 396 404 330 512 330C620 330 718 396 796 512C718 628 620 694 512 694C404 694 306 628 228 512Z" fill="#131114" stroke="url(#eye)" stroke-width="20"/>
+  <circle cx="512" cy="512" r="122" fill="#F2DEB0"/>
+  <circle cx="512" cy="512" r="64" fill="#6D4323"/>
+  <circle cx="512" cy="512" r="28" fill="#110C0A"/>
+  <circle cx="512" cy="356" r="18" fill="#E8CB87"/>
+  <circle cx="662" cy="428" r="14" fill="#E8CB87"/>
+  <circle cx="664" cy="594" r="14" fill="#E8CB87"/>
+  <circle cx="362" cy="594" r="14" fill="#E8CB87"/>
+  <circle cx="362" cy="428" r="14" fill="#E8CB87"/>
+</svg>

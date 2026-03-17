@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" fill="none">
+  <defs>
+    <linearGradient id="stone" x1="800" y1="40" x2="800" y2="1160" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1C1A1E"/>
+      <stop offset="1" stop-color="#0E0D11"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="154" y1="120" x2="1446" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0D89E"/>
+      <stop offset="0.5" stop-color="#C99845"/>
+      <stop offset="1" stop-color="#7A5321"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="1520" height="1120" rx="72" fill="url(#stone)" stroke="#382F25" stroke-width="10"/>
+  <rect x="114" y="114" width="1372" height="972" rx="54" fill="#09090B" stroke="url(#gold)" stroke-width="8"/>
+  <rect x="154" y="154" width="1292" height="892" rx="40" stroke="#4A3B28" stroke-width="4" stroke-dasharray="12 18"/>
+  <circle cx="166" cy="166" r="54" fill="#161519" stroke="#D1A14A" stroke-width="8"/>
+  <circle cx="1434" cy="166" r="54" fill="#161519" stroke="#D1A14A" stroke-width="8"/>
+  <circle cx="166" cy="1034" r="54" fill="#161519" stroke="#D1A14A" stroke-width="8"/>
+  <circle cx="1434" cy="1034" r="54" fill="#161519" stroke="#D1A14A" stroke-width="8"/>
+  <path d="M166 138C186 138 204 150 214 166C204 182 186 194 166 194C146 194 128 182 118 166C128 150 146 138 166 138Z" fill="#D6B165"/>
+  <path d="M1434 138C1454 138 1472 150 1482 166C1472 182 1454 194 1434 194C1414 194 1396 182 1386 166C1396 150 1414 138 1434 138Z" fill="#D6B165"/>
+  <path d="M166 1006C186 1006 204 1018 214 1034C204 1050 186 1062 166 1062C146 1062 128 1050 118 1034C128 1018 146 1006 166 1006Z" fill="#D6B165"/>
+  <path d="M1434 1006C1454 1006 1472 1018 1482 1034C1472 1050 1454 1062 1434 1062C1414 1062 1396 1050 1386 1034C1396 1018 1414 1006 1434 1006Z" fill="#D6B165"/>
+</svg>

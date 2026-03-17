@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="430" y1="122" x2="1172" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2D9A2"/>
+      <stop offset="0.5" stop-color="#D1A04D"/>
+      <stop offset="1" stop-color="#805724"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="600" rx="72" fill="#0B0B0E"/>
+  <rect x="18" y="18" width="1564" height="564" rx="54" fill="#121216" stroke="#32281F" stroke-width="4"/>
+  <path d="M278 178C346 98 428 58 512 58C596 58 678 98 746 178C678 258 596 298 512 298C428 298 346 258 278 178Z" fill="#121114" stroke="url(#gold)" stroke-width="16"/>
+  <circle cx="512" cy="178" r="92" fill="#E8D2A0"/>
+  <circle cx="512" cy="178" r="42" fill="#68242A"/>
+  <circle cx="512" cy="178" r="18" fill="#100B0C"/>
+  <path d="M410 344H1240" stroke="#433426" stroke-width="2"/>
+  <text x="800" y="250" text-anchor="middle" fill="url(#gold)" font-size="118" font-family="Georgia, serif" letter-spacing="6">THE EYE IN THE SKY</text>
+  <text x="800" y="334" text-anchor="middle" fill="#8F806B" font-size="28" font-family="Georgia, serif" letter-spacing="10">SACRED SURVEILLANCE</text>
+</svg>

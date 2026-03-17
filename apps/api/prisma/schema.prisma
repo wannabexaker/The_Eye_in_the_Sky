@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String?        @unique
+  displayName  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  wallets      Wallet[]
+  sessions     GameSession[]
+  rounds       Round[]
+  bonusStates  BonusState[]
+  adminActions AdminAction[]
+}
+
+model Wallet {
+  id            String        @id @default(cuid())
+  userId        String
+  currencyCode  String        @default("FAKE")
+  balance       Decimal       @db.Decimal(18, 2)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id])
+  ledgerEntries LedgerEntry[]
+}
+
+model LedgerEntry {
+  id           String   @id @default(cuid())
+  walletId     String
+  roundId      String?
+  reason       String
+  amount       Decimal  @db.Decimal(18, 2)
+  balanceAfter Decimal  @db.Decimal(18, 2)
+  createdAt    DateTime @default(now())
+  wallet       Wallet   @relation(fields: [walletId], references: [id])
+  round        Round?   @relation(fields: [roundId], references: [id])
+}
+
+model Game {
+  id           String            @id @default(cuid())
+  key          String            @unique
+  title        String
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  mathProfiles GameMathProfile[]
+  sessions     GameSession[]
+  rounds       Round[]
+}
+
+model GameMathProfile {
+  id               String   @id @default(cuid())
+  gameId           String
+  version          String
+  configJson       Json
+  targetRtp        Float
+  volatilityLabel  String
+  createdAt        DateTime @default(now())
+  game             Game     @relation(fields: [gameId], references: [id])
+}
+
+model GameSession {
+  id         String   @id @default(cuid())
+  userId     String
+  gameId     String
+  startedAt  DateTime @default(now())
+  endedAt    DateTime?
+  user       User     @relation(fields: [userId], references: [id])
+  game       Game     @relation(fields: [gameId], references: [id])
+}
+
+model Round {
+  id               String        @id @default(cuid())
+  userId           String
+  gameId           String
+  mathProfileId    String?
+  seedUsed         String
+  bet              Decimal       @db.Decimal(18, 2)
+  totalWin         Decimal       @db.Decimal(18, 2)
+  walletDelta      Decimal       @db.Decimal(18, 2)
+  initialBoardJson Json
+  resultJson       Json
+  createdAt        DateTime      @default(now())
+  user             User          @relation(fields: [userId], references: [id])
+  game             Game          @relation(fields: [gameId], references: [id])
+  bonusStates      BonusState[]
+  ledgerEntries    LedgerEntry[]
+}
+
+model BonusState {
+  id                 String   @id @default(cuid())
+  userId             String
+  roundId            String?
+  mode               String
+  freeSpinsRemaining Int
+  stickyMultiplier   Int
+  totalBonusWin      Decimal  @db.Decimal(18, 2)
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
+  round              Round?   @relation(fields: [roundId], references: [id])
+}
+
+model AdminAction {
+  id         String   @id @default(cuid())
+  userId     String
+  actionType String
+  payload    Json
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  eventType  String
+  payload    Json
+  createdAt  DateTime @default(now())
+}

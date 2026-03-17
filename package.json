@@ -1,0 +1,15 @@
+{
+  "name": "the-eye-in-the-sky",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.3",
+  "scripts": {
+    "dev": "corepack pnpm --filter player-web dev",
+    "dev:player": "corepack pnpm --filter player-web dev",
+    "dev:admin": "corepack pnpm --filter admin-web dev",
+    "dev:api": "corepack pnpm --filter api start:dev",
+    "build": "corepack pnpm -r build",
+    "lint": "corepack pnpm -r lint",
+    "simulate": "corepack pnpm --filter @eye/game-engine simulate"
+  }
+}

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 460) rotate(90) scale(440)">
+      <stop stop-color="#2A2328"/>
+      <stop offset="1" stop-color="#100F13"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="312" y1="220" x2="712" y2="804" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2D9A2"/>
+      <stop offset="0.55" stop-color="#D2A14A"/>
+      <stop offset="1" stop-color="#8A6128"/>
+    </linearGradient>
+    <filter id="glow" x="180" y="180" width="664" height="664" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="#09090B"/>
+  <rect x="44" y="44" width="936" height="936" rx="180" fill="url(#bg)" stroke="#3A3025" stroke-width="6"/>
+  <circle cx="512" cy="512" r="300" fill="#151217" stroke="#5F4B30" stroke-width="8"/>
+  <g opacity="0.28" filter="url(#glow)">
+    <circle cx="512" cy="512" r="184" fill="#D2A14A"/>
+  </g>
+  <path d="M512 276L662 402L598 592L426 592L362 402L512 276Z" stroke="url(#gold)" stroke-width="28" stroke-linejoin="round"/>
+  <path d="M512 348L568 510L512 674L456 510L512 348Z" stroke="url(#gold)" stroke-width="24" stroke-linejoin="round"/>
+  <path d="M390 470H634" stroke="url(#gold)" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="512" cy="512" r="26" fill="#E5C57C"/>
+  <circle cx="512" cy="512" r="12" fill="#2B1F16"/>
+</svg>
