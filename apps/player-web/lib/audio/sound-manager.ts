@@ -8,6 +8,7 @@ type SoundEvent =
   | "spin"
   | "drop"
   | "win"
+  | "loss"
   | "cascade"
   | "multiplier"
   | "bonus"
@@ -25,6 +26,8 @@ type SoundPreset = {
   type: OscillatorType;
   harmonics?: number[];
   noise?: boolean;
+  attack?: number;
+  release?: number;
 };
 
 class SoundManager {
@@ -80,9 +83,12 @@ class SoundManager {
       ? new StereoPannerNode(context, { pan: options.pan ?? 0 })
       : null;
 
+    const attack = preset.attack ?? 0.02;
+    const release = preset.release ?? preset.duration;
+
     output.gain.setValueAtTime(0.0001, now);
-    output.gain.exponentialRampToValueAtTime(preset.volume, now + 0.02);
-    output.gain.exponentialRampToValueAtTime(0.0001, now + preset.duration);
+    output.gain.exponentialRampToValueAtTime(preset.volume, now + attack);
+    output.gain.exponentialRampToValueAtTime(0.0001, now + release);
 
     if (panner) {
       output.connect(panner);
@@ -137,45 +143,67 @@ class SoundManager {
         noise: true
       },
       win: {
-        baseFrequency: 620,
-        duration: 0.28,
+        baseFrequency: 610,
+        duration: 0.44,
         volume: 0.055,
-        sweep: 74,
+        sweep: 90,
         type: "triangle",
-        harmonics: [1.5, 2]
+        harmonics: [1.5, 2, 3],
+        attack: 0.014,
+        release: 0.42
+      },
+      loss: {
+        baseFrequency: 186,
+        duration: 0.36,
+        volume: 0.028,
+        sweep: -32,
+        type: "sine",
+        harmonics: [0.5, 1.5],
+        noise: true,
+        attack: 0.01,
+        release: 0.28
       },
       cascade: {
-        baseFrequency: 330,
-        duration: 0.22,
+        baseFrequency: 344,
+        duration: 0.26,
         volume: 0.04,
-        sweep: 56,
+        sweep: 64,
         type: "sine",
-        noise: true
+        harmonics: [2],
+        noise: true,
+        attack: 0.012,
+        release: 0.24
       },
       multiplier: {
-        baseFrequency: 860,
-        duration: 0.28,
+        baseFrequency: 840,
+        duration: 0.42,
         volume: 0.052,
-        sweep: 150,
+        sweep: 180,
         type: "triangle",
-        harmonics: [2, 3]
+        harmonics: [2, 3, 4],
+        attack: 0.012,
+        release: 0.38
       },
       bonus: {
         baseFrequency: 520,
-        duration: 0.88,
-        volume: 0.05,
-        sweep: 240,
+        duration: 1.2,
+        volume: 0.048,
+        sweep: 260,
         type: "sine",
-        harmonics: [1.25, 1.5]
+        harmonics: [1.25, 1.5, 2],
+        attack: 0.03,
+        release: 1.08
       },
       big_win: {
         baseFrequency: 430,
-        duration: 1.1,
-        volume: 0.064,
-        sweep: 280,
+        duration: 1.45,
+        volume: 0.068,
+        sweep: 320,
         type: "triangle",
-        harmonics: [1.5, 2, 3],
-        noise: true
+        harmonics: [1.5, 2, 3, 4],
+        noise: true,
+        attack: 0.016,
+        release: 1.26
       }
     };
 

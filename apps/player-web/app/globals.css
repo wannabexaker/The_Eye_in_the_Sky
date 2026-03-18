@@ -630,6 +630,26 @@ p {
   height: 100%;
 }
 
+.symbolTooltip {
+  position: absolute;
+  z-index: calc(var(--z-board-overlay) + 2);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  background: rgba(10, 10, 13, 0.94);
+  color: #f4e7bf;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.05;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(226, 190, 112, 0.18);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
 .sideRail {
   display: grid;
   grid-auto-rows: min-content;
@@ -2241,10 +2261,14 @@ Current shell calibration:
   line-height: 1.32;
 }
 
+/* Active Machine Layout: Center Stage */
+
 .centerStage {
   width: 100%;
-  padding-top: 6px;
-  gap: 8px;
+  padding-top: 0;
+  gap: 4px;
+  align-content: end;
+  z-index: calc(var(--z-surface) + 1);
 }
 
 .boardMetaRow {
@@ -2264,7 +2288,10 @@ Current shell calibration:
 .boardShell {
   width: 100%;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
+  align-self: end;
+  display: grid;
+  place-items: end center;
 }
 
 .boardStageHalo {
@@ -2275,23 +2302,33 @@ Current shell calibration:
 }
 
 .boardFrameMain {
-  height: min(100%, calc(100dvh - 192px));
+  position: relative;
+  z-index: calc(var(--z-surface) + 2);
+  height: min(100%, calc(100dvh - 162px));
   max-width: min(100%, 1080px);
+  margin-bottom: -8px;
 }
+
+/* Active Machine Layout: Bottom Bar Shell */
 
 .controlsDock.bottomControlsDock {
   width: 100%;
   justify-self: stretch;
-  margin-top: 0;
+  margin-top: -14px;
   overflow: visible;
+  position: relative;
+  z-index: auto;
 }
 
 .machineBottomBar {
-  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  position: relative;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 96px;
-  padding: 10px 16px;
+  gap: 4px;
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  padding: 4px 10px;
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(13, 13, 17, 0.96), rgba(10, 10, 13, 0.98)),
@@ -2299,10 +2336,14 @@ Current shell calibration:
   overflow: visible;
 }
 
+/* Active Machine Layout: Left Footer Cluster */
+
 .bottomBarZone {
   min-width: 0;
   display: grid;
   align-items: center;
+  justify-items: center;
+  align-content: center;
   gap: 6px;
 }
 
@@ -2357,8 +2398,8 @@ Current shell calibration:
 
 .balanceZone {
   grid-template-columns: repeat(2, minmax(92px, 112px));
-  gap: 8px;
-  justify-self: center;
+  gap: 1px;
+  justify-self: start;
 }
 
 .bottomBarStat {
@@ -2383,46 +2424,68 @@ Current shell calibration:
   line-height: 1.05;
 }
 
-.spinZone {
-  position: relative;
-  width: 112px;
-  min-height: 0;
-  justify-items: center;
-  overflow: visible;
-}
-
-.spinAnchor {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  overflow: visible;
-}
+/* Active Machine Layout: Right Footer Cluster */
 
 .betAdjustZone,
 .autoplayZone {
+  position: relative;
   align-content: center;
+}
+
+.betSpinStack {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  overflow: visible;
+  padding-top: 14px;
+}
+
+.betSpinAnchor {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%);
+  overflow: visible;
+  z-index: calc(var(--z-surface) + 4);
+  pointer-events: auto;
 }
 
 .betAdjustControls,
 .autoplayControls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   flex-wrap: nowrap;
 }
 
+.betAdjustControls {
+  display: grid;
+  grid-template-columns: 16px 36px 16px;
+  align-items: center;
+  column-gap: 2px;
+}
+
 .betAdjustZone {
-  align-self: center;
+  align-self: end;
+  justify-self: end;
   justify-items: center;
   margin-left: 0;
   padding-top: 0;
+  padding-right: 4px;
+  padding-bottom: 6px;
 }
 
 .autoplayZone {
+  width: auto;
+  min-width: 0;
+  align-self: end;
   justify-self: end;
-  justify-items: end;
-  padding-left: 14px;
+  justify-items: start;
+  gap: 2px;
+  margin-left: 10px;
+  padding-left: 10px;
+  padding-bottom: 6px;
   border-left: 1px solid rgba(226, 190, 112, 0.08);
 }
 
@@ -2441,7 +2504,7 @@ Current shell calibration:
 }
 
 .betAmountInput {
-  width: 116px;
+  width: 36px;
   text-align: center;
 }
 
@@ -2449,8 +2512,12 @@ Current shell calibration:
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 10px;
-  min-height: 18px;
+  gap: 4px 8px;
+  min-height: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 2px);
 }
 
 .compactBottomAction,
@@ -2492,18 +2559,108 @@ Current shell calibration:
   padding-inline: 10px;
 }
 
+.autoplayCountInput {
+  width: 44px;
+  min-height: 22px;
+  padding-inline: 4px;
+  text-align: center;
+}
+
 .autoplayMetaRow {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px 10px;
-  min-height: 18px;
+  justify-content: center;
+  gap: 4px 8px;
+  min-height: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 2px);
+}
+
+.autoplayActionRow {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  column-gap: 4px;
+  justify-content: start;
+}
+
+.autoplayModeStack {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
 }
 
 .controlHelper.inline,
 .validationText.inline {
   margin: 0;
   font-size: var(--font-xs);
+}
+
+.betAdjustControls .betAdjustIconButton {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  padding: 0;
+}
+
+.betAdjustControls .betAmountInput.bottomBarInput {
+  width: 36px;
+  min-height: 16px;
+  height: 16px;
+  padding-inline: 2px;
+  font-size: 0.68rem;
+}
+
+.autoplayModeGroup {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.autoplayActionRow .compactChip {
+  min-width: 0;
+  min-height: 18px;
+  padding-inline: 3px;
+  justify-content: center;
+  font-size: 0.54rem;
+  line-height: 1;
+}
+
+.autoplayModeButton {
+  min-width: 24px;
+  height: 18px;
+  min-height: 18px;
+  padding-inline: 3px;
+}
+
+.autoplayActionRow .autoContinueToggle {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  padding: 0;
+}
+
+.autoplayControls .autoplayCountInput.bottomBarInput {
+  width: 34px;
+  min-height: 18px;
+  height: 18px;
+  padding-inline: 2px;
+  font-size: 0.68rem;
 }
 
 .controlHelper.inline {
@@ -2514,7 +2671,23 @@ Current shell calibration:
   color: #d5a35f;
 }
 
+.betAdjustIcon {
+  width: 8px;
+  height: 8px;
+  display: block;
+  margin: 0 auto;
+}
+
+.skipIcon {
+  width: 10px;
+  height: 10px;
+  display: block;
+  margin: 0 auto;
+}
+
 @media (max-width: 1600px), (max-height: 900px) {
+  /* Desktop Band: 1600 x 900 */
+
   .gameArea.machineStage {
     grid-template-columns:
       clamp(162px, 12vw, 194px)
@@ -2532,14 +2705,18 @@ Current shell calibration:
   }
 
   .machineBottomBar {
-    grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-    gap: 10px;
-    min-height: 90px;
-    padding: 9px 12px;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 6px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
+    padding: 4px 10px;
   }
 }
 
 @media (max-width: 1366px), (max-height: 768px) {
+  /* Desktop Band: 1366 x 768 */
+
   .slotViewport {
     gap: 8px;
     padding: 8px;
@@ -2578,10 +2755,12 @@ Current shell calibration:
   }
 
   .machineBottomBar {
-    grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-    gap: 8px;
-    min-height: 84px;
-    padding: 8px 10px;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 6px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
+    padding: 4px 10px;
   }
 
   .utilityZone {

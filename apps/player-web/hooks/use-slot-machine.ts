@@ -32,6 +32,9 @@ const DEFAULT_AUTOSPIN_COUNT = 10;
 const MAX_AUTOSPIN_COUNT = 1000;
 const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
+const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
+const BIG_WIN_AUTO_DISMISS_MS = 2200;
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -148,7 +151,10 @@ const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
   };
 };
 
-const buildWinPresentation = (result: SpinResult): WinPresentationEntry | null => {
+const buildWinPresentation = (
+  result: SpinResult,
+  autoContinueNeverStop: boolean
+): WinPresentationEntry | null => {
   if (buildBonusSummary(result)) {
     return null;
   }
@@ -161,7 +167,7 @@ const buildWinPresentation = (result: SpinResult): WinPresentationEntry | null =
     return null;
   }
 
-  const bigWin = result.totalWin >= result.bet * 8;
+  const bigWin = result.totalWin >= result.bet * 5;
   const inBonus = result.mode === "bonus";
   const subtitleParts = [
     hasMultiplierEvent(result) ? `x${result.appliedWinMultiplier} multiplier applied` : null,
@@ -183,15 +189,23 @@ const buildWinPresentation = (result: SpinResult): WinPresentationEntry | null =
     amount: result.totalWin,
     subtitle: subtitleParts.join(" • ") || undefined,
     detailRows: getCascadeDetailRows(result),
-    requireAcknowledgement: bigWin || result.cascades.length >= 3 || result.bonusTriggered,
+    requireAcknowledgement:
+      !autoContinueNeverStop &&
+      (bigWin || result.cascades.length >= 3 || result.bonusTriggered),
     continueLabel: result.bonusTriggered ? "Enter Bonus" : "Continue",
-    autoDismissMs: bigWin ? undefined : WIN_PRESENTATION_AUTO_DISMISS_MS
+    autoDismissMs:
+      autoContinueNeverStop && bigWin
+        ? BIG_WIN_AUTO_DISMISS_MS
+        : bigWin
+          ? undefined
+          : WIN_PRESENTATION_AUTO_DISMISS_MS
   };
 };
 
 export function useSlotMachine() {
   const {
     soundEnabled,
+    autoContinueNeverStop,
     wallet,
     gameStateSnapshot,
     applyRoundResult,
@@ -341,6 +355,7 @@ export function useSlotMachine() {
 
     const error = validateBetAmount(bet);
     if (!error) {
+      setBetValidationMessage("");
       return;
     }
 
@@ -492,6 +507,8 @@ export function useSlotMachine() {
               result.totalWin >= result.bet * 5 ? "big_win" : "win",
               soundEnabled
             );
+          } else {
+            soundManager.play("loss", soundEnabled);
           }
         }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop)
       );
@@ -558,7 +575,7 @@ export function useSlotMachine() {
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           const summary = buildBonusSummary(result);
-          const presentation = summary ? null : buildWinPresentation(result);
+          const presentation = summary ? null : buildWinPresentation(result, autoContinueNeverStop);
 
           setBonusSummary(summary);
           setWinPresentation(presentation);
@@ -579,7 +596,7 @@ export function useSlotMachine() {
         }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0) + PRESENTATION_TIMINGS.roundEnd)
       );
     },
-    [clearTimers, soundEnabled]
+    [autoContinueNeverStop, clearTimers, soundEnabled]
   );
 
   const runSpin = useCallback(() => {
@@ -727,6 +744,30 @@ export function useSlotMachine() {
     winPresentation
   ]);
 
+  useEffect(() => {
+    if (!autoContinueNeverStop || !bonusAnnouncement) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setBonusAnnouncement(null);
+    }, BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [autoContinueNeverStop, bonusAnnouncement]);
+
+  useEffect(() => {
+    if (!autoContinueNeverStop || !bonusSummary) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setBonusSummary(null);
+    }, BONUS_SUMMARY_AUTO_DISMISS_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [autoContinueNeverStop, bonusSummary]);
+
   const dismissBonusAnnouncement = useCallback(() => {
     setBonusAnnouncement(null);
   }, []);
@@ -799,6 +840,7 @@ export function useSlotMachine() {
     minBet: MIN_BET,
     maxBet: rawMaxBet,
     requestedAutospinCount,
+    autospinRemaining: autoSpinRemaining,
     autospinCountInput,
     autospinOptions: QUICK_AUTOSPIN_OPTIONS,
     autospinValidationMessage,
@@ -815,6 +857,7 @@ export function useSlotMachine() {
     areBetControlsLocked,
     isAutospinActive: isAutoSpinning,
     autospinStopRequested,
+    autoContinueNeverStop,
     winMultiplier,
     winMultiplierOptions: defaultGameConfig.winMultiplierOptions,
     spin,

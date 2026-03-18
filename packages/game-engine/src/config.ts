@@ -2,7 +2,7 @@ import type { GameConfig, GameState } from "./types";
 
 export const defaultGameConfig: GameConfig = {
   gameKey: "the-eye-in-the-sky",
-  version: "eye-sky-math-v1.2",
+  version: "eye-sky-math-v1.3",
   targetRtp: 0.955,
   volatility: "medium",
   rows: 5,
@@ -14,7 +14,7 @@ export const defaultGameConfig: GameConfig = {
   clusterThreshold: 4,
   maxCascadeSteps: 12,
   cascadeMultiplierLadder: [1, 1.25, 1.5, 2, 2.5],
-  bonusMeterTarget: 30,
+  bonusMeterTarget: 16,
   bonusSpinsAwarded: 8,
   winMultiplierOptions: [1, 2, 3],
   maxBonusMultiplier: 4,
@@ -28,7 +28,7 @@ export const defaultGameConfig: GameConfig = {
     { symbol: "ophidian_relic", weight: 4.7 },
     { symbol: "celestial_gate", weight: 3.4 },
     { symbol: "seraphim_eye", weight: 0.34 },
-    { symbol: "samsara", weight: 0.14 },
+    { symbol: "samsara", weight: 0.08 },
     { symbol: "ouroboros", weight: 0.16 },
     { symbol: "panepoptis_ophthalmos", weight: 0.08 }
   ],

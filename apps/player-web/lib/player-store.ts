@@ -63,7 +63,9 @@ type PaymentMethodDraft = {
 };
 
 type PlayerUiState = {
+  hasHydrated: boolean;
   soundEnabled: boolean;
+  autoContinueNeverStop: boolean;
   debugPanelOpen: boolean;
   settingsOpen: boolean;
   historyOpen: boolean;
@@ -83,6 +85,7 @@ type PlayerUiState = {
   withdrawalDraft: WithdrawalDraft;
   paymentMethodDraft: PaymentMethodDraft;
   toggleSound: () => void;
+  setAutoContinueNeverStop: (value: boolean) => void;
   toggleModal: (key: ModalKey) => void;
   setModal: (key: ModalKey, open: boolean) => void;
   toggleDebugPanel: () => void;
@@ -163,6 +166,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
   persist(
     (set, get) => ({
       soundEnabled: false,
+      hasHydrated: false,
+      autoContinueNeverStop: false,
       debugPanelOpen: false,
       settingsOpen: false,
       historyOpen: false,
@@ -185,6 +190,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       withdrawalDraft: baseWithdrawalDraft(),
       paymentMethodDraft: basePaymentMethodDraft(),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setAutoContinueNeverStop: (value) => set({ autoContinueNeverStop: value }),
       toggleModal: (key) => set((state) => ({ [key]: !state[key] }) as Pick<PlayerUiState, ModalKey>),
       setModal: (key, open) => set({ [key]: open } as Pick<PlayerUiState, ModalKey>),
       toggleDebugPanel: () =>
@@ -469,6 +475,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
     {
       name: "eye-in-the-sky-player-store",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => () => {
+        usePlayerUiStore.setState({ hasHydrated: true });
+      },
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<PlayerUiState>;
         const paymentMethods = ensureDefaultPaymentMethod(persisted.paymentMethods);
@@ -493,6 +502,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       },
       partialize: (state) => ({
         soundEnabled: state.soundEnabled,
+        autoContinueNeverStop: state.autoContinueNeverStop,
         welcomeOpen: state.welcomeOpen,
         welcomeClaimed: state.welcomeClaimed,
         wallet: state.wallet,

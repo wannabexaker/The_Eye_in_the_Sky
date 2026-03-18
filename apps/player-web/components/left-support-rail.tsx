@@ -4,7 +4,10 @@ Layer: frontend (player-web)
 Uses: wallet actions, status state, and samsara meter
 */
 
+"use client";
+
 import type { SpinResult } from "@eye/game-engine";
+import { useEffect, useState } from "react";
 import { SamsaraMeter } from "./samsara-meter";
 
 type LeftSupportRailProps = {
@@ -30,6 +33,10 @@ const formatWin = (result: SpinResult) =>
       }).format(result.totalWin)}`
     : "LOSS";
 
+const MAX_RITUAL_LOG_ENTRIES = 10;
+const DESKTOP_VISIBLE_ENTRIES = 5;
+const COMPACT_VISIBLE_ENTRIES = 3;
+
 export function LeftSupportRail({
   currentBet,
   totalDeposited,
@@ -44,6 +51,29 @@ export function LeftSupportRail({
   onDeposit,
   onWithdraw
 }: LeftSupportRailProps) {
+  const [compactView, setCompactView] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1600px), (max-height: 900px)");
+    const syncCompactView = () => setCompactView(mediaQuery.matches);
+
+    syncCompactView();
+    mediaQuery.addEventListener("change", syncCompactView);
+    return () => mediaQuery.removeEventListener("change", syncCompactView);
+  }, []);
+
+  const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
+  const defaultVisibleEntries = compactView ? COMPACT_VISIBLE_ENTRIES : DESKTOP_VISIBLE_ENTRIES;
+  const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
+  const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
+
+  useEffect(() => {
+    if (ritualEntries.length <= defaultVisibleEntries && showMore) {
+      setShowMore(false);
+    }
+  }, [defaultVisibleEntries, ritualEntries.length, showMore]);
+
   return (
     <aside className="leftRail supportRail">
       <section className="compactPanel supportBlock treasuryBlock">
@@ -93,13 +123,22 @@ export function LeftSupportRail({
       <section className="compactPanel supportBlock">
         <div className="panelHeader">
           <p className="eyebrow">Ritual Log</p>
+          {canToggleHistory ? (
+            <button
+              className="supportToggle"
+              onClick={() => setShowMore((current) => !current)}
+              type="button"
+            >
+              {showMore ? "Less" : "More"}
+            </button>
+          ) : null}
         </div>
         <p className="supportNote">{phaseMessage}</p>
-        <div className="supportHistory">
+        <div className={`supportHistory ${showMore ? "is-scrollable" : ""}`}>
           {history.length === 0 ? (
             <span className="supportMuted">No rounds yet.</span>
           ) : (
-            history.slice(0, 3).map((result, index) => (
+            visibleEntries.map((result, index) => (
               <div className="supportHistoryRow" key={`${result.roundSummary.roundId}-${index}`}>
                 <strong>{formatWin(result)}</strong>
                 <span>{result.mode === "bonus" ? "bonus" : "base"}</span>

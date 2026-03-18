@@ -63,6 +63,22 @@ const symbolPalette: Record<SymbolId, { fill: number; accent: number }> = {
   wild: { fill: 0x602a2f, accent: 0xffefbc }
 };
 
+const symbolLabels: Record<SymbolId, string> = {
+  ashen_sigil: "Ashen Sigil",
+  broken_halo: "Broken Halo",
+  ritual_dagger: "Ritual Dagger",
+  sealed_scroll: "Sealed Scroll",
+  seraphim_feather: "Seraphim Feather",
+  burning_crown: "Burning Crown",
+  ophidian_relic: "Ophidian Relic",
+  celestial_gate: "Celestial Gate",
+  seraphim_eye: "Seraphim Eye",
+  samsara: "Samsara",
+  ouroboros: "Ouroboros",
+  panepoptis_ophthalmos: "Panepoptis Ophthalmos",
+  wild: "Wild"
+};
+
 type CellSprite = {
   container: Container;
   tile: Graphics;
@@ -209,10 +225,13 @@ export function PixiTempleBoard({
   const lightningUntilRef = useRef(0);
   const bonusFlashUntilRef = useRef(0);
   const bigWinUntilRef = useRef(0);
+  const guidanceUntilRef = useRef(0);
+  const lossVeilUntilRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [displayBoard, setDisplayBoard] = useState(board);
   const [highlightedCells, setHighlightedCells] = useState<{ row: number; col: number }[]>([]);
+  const [hoveredSymbol, setHoveredSymbol] = useState<{ label: string; x: number; y: number } | null>(null);
   const displayBoardRef = useRef(displayBoard);
 
   const applySymbolTexture = (cell: CellSprite, symbol: SymbolId, accent: number) => {
@@ -255,6 +274,12 @@ export function PixiTempleBoard({
   useEffect(() => {
     displayBoardRef.current = displayBoard;
   }, [displayBoard]);
+
+  useEffect(() => {
+    if (spinPhase !== "IDLE" && spinPhase !== "ROUND_END") {
+      setHoveredSymbol(null);
+    }
+  }, [spinPhase]);
 
   const clearFloatingTexts = () => {
     floatingTextsRef.current.forEach((text) => text.destroy());
@@ -485,6 +510,19 @@ export function PixiTempleBoard({
 
     if (result.totalWin >= result.bet * 5) {
       bigWinUntilRef.current = performance.now() + 1100;
+    }
+
+    if (result.totalWin > 0) {
+      guidanceUntilRef.current =
+        performance.now() +
+        PRESENTATION_TIMINGS.boardDrop +
+        PRESENTATION_TIMINGS.winHighlight +
+        PRESENTATION_TIMINGS.cascadeDrop +
+        220;
+      lossVeilUntilRef.current = 0;
+    } else if (!result.bonusTriggered) {
+      lossVeilUntilRef.current = performance.now() + 700;
+      guidanceUntilRef.current = 0;
     }
 
     let cursor = 0;
@@ -750,12 +788,46 @@ export function PixiTempleBoard({
             col
           };
 
-          container.on("pointerover", () => {
+          container.on("pointerover", (event) => {
             cell.hovered = true;
+
+            const host = hostRef.current;
+            const symbol = displayBoardRef.current[row]?.[col];
+            if (!host || !symbol) {
+              return;
+            }
+
+            const bounds = host.getBoundingClientRect();
+            setHoveredSymbol({
+              label: symbolLabels[symbol],
+              x: event.clientX - bounds.left,
+              y: event.clientY - bounds.top - 12
+            });
+            host.title = symbolLabels[symbol];
+          });
+
+          container.on("pointermove", (event) => {
+            const host = hostRef.current;
+            const symbol = displayBoardRef.current[row]?.[col];
+            if (!host || !symbol) {
+              return;
+            }
+
+            const bounds = host.getBoundingClientRect();
+            setHoveredSymbol({
+              label: symbolLabels[symbol],
+              x: event.clientX - bounds.left,
+              y: event.clientY - bounds.top - 12
+            });
           });
 
           container.on("pointerout", () => {
             cell.hovered = false;
+            setHoveredSymbol(null);
+
+            if (hostRef.current) {
+              hostRef.current.title = "";
+            }
           });
 
           cells.push(cell);
@@ -811,6 +883,9 @@ export function PixiTempleBoard({
           : 0;
 
         cellRefs.current.forEach((cell) => {
+          const currentPhase = phaseRef.current;
+          const idleMotionActive =
+            (currentPhase === "IDLE" || currentPhase === "ROUND_END") && !cell.animating;
           const progress = Math.min(1, Math.max(0, (now - cell.animStart) / cell.animDuration));
           const animating = cell.animating && now >= cell.animStart;
           const eased = easeOutBack(progress);
@@ -823,9 +898,11 @@ export function PixiTempleBoard({
           const shakeY = phaseRef.current === "SPIN_START"
             ? Math.cos(now / 22 + cell.col + cell.row * 0.4) * 1.2
             : 0;
-          const breathing = Math.sin(now / 880 + cell.breathingSeed) * 0.012;
-          const hoverBoost = cell.hovered ? 0.05 : 0;
-        const pulseBoost = cell.pulseUntil > now
+          const breathing = idleMotionActive
+            ? Math.sin(now / 880 + cell.breathingSeed) * 0.012
+            : 0;
+          const hoverBoost = idleMotionActive && cell.hovered ? 0.05 : 0;
+          const pulseBoost = cell.pulseUntil > now
             ? Math.sin((1 - (cell.pulseUntil - now) / PRESENTATION_TIMINGS.winHighlight) * Math.PI * 3) * 0.035
             : 0;
           const scale = 1 + breathing + hoverBoost + pulseBoost;
@@ -856,6 +933,36 @@ export function PixiTempleBoard({
           });
         }
 
+        if (guidanceUntilRef.current > now && highlightedWinsRef.current.length > 0) {
+          const guidanceAlpha = Math.max(
+            0,
+            ((guidanceUntilRef.current - now) /
+              (PRESENTATION_TIMINGS.boardDrop +
+                PRESENTATION_TIMINGS.winHighlight +
+                PRESENTATION_TIMINGS.cascadeDrop +
+                220)) *
+              0.22
+          );
+          const winningCells = highlightedWinsRef.current.flatMap((win) => win.cells);
+
+          overlay.stroke({ color: 0xfff2c9, width: 2, alpha: guidanceAlpha * 0.9, cap: "round" });
+          winningCells.forEach((cell) => {
+            const center = getCellCenter(cell.row, cell.col);
+            overlay.moveTo(logicalWidth / 2, 18);
+            overlay.lineTo(center.x, center.y - 14);
+          });
+
+          overlay.stroke({ color: 0xf0ca72, width: 18, alpha: guidanceAlpha * 0.12, cap: "round" });
+          overlay.arc(logicalWidth / 2, 26, 42, Math.PI * 0.08, Math.PI * 0.92);
+          overlay.arc(logicalWidth / 2, 26, 28, Math.PI * 0.16, Math.PI * 0.84);
+
+          winningCells.forEach((cell) => {
+            const center = getCellCenter(cell.row, cell.col);
+            overlay.circle(center.x, center.y, 30);
+          });
+          overlay.stroke({ color: 0xffefbc, width: 3, alpha: guidanceAlpha * 0.55 });
+        }
+
         if (bigWinUntilRef.current > now) {
           const rayAlpha = ((bigWinUntilRef.current - now) / 1100) * 0.18;
           overlay.moveTo(logicalWidth / 2, logicalHeight / 2);
@@ -863,6 +970,16 @@ export function PixiTempleBoard({
           overlay.lineTo(logicalWidth / 2 + 180, logicalHeight / 2 - 240);
           overlay.closePath();
           overlay.fill({ color: 0xf0ca72, alpha: rayAlpha });
+        }
+
+        if (lossVeilUntilRef.current > now) {
+          const fade = ((lossVeilUntilRef.current - now) / 700) * 0.18;
+          overlay.rect(0, 0, logicalWidth, logicalHeight).fill({
+            color: 0x050507,
+            alpha: fade
+          });
+          overlay.stroke({ color: 0x79685a, width: 3, alpha: fade * 0.6 });
+          overlay.arc(logicalWidth / 2, logicalHeight / 2 + 34, 96, Math.PI * 0.18, Math.PI * 0.82);
         }
 
         bonusBeams.clear();
@@ -948,5 +1065,20 @@ export function PixiTempleBoard({
     }
   }, [result, spinPhase]);
 
-  return <div className={`pixiStage phase-${spinPhase.toLowerCase()}`} ref={hostRef} />;
+  return (
+    <div className="pixiStageShell">
+      <div className={`pixiStage phase-${spinPhase.toLowerCase()}`} ref={hostRef} />
+      {hoveredSymbol ? (
+        <div
+          className="symbolTooltip"
+          style={{
+            left: `${hoveredSymbol.x}px`,
+            top: `${hoveredSymbol.y}px`
+          }}
+        >
+          {hoveredSymbol.label}
+        </div>
+      ) : null}
+    </div>
+  );
 }

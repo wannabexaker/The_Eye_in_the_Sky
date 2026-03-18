@@ -52,6 +52,7 @@ export default function HomePage() {
   const depositPromptShownRef = useRef(false);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
   const {
+    hasHydrated,
     debugPanelOpen,
     historyOpen,
     settingsOpen,
@@ -61,6 +62,7 @@ export default function HomePage() {
     walletHistoryOpen,
     welcomeOpen,
     soundEnabled,
+    autoContinueNeverStop,
     wallet,
     totalDeposited,
     totalWithdrawn,
@@ -71,7 +73,8 @@ export default function HomePage() {
     toggleHistory,
     toggleSettings,
     toggleSound,
-    toggleModal
+    toggleModal,
+    setAutoContinueNeverStop
   } = usePlayerUiStore();
   const slot = useSlotMachine();
 
@@ -93,7 +96,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!slot.needsDepositPrompt) {
+    if (!hasHydrated || !slot.needsDepositPrompt) {
       depositPromptShownRef.current = false;
       return;
     }
@@ -104,14 +107,10 @@ export default function HomePage() {
 
     setModal("depositOpen", true);
     depositPromptShownRef.current = true;
-  }, [depositOpen, setModal, slot.needsDepositPrompt, welcomeOpen]);
+  }, [depositOpen, hasHydrated, setModal, slot.needsDepositPrompt, welcomeOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "Space") {
-        return;
-      }
-
       const target = event.target as HTMLElement | null;
       const tagName = target?.tagName;
       const isTypingTarget =
@@ -119,6 +118,20 @@ export default function HomePage() {
         tagName === "TEXTAREA" ||
         tagName === "SELECT" ||
         target?.isContentEditable;
+
+      if (event.code === "Escape") {
+        if (!slot.isAutospinActive && !slot.autospinStopRequested) {
+          return;
+        }
+
+        event.preventDefault();
+        slot.stopAutoSpin();
+        return;
+      }
+
+      if (event.code !== "Space") {
+        return;
+      }
 
       if (isTypingTarget) {
         return;
@@ -274,8 +287,10 @@ export default function HomePage() {
       <div className="controlsDock bottomControlsDock">
         <ControlPanel
           autospinCountInput={slot.autospinCountInput}
+          autospinRemaining={slot.autospinRemaining}
           autospinStopRequested={slot.autospinStopRequested}
           autospinValidationMessage={slot.autospinValidationMessage}
+          autoContinueNeverStop={autoContinueNeverStop}
           areBetControlsLocked={slot.areBetControlsLocked}
           balance={wallet.balance}
           bet={slot.bet}
@@ -296,10 +311,10 @@ export default function HomePage() {
           onStartAutospin={slot.startAutoSpin}
           onStopAutoSpin={slot.stopAutoSpin}
           onToggleFullscreen={toggleFullscreen}
+          onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
           onToggleHistory={toggleHistory}
           onToggleSettings={toggleSettings}
           onToggleSound={toggleSound}
-          requestedAutospinCount={slot.requestedAutospinCount}
           soundEnabled={soundEnabled}
           spinPhase={slot.spinPhase}
           spinPulseKey={slot.spinPulseKey}
@@ -445,7 +460,7 @@ export default function HomePage() {
         winPresentation={slot.winPresentation}
       />
 
-      <WelcomeOverlay onStart={startWelcomeFlow} open={welcomeOpen} />
+      <WelcomeOverlay onStart={startWelcomeFlow} open={hasHydrated && welcomeOpen} />
     </main>
   );
 }
