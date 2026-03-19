@@ -10,12 +10,12 @@ These are the board-related custom properties currently owned by `.slotViewport`
 */
 
 .slotViewport {
-  /* Narrow the side rails slightly so more of the center playfield belongs to the board. */
+  /* Give the side lanes explicit ownership so the board footprint no longer expands to fill everything. */
   --machine-stage-columns:
-    clamp(96px, 6vw, 122px)
+    232px
     minmax(0, 1fr)
-    clamp(136px, 8.2vw, 162px);
-  --machine-stage-gap: clamp(4px, 0.25vw, 6px);
+    254px;
+  --machine-stage-gap: 10px;
 
   /* Keeps the top mini-stat strip narrow and centered over the board. */
   --stage-status-width: min(100%, 420px);
@@ -24,10 +24,16 @@ These are the board-related custom properties currently owned by `.slotViewport`
   --board-shell-top-pad: 0;
 
   /* Main sizing control: the board now scales from viewport height, not parent percentages. */
-  --board-frame-fit-height: calc(100dvh + 124px);
+  --board-frame-fit-height: calc(100dvh + 40px);
+
+  /* Hard inline breathing room so the board can be made smaller even when width, not height, is the limiting factor. */
+  --board-inline-breathe: 44px;
 
   /* Reserve overlap so the board can sit visually in front of the footer. */
-  --board-frame-margin-bottom: -52px;
+  --board-frame-margin-bottom: -38px;
+
+  /* Fine vertical placement control so viewport-specific tuning does not require resizing the board again. */
+  --board-frame-translate-y: 0px;
 }
 
 /*
@@ -53,13 +59,13 @@ Board atmosphere and frame art
   z-index: var(--z-board-frame);
   min-height: 0;
   border-radius: 24px;
-  border: 1px solid rgba(226, 190, 112, 0.12);
+  border: 1px solid rgba(226, 190, 112, 0.06);
   background:
-    radial-gradient(circle at center, rgba(197, 154, 75, 0.08), transparent 44%),
-    linear-gradient(180deg, rgba(10, 10, 13, 0.9), rgba(8, 8, 11, 0.98));
+    radial-gradient(circle at center, rgba(197, 154, 75, 0.03), transparent 44%),
+    linear-gradient(180deg, rgba(10, 10, 13, 0.2), rgba(8, 8, 11, 0.24));
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.32),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    0 18px 42px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.01);
   overflow: hidden;
 }
 
@@ -71,8 +77,8 @@ Board atmosphere and frame art
   z-index: calc(var(--z-board-frame) + 1);
   pointer-events: none;
   background:
-    radial-gradient(circle at center, transparent 48%, rgba(6, 6, 8, 0.22) 100%),
-    linear-gradient(180deg, rgba(5, 5, 6, 0.08), transparent 22%, transparent 82%, rgba(5, 5, 6, 0.16));
+    radial-gradient(circle at center, transparent 48%, rgba(6, 6, 8, 0.06) 100%),
+    linear-gradient(180deg, rgba(5, 5, 6, 0.02), transparent 22%, transparent 82%, rgba(5, 5, 6, 0.04));
 }
 
 .boardArtFrame,
@@ -88,19 +94,22 @@ Board atmosphere and frame art
 
 .boardArtFrame {
   /* Permanent frame art skin. */
-  inset: -1px;
-  opacity: 0.92;
+  inset: -17.5% -32.8% -14.2% -32.8%;
+  opacity: 0;
   background-size: 100% 100%;
+  background-position: center;
   mix-blend-mode: screen;
   filter: saturate(0.92) brightness(0.9) contrast(1.02);
+  display: none;
 }
 
 .boardBonusArt {
-  /* Bonus-only scenic wash over the board frame. */
+  /* Legacy bonus-only scenic wash kept disabled after moving the bonus swap into the main frame art. */
   background-position: center 24%;
   background-size: cover;
   opacity: 0;
   transition: opacity 220ms ease;
+  display: none;
 }
 
 .boardBonusArt.is-active {
@@ -207,7 +216,7 @@ Board stage and Pixi shell
   display: block;
   min-height: 0;
   padding-top: 0;
-  z-index: calc(var(--z-surface) + 1);
+  z-index: calc(var(--z-surface) + 4);
   height: 100%;
   overflow: visible;
 }
@@ -220,7 +229,7 @@ Board stage and Pixi shell
   right: auto;
   width: 100%;
   transform: translateX(-50%);
-  z-index: calc(var(--z-surface) + 5);
+  z-index: calc(var(--z-surface) + 9);
   display: grid;
   justify-content: center;
   pointer-events: none;
@@ -242,28 +251,33 @@ Board stage and Pixi shell
 .boardShell {
   /* Absolute board placement zone filling the center playfield from below the stat strip to the footer overlap. */
   position: absolute;
-  inset: 8px 0 -58px 0;
+  inset: 0 0 -24px 0;
   width: 100%;
   overflow: visible;
   display: grid;
-  place-items: end center;
+  place-items: start center;
   height: auto;
   padding-top: 0;
   margin-top: 0;
   min-height: 0;
+  z-index: calc(var(--z-surface) + 6);
 }
 
 .boardFrameMain {
   /* Main board footprint: width is derived from the available viewport height. */
   position: relative;
-  z-index: calc(var(--z-surface) + 2);
-  width: min(100%, calc(var(--board-frame-fit-height) * 766 / 646));
+  z-index: calc(var(--z-surface) + 10);
+  width: min(
+    calc(100% - var(--board-inline-breathe)),
+    calc(var(--board-frame-fit-height) * 766 / 646)
+  );
   max-height: none;
   height: auto;
   aspect-ratio: 766 / 646;
   justify-self: center;
-  align-self: end;
+  align-self: start;
   margin-bottom: var(--board-frame-margin-bottom);
+  transform: translateY(var(--board-frame-translate-y));
 }
 
 .pixiStageShell {
@@ -316,29 +330,27 @@ Board responsive variables and local overrides
 
 @media (max-width: 1920px), (max-height: 1100px) {
   .slotViewport {
-    /* Primary `1920x1080` calibration band: make the board footprint much larger before smaller desktop breakpoints take over. */
-    --machine-stage-columns:
-      clamp(92px, 5.6vw, 112px)
-      minmax(0, 1fr)
-      clamp(132px, 8vw, 152px);
-    --machine-stage-gap: 4px;
-    --stage-status-width: min(100%, 360px);
-    --board-frame-fit-height: calc(100dvh + 244px);
-    --board-frame-margin-bottom: -76px;
+    /* Full HD target: smaller board, clearer left lane, clearer right lane. */
+    --machine-stage-columns: 264px minmax(0, 1fr) 304px;
+    --machine-stage-gap: 12px;
+    --stage-status-width: min(100%, 348px);
+    --board-frame-fit-height: calc(100dvh + 18px);
+    --board-inline-breathe: 78px;
+    --board-frame-margin-bottom: -26px;
+    --board-frame-translate-y: -14px;
   }
 }
 
 @media (max-width: 1600px), (max-height: 900px) {
   .slotViewport {
-    /* Larger desktop band: keep the strip readable and slightly reduce board fit height. */
-    --machine-stage-columns:
-      clamp(96px, 7vw, 118px)
-      minmax(0, 1fr)
-      clamp(132px, 8.6vw, 154px);
-    --machine-stage-gap: 4px;
-    --stage-status-width: min(100%, 350px);
-    --board-frame-fit-height: calc(100dvh + 178px);
-    --board-frame-margin-bottom: -68px;
+    /* Large desktop but below Full HD: keep the same ownership pattern with a slightly tighter center. */
+    --machine-stage-columns: 228px minmax(0, 1fr) 270px;
+    --machine-stage-gap: 10px;
+    --stage-status-width: min(100%, 336px);
+    --board-frame-fit-height: calc(100dvh + 8px);
+    --board-inline-breathe: 64px;
+    --board-frame-margin-bottom: -20px;
+    --board-frame-translate-y: -10px;
   }
 }
 
@@ -349,22 +361,24 @@ Board responsive variables and local overrides
     gap: 0;
 
     /* Compact desktop band: further reduce board fit height while keeping the same board model. */
-    --machine-stage-columns: 88px minmax(0, 1fr) 140px;
-    --machine-stage-gap: 4px;
+    --machine-stage-columns: 182px minmax(0, 1fr) 220px;
+    --machine-stage-gap: 8px;
     --stage-status-width: min(100%, 320px);
-    --board-frame-fit-height: calc(100dvh + 138px);
-    --board-frame-margin-bottom: -54px;
+    --board-frame-fit-height: calc(100dvh - 12px);
+    --board-inline-breathe: 40px;
+    --board-frame-margin-bottom: -10px;
   }
 }
 
 @media (max-width: 1280px), (max-height: 720px) {
   .slotViewport {
     /* Small desktop band: keep the board in-view without changing the ownership model. */
-    --machine-stage-columns: 76px minmax(0, 1fr) 126px;
+    --machine-stage-columns: 154px minmax(0, 1fr) 184px;
     --machine-stage-gap: 4px;
     --stage-status-width: min(100%, 300px);
-    --board-frame-fit-height: calc(100dvh + 96px);
-    --board-frame-margin-bottom: -44px;
+    --board-frame-fit-height: calc(100dvh - 40px);
+    --board-inline-breathe: 28px;
+    --board-frame-margin-bottom: -6px;
   }
 
   .phaseBadge {

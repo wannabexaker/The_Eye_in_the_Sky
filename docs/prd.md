@@ -18,6 +18,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Keep docs ahead of implementation.
 - Prepare clean migration path to server-authoritative resolution.
 - Lock a coherent math and pacing model before deeper balancing.
+- Keep room for in-world gameplay variants that reuse the same shell and identity without fragmenting the product.
 
 ## Non-Goals
 - Real payments
@@ -231,6 +232,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - Zustand gameplay store migration
   - Tailwind integration
   - painted production asset generation pipeline for symbol suite, background, frame, and bonus splash
+  - research and design definition for a simpler `count-anywhere` Eye variant that reuses the main shell
 - `Not started`
   - Prisma schema implementation in runtime
   - NestJS module wiring beyond health/bootstrap
@@ -285,6 +287,10 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - dual-screen style wide usage where the game still needs a stable center-board footprint
 - Responsive handling should be based on `width + height + aspect ratio` bands, not naive single-width breakpoints.
 - CSS organization direction is now explicit: the shell should be split into focused active stylesheets (`globals`, `main-board`, `footer-controls`, `rails`, `overlays`) instead of continuing to grow one monolithic file.
+- Before freezing the current UI as the pre-refactor backup, the active shell still must satisfy three non-negotiable desktop-first checks:
+  - all footer and left-rail controls remain clickable without z-index hacks on the footer shell
+  - the footer reads as separated left/right control clusters with a clear open center lane for the board/spin relationship
+  - the board gap/background treatment remains intentionally transparent enough that the scenic backdrop is still visible behind the symbol field
 
 ## Assumptions
 - Fake-money prototype remains the only supported scope in Phase 1.
@@ -388,7 +394,13 @@ and not only on naive width breakpoints.
   - three-band symbol-count structure
   - separate scatter explanation
   - mobile-friendly rules/paytable presentation
+- The same benchmark note now also includes the approximate visible payout pattern from the user-provided screenshot:
+  - regular symbols grouped into `8-9`, `10-11`, and `12-30`
+  - clear high / mid / low symbol value separation
+  - separate scatter block paying on `4`, `5`, and `6`
 - This benchmark is recorded as a quality reference, not a direct copy target.
+- A dedicated design brief for the simpler Eye sub-variant now exists at `docs/variant-simple.md`.
+- Recommended working name for the first simple variant: `The Eye in the Sky: Constellation`.
 
 ### Current Logical Next Steps
 1. Stabilize the `1920x1080` board footprint in `main-board.css`.

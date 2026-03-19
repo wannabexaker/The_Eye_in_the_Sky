@@ -137,6 +137,73 @@ User-provided reference from a strong modern `pay-anywhere` slot shows this stru
 - scatter explained separately as its own rule block
 - payout values presented in clean descending tiers, easy to scan on mobile
 
+### Captured Benchmark Values From User Screenshot
+The user provided a screenshot of a well-known slot paytable and explicitly asked that the pattern be preserved in our notes so future tuning does not drift away from this level of readability and hierarchy.
+
+This is recorded as a benchmark reference only, not a copy target.
+
+Observed structure from the screenshot:
+- `9` regular paying symbols are grouped into `3` payout bands:
+  - top-value symbols
+  - mid-value symbols
+  - low-value symbols
+- every regular symbol pays in the same `3` count bands:
+  - `8-9`
+  - `10-11`
+  - `12-30`
+- the highest-value symbols jump sharply at the top band
+- the lowest-value symbols stay compressed and readable
+- scatter is presented separately and pays anywhere
+
+Observed payout examples from the screenshot, at the displayed stake/currency:
+- top symbol A:
+  - `12-30 -> 20.00`
+  - `10-11 -> 10.00`
+  - `8-9 -> 4.00`
+- top symbol B:
+  - `12-30 -> 10.00`
+  - `10-11 -> 4.00`
+  - `8-9 -> 1.00`
+- top symbol C:
+  - `12-30 -> 6.00`
+  - `10-11 -> 2.00`
+  - `8-9 -> 0.80`
+- upper-mid symbol:
+  - `12-30 -> 4.80`
+  - `10-11 -> 0.80`
+  - `8-9 -> 0.60`
+- mid symbol:
+  - `12-30 -> 4.00`
+  - `10-11 -> 0.60`
+  - `8-9 -> 0.40`
+- mid-low symbol:
+  - `12-30 -> 3.20`
+  - `10-11 -> 0.48`
+  - `8-9 -> 0.32`
+- low symbol A:
+  - `12-30 -> 2.00`
+  - `10-11 -> 0.40`
+  - `8-9 -> 0.20`
+- low symbol B:
+  - `12-30 -> 1.60`
+  - `10-11 -> 0.36`
+  - `8-9 -> 0.16`
+- lowest visible symbol:
+  - `12-30 -> 0.80`
+  - `10-11 -> 0.30`
+  - `8-9 -> 0.10`
+- scatter block:
+  - `4 -> 1.20`
+  - `5 -> 2.00`
+  - `6 -> 40.00`
+
+What must be preserved conceptually in `The Eye in the Sky`:
+- `3` clear symbol-count payout bands are easier to scan than many tiny ladder steps
+- top symbols need visibly separated value identity, not minor incremental differences
+- low symbols should still pay often enough to feel alive, but stay clearly below the high-symbol tier
+- scatter / special-rule presentation should be detached from the main symbol grid
+- the paytable should remain readable in one mobile-height modal without visual clutter
+
 This should be treated as a quality benchmark for:
 - payout ladder readability
 - symbol-value hierarchy

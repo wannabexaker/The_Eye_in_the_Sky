@@ -85,6 +85,8 @@ export default function HomePage() {
   const fullHistory = slot.history.slice(0, 10);
   const fullWalletHistory = walletTransactions.slice(0, 10);
   const latestRound = slot.lastResult;
+  const bonusFrameActive = Boolean(slot.gameState.bonusState || slot.lastResult?.bonusTriggered);
+  const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -258,13 +260,7 @@ export default function HomePage() {
               <div
                 aria-hidden="true"
                 className="boardArtFrame"
-                style={{ backgroundImage: `url(${shellAssets.boardFrame})` }}
-              />
-
-              <div
-                aria-hidden="true"
-                className={`boardBonusArt ${slot.gameState.bonusState || slot.lastResult?.bonusTriggered ? "is-active" : ""}`}
-                style={{ backgroundImage: `url(${shellAssets.bonusOverlay})` }}
+                style={{ backgroundImage: `url(${boardFrameBackground})` }}
               />
 
               <PixiTempleBoard

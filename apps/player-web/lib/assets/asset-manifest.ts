@@ -8,7 +8,7 @@ import type { SymbolId } from "@eye/game-engine";
 
 export const shellAssets = {
   mainBackground: "/assets/backgrounds/bg-main-temple-sky.png",
-  bonusOverlay: "/assets/backgrounds/bonus-sky-opens.svg",
+  bonusOverlay: "/assets/backgrounds/bonus-sky-opens.png",
   boardFrame: "/assets/ui/frame-board-main.png",
   bigWinGlowPlate: "/assets/ui/big-win-glow-plate.png",
   logo: "/assets/ui/logo-eye-in-the-sky.png",

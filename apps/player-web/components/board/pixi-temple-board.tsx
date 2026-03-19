@@ -691,12 +691,12 @@ export function PixiTempleBoard({
       frame.zIndex = 0;
       frame.roundRect(0, 0, logicalWidth - 24, logicalHeight - 24, 26).fill({
         color: 0x120d11,
-        alpha: 0.86
+        alpha: 0.34
       });
       frame.roundRect(0, 0, logicalWidth - 24, logicalHeight - 24, 26).stroke({
         color: 0xf0ca72,
         width: 2,
-        alpha: 0.18
+        alpha: 0.1
       });
       frame.x = -12;
       frame.y = -12;

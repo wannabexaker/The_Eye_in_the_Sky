@@ -10,11 +10,14 @@
 - `in_progress` Move player state into a fuller Zustand-driven store
 - `in_progress` Produce painted production art pack from approved SVG first-pass assets
 - `in_progress` Clean the active `player-web` shell CSS into single authoritative selector blocks with variable-driven breakpoint overrides
+- `in_progress` Define the first simple `count-anywhere` Eye variant so it can reuse the main shell without becoming a separate product
 - `in_progress` Re-expand the center board so the playable frame fills the intended center-stage area between the left and right rails
 - `in_progress` Keep the mini-stat strip as an overlay so it no longer permanently consumes center-board height
 - `in_progress` Keep the board visually above the footer overlay while pushing the playable frame down to the bottom of the center playfield
 - `in_progress` Calibrate the board footprint specifically for `1920x1080` so it nearly touches the mini-stat strip, side rails, and footer while remaining fully visible at browser zoom `100%`
 - `in_progress` Keep browser-zoom behavior consistent so the board scales with the shell instead of shrinking or drifting differently from the surrounding UI
+- `in_progress` Stabilize footer interactivity and geometry so left/right control clusters remain clickable, centered spin remains visible, and the board center stays unobstructed
+- `in_progress` Increase board-through transparency by reducing both CSS shell opacity and Pixi board-gap background opacity so more of the scenic background remains visible
 - `todo` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
 - `todo` Split the active shell CSS into focused files for board, footer controls, rails, and overlays so future responsive tuning stays isolated and predictable
 - `done` Wire public art assets into the player runtime with PNG-first and SVG fallback preview support
@@ -117,6 +120,9 @@
   - Fixed small-win presentation formatting so valid low-value wins no longer appear as misleading `+0` labels in history or board feedback
   - Retuned the live engine again to `eye-sky-math-v1.2`, replacing the over-chaining profile with a capped-cascade cluster model, visible-value paytable at minimum bet, and in-game paytable disclosure through the menu
 - `2026-03-18`
+  - Stabilized the dev workflow by making plain `next dev` the default and keeping turbopack as an opt-in script after repeated turbopack runtime/cache failures during CSS iteration
+  - Moved the footer toward a split left/right cluster model so the center playfield can remain visually open for the board instead of being blocked by one continuous footer bar
+  - Started reducing the visual weight of the board shell and frame art so the scenic background and board gap areas can remain more visible behind the symbol field
   - Retuned the live engine profile to `eye-sky-math-v1.3`, keeping the game in a professional RTP band while tightening the Samsara meter target and preserving the capped-cascade profile
   - Reorganized `player-web` into future-proof folders and added local documentation indexes so another engineer can navigate the app structure faster
   - Restarted PRD/task synchronization after recent shell, math, and structure changes
@@ -124,3 +130,7 @@
   - Started the CSS-governance pass that converts repeated active-layout selectors into one authoritative selector block plus variable-only breakpoint overrides
   - Added explicit active tasks for the remaining board-shell work: overlay mini-stats, full-height center-board expansion, and board-above-footer geometry
   - Recorded the latest board-shell geometry pass: the mini-stat strip now sits as an absolute overlay and the active center-board model is back on height-first fitting with visible overflow for the center stage
+- `2026-03-19`
+  - Recorded the approximate payout structure from a user-provided screenshot of a strong well-known slot into `docs/game-math.md` so the project keeps a permanent benchmark for three-band pay-anywhere ladder design, high/mid/low symbol separation, and separate scatter presentation
+  - Added `docs/variant-simple.md` to define the first simpler Eye sub-variant around a benchmark-informed `count-anywhere` model, shared shell/art reuse, reduced special-symbol complexity, and the recommended working name `Constellation`
+  - Recalibrated the active Full HD shell so the center board sits slightly smaller inside clearer left/right ownership lanes, the board stack renders in front of neighboring shell layers more decisively, and the bottom footer bar uses a lighter transparent glass treatment instead of the previous heavier opaque block
