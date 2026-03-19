@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: win-presentation-types.ts and player bonus-summary state
 */
 
-import type { BonusSummaryEntry } from "../lib/presentation/win-presentation-types";
+import type { BonusSummaryEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusSummaryOverlayProps = {
   summary: BonusSummaryEntry | null;

@@ -1,0 +1,391 @@
+/*
+Purpose: isolated copy of the active main-board shell rules
+Status: active board override imported after globals.css
+Note: this file now owns the main-board geometry and board-local presentation rules
+*/
+
+/*
+Board viewport variables
+These are the board-related custom properties currently owned by `.slotViewport`.
+*/
+
+.slotViewport {
+  /* Narrow the side rails slightly so more of the center playfield belongs to the board. */
+  --machine-stage-columns:
+    clamp(96px, 6vw, 122px)
+    minmax(0, 1fr)
+    clamp(136px, 8.2vw, 162px);
+  --machine-stage-gap: clamp(4px, 0.25vw, 6px);
+
+  /* Keeps the top mini-stat strip narrow and centered over the board. */
+  --stage-status-width: min(100%, 420px);
+
+  /* Leaves a dedicated shell layer for board-only top spacing. */
+  --board-shell-top-pad: 0;
+
+  /* Main sizing control: the board now scales from viewport height, not parent percentages. */
+  --board-frame-fit-height: calc(100dvh + 124px);
+
+  /* Reserve overlap so the board can sit visually in front of the footer. */
+  --board-frame-margin-bottom: -52px;
+}
+
+/*
+Board atmosphere and frame art
+*/
+
+.boardStageHalo {
+  /* Soft light bed behind the board so the center stage reads before the background. */
+  position: absolute;
+  inset: 11% 9% 15%;
+  z-index: var(--z-atmosphere);
+  pointer-events: none;
+  border-radius: 42px;
+  background:
+    radial-gradient(circle at center, rgba(226, 190, 112, 0.18), transparent 34%),
+    radial-gradient(circle at center, rgba(255, 244, 210, 0.08), transparent 18%);
+  filter: blur(24px);
+}
+
+.boardFrame {
+  /* Physical board shell: frame, obsidian surface, and clipping root for board art. */
+  position: relative;
+  z-index: var(--z-board-frame);
+  min-height: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  background:
+    radial-gradient(circle at center, rgba(197, 154, 75, 0.08), transparent 44%),
+    linear-gradient(180deg, rgba(10, 10, 13, 0.9), rgba(8, 8, 11, 0.98));
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.boardFrame::after {
+  /* Vignette and inner darkening that keep the symbols readable over the art frame. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-board-frame) + 1);
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 48%, rgba(6, 6, 8, 0.22) 100%),
+    linear-gradient(180deg, rgba(5, 5, 6, 0.08), transparent 22%, transparent 82%, rgba(5, 5, 6, 0.16));
+}
+
+.boardArtFrame,
+.boardBonusArt {
+  /* Decorative board art layers that sit above the shell but below gameplay symbols. */
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-board-frame);
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.boardArtFrame {
+  /* Permanent frame art skin. */
+  inset: -1px;
+  opacity: 0.92;
+  background-size: 100% 100%;
+  mix-blend-mode: screen;
+  filter: saturate(0.92) brightness(0.9) contrast(1.02);
+}
+
+.boardBonusArt {
+  /* Bonus-only scenic wash over the board frame. */
+  background-position: center 24%;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.boardBonusArt.is-active {
+  /* Active bonus pulse. */
+  opacity: 0.16;
+  animation: bonusBreath 2.4s ease-in-out infinite;
+}
+
+/*
+Board-local chips and status
+*/
+
+.boardOverlayTop {
+  /* Legacy board-top overlay zone kept here for board-local chips/badges. */
+  position: absolute;
+  inset: 10px 10px auto 10px;
+  z-index: var(--z-board-overlay);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.boardChips {
+  /* Right-side grouping for board-top chips. */
+  justify-content: end;
+}
+
+.phaseBadge {
+  /* Board-local phase feedback badge. */
+  display: grid;
+  gap: 3px;
+  max-width: min(52%, 560px);
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(9, 9, 12, 0.78);
+}
+
+.phaseBadge strong {
+  /* Badge eyebrow line. */
+  color: var(--gold-bright);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phaseBadge span {
+  /* Badge body copy. */
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.roundChips,
+.statusGrid {
+  /* Shared grid rhythm for compact board-local chip rows. */
+  display: grid;
+  gap: 6px;
+}
+
+.roundChips {
+  /* Horizontal chip row used by stage stats. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(72px, auto);
+}
+
+.statusGrid {
+  /* Three-up stat grid when board-local stats need equal columns. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.miniStat {
+  /* Small stat card used by Round / Cascades / Free Spins. */
+  display: grid;
+  gap: 4px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  background:
+    linear-gradient(180deg, rgba(13, 13, 17, 0.56), rgba(10, 10, 13, 0.66)),
+    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.05), transparent 60%);
+  backdrop-filter: blur(10px) saturate(0.92);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/*
+Board stage and Pixi shell
+*/
+
+.gameArea.machineStage {
+  /* The playable shell must always span the full viewport grid, even if a legacy breakpoint still creates extra rows. */
+  grid-row: 1 / -1;
+  align-self: stretch;
+  height: 100%;
+}
+
+.centerStage {
+  /* Main center playfield column that owns only the board and its overlays. */
+  width: 100%;
+  position: relative;
+  display: block;
+  min-height: 0;
+  padding-top: 0;
+  z-index: calc(var(--z-surface) + 1);
+  height: 100%;
+  overflow: visible;
+}
+
+.boardMetaRow {
+  /* Absolute overlay strip for the mini stats so it does not consume board height. */
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  right: auto;
+  width: 100%;
+  transform: translateX(-50%);
+  z-index: calc(var(--z-surface) + 5);
+  display: grid;
+  justify-content: center;
+  pointer-events: none;
+  min-height: 50px;
+}
+
+.stageStatusStrip {
+  /* Centered mini-stat strip width cap. */
+  width: var(--stage-status-width);
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.roundChips.stageStatusStrip {
+  /* Slightly larger columns for the main stage strip than generic chip rows. */
+  grid-auto-columns: minmax(92px, auto);
+}
+
+.boardShell {
+  /* Absolute board placement zone filling the center playfield from below the stat strip to the footer overlap. */
+  position: absolute;
+  inset: 8px 0 -58px 0;
+  width: 100%;
+  overflow: visible;
+  display: grid;
+  place-items: end center;
+  height: auto;
+  padding-top: 0;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.boardFrameMain {
+  /* Main board footprint: width is derived from the available viewport height. */
+  position: relative;
+  z-index: calc(var(--z-surface) + 2);
+  width: min(100%, calc(var(--board-frame-fit-height) * 766 / 646));
+  max-height: none;
+  height: auto;
+  aspect-ratio: 766 / 646;
+  justify-self: center;
+  align-self: end;
+  margin-bottom: var(--board-frame-margin-bottom);
+}
+
+.pixiStageShell {
+  /* Layout wrapper for the live Pixi board surface. */
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-board-content);
+}
+
+.pixiStage {
+  /* Full-size interactive Pixi board host. */
+  position: relative;
+  z-index: var(--z-board-content);
+  width: 100%;
+  height: 100%;
+}
+
+.pixiStage canvas {
+  /* Canvas always fills the board footprint. */
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.symbolTooltip {
+  /* Symbol-name hover tooltip above tiles. */
+  position: absolute;
+  z-index: calc(var(--z-board-overlay) + 2);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  background: rgba(10, 10, 13, 0.94);
+  color: #f4e7bf;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.05;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(226, 190, 112, 0.18);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+/*
+Board responsive variables and local overrides
+*/
+
+@media (max-width: 1920px), (max-height: 1100px) {
+  .slotViewport {
+    /* Primary `1920x1080` calibration band: make the board footprint much larger before smaller desktop breakpoints take over. */
+    --machine-stage-columns:
+      clamp(92px, 5.6vw, 112px)
+      minmax(0, 1fr)
+      clamp(132px, 8vw, 152px);
+    --machine-stage-gap: 4px;
+    --stage-status-width: min(100%, 360px);
+    --board-frame-fit-height: calc(100dvh + 244px);
+    --board-frame-margin-bottom: -76px;
+  }
+}
+
+@media (max-width: 1600px), (max-height: 900px) {
+  .slotViewport {
+    /* Larger desktop band: keep the strip readable and slightly reduce board fit height. */
+    --machine-stage-columns:
+      clamp(96px, 7vw, 118px)
+      minmax(0, 1fr)
+      clamp(132px, 8.6vw, 154px);
+    --machine-stage-gap: 4px;
+    --stage-status-width: min(100%, 350px);
+    --board-frame-fit-height: calc(100dvh + 178px);
+    --board-frame-margin-bottom: -68px;
+  }
+}
+
+@media (max-width: 1366px), (max-height: 768px) {
+  .slotViewport {
+    /* Cancel the old two-row viewport split that collapses the board into the first ~62px row at 1920x1080. */
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+
+    /* Compact desktop band: further reduce board fit height while keeping the same board model. */
+    --machine-stage-columns: 88px minmax(0, 1fr) 140px;
+    --machine-stage-gap: 4px;
+    --stage-status-width: min(100%, 320px);
+    --board-frame-fit-height: calc(100dvh + 138px);
+    --board-frame-margin-bottom: -54px;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 720px) {
+  .slotViewport {
+    /* Small desktop band: keep the board in-view without changing the ownership model. */
+    --machine-stage-columns: 76px minmax(0, 1fr) 126px;
+    --machine-stage-gap: 4px;
+    --stage-status-width: min(100%, 300px);
+    --board-frame-fit-height: calc(100dvh + 96px);
+    --board-frame-margin-bottom: -44px;
+  }
+
+  .phaseBadge {
+    /* Shrink the phase badge footprint in tighter desktop heights. */
+    max-width: 58%;
+  }
+
+  .phaseBadge span {
+    /* Slightly smaller body copy for the tighter phase badge. */
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .slotViewport {
+    /* Mobile/small-screen fallback for the board fit height. */
+    --board-frame-fit-height: calc(100dvh - 210px);
+  }
+
+  .roundChips {
+    /* Hide the horizontal chip row in the narrowest layout band. */
+    display: none;
+  }
+}

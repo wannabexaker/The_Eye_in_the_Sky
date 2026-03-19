@@ -5,7 +5,7 @@ Uses: player store deposit draft and wallet transactions
 */
 
 import { useEffect, useState } from "react";
-import { usePlayerUiStore } from "../lib/player-store";
+import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const depositAmounts = [20, 50, 100, 200, 500];
 

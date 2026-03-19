@@ -4,8 +4,8 @@ Layer: frontend (player-web)
 Uses: win-presentation-types.ts and shell asset manifest
 */
 
-import { shellAssets } from "../lib/asset-manifest";
-import type { BonusAnnouncementEntry } from "../lib/presentation/win-presentation-types";
+import { shellAssets } from "@/lib/assets/asset-manifest";
+import type { BonusAnnouncementEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusWinOverlayProps = {
   announcement: BonusAnnouncementEntry | null;

@@ -18,12 +18,12 @@ import {
   Text
 } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { symbolAssetSources } from "../lib/asset-manifest";
-import { ParticleSystem } from "../lib/presentation/particle-system";
+import { symbolAssetSources } from "@/lib/assets/asset-manifest";
+import { ParticleSystem } from "@/lib/presentation/particle-system";
 import {
   PRESENTATION_TIMINGS,
   type SpinPhase
-} from "../lib/presentation/spin-state-machine";
+} from "@/lib/presentation/spin-state-machine";
 
 const rows = 5;
 const cols = 6;

@@ -8,10 +8,10 @@ import type {
   BonusAnnouncementEntry,
   BonusSummaryEntry,
   WinPresentationEntry
-} from "../lib/presentation/win-presentation-types";
-import { BonusSummaryOverlay } from "./bonus-summary-overlay";
-import { BonusWinOverlay } from "./bonus-win-overlay";
-import { WinPresentationOverlay } from "./win-presentation-overlay";
+} from "@/lib/presentation/win-presentation-types";
+import { BonusSummaryOverlay } from "@/components/presentation/bonus-summary-overlay";
+import { BonusWinOverlay } from "@/components/presentation/bonus-win-overlay";
+import { WinPresentationOverlay } from "@/components/presentation/win-presentation-overlay";
 
 type WinPresentationControllerProps = {
   bonusAnnouncement: BonusAnnouncementEntry | null;

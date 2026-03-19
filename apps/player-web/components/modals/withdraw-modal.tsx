@@ -5,7 +5,7 @@ Uses: player store wallet, payment methods, and withdrawal draft
 */
 
 import { useEffect, useState } from "react";
-import { usePlayerUiStore } from "../lib/player-store";
+import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const withdrawalAmounts = [20, 50, 100, 200, 500];
 

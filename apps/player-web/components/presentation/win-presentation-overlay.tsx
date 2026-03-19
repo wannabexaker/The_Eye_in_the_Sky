@@ -4,8 +4,8 @@ Layer: frontend (player-web)
 Uses: slot presentation state from use-slot-machine.ts
 */
 
-import type { WinPresentationEntry } from "../lib/presentation/win-presentation-types";
-import { shellAssets } from "../lib/asset-manifest";
+import type { WinPresentationEntry } from "@/lib/presentation/win-presentation-types";
+import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type WinPresentationOverlayProps = {
   presentation: WinPresentationEntry | null;

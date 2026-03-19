@@ -8,21 +8,21 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 
 import { defaultGameConfig } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
-import { ControlPanel } from "../components/control-panel";
-import { DebugPanel } from "../components/debug-panel";
-import { DepositModal } from "../components/deposit-modal";
-import { LeftSupportRail } from "../components/left-support-rail";
-import { OverlayModal } from "../components/overlay-modal";
-import { PaymentMethodsModal } from "../components/payment-methods-modal";
-import { PixiTempleBoard } from "../components/pixi-temple-board";
-import { RightOperatorRail } from "../components/right-operator-rail";
-import { StageStatusStrip } from "../components/stage-status-strip";
-import { WelcomeOverlay } from "../components/welcome-overlay";
-import { WinPresentationController } from "../components/win-presentation-controller";
-import { WithdrawModal } from "../components/withdraw-modal";
-import { useSlotMachine } from "../hooks/use-slot-machine";
-import { shellAssets } from "../lib/asset-manifest";
-import { usePlayerUiStore } from "../lib/player-store";
+import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
+import { StageStatusStrip } from "@/components/board/stage-status-strip";
+import { ControlPanel } from "@/components/controls/control-panel";
+import { DebugPanel } from "@/components/debug/debug-panel";
+import { LeftSupportRail } from "@/components/layout/left-support-rail";
+import { RightOperatorRail } from "@/components/layout/right-operator-rail";
+import { DepositModal } from "@/components/modals/deposit-modal";
+import { OverlayModal } from "@/components/modals/overlay-modal";
+import { PaymentMethodsModal } from "@/components/modals/payment-methods-modal";
+import { WelcomeOverlay } from "@/components/modals/welcome-overlay";
+import { WithdrawModal } from "@/components/modals/withdraw-modal";
+import { WinPresentationController } from "@/components/presentation/win-presentation-controller";
+import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
+import { shellAssets } from "@/lib/assets/asset-manifest";
+import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
   amount: number,

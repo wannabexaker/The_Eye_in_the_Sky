@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: shared shell asset manifest for the eye core icon
 */
 
-import { shellAssets } from "../lib/asset-manifest";
+import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type SamsaraMeterProps = {
   meterRatio: number;

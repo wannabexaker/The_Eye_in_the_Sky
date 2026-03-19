@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: wallet transactions from the player store
 */
 
-import type { WalletTransaction } from "../lib/player-store";
+import type { WalletTransaction } from "@/lib/state/player-store";
 
 const signFor = (type: WalletTransaction["type"]) =>
   type === "withdrawal" || type === "bet" ? "-" : "+";

@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-17`
+- Last updated: `2026-03-19`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -45,6 +45,10 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
    Frontend polish matters, but only after deterministic game logic is stable.
 4. `Document-first development`
    PRD, architecture, math notes, economy notes, roadmap, and tasks are updated with every meaningful feature change.
+
+## UI Workflow Guardrails
+- Read `docs/prd.md` and `docs/tasks.md` before touching the board shell or footer geometry.
+- For risky board/footer CSS experiments, keep the previous working block commented or isolated until the replacement is verified.
 
 ## Game Identity
 - Title: `The Eye in the Sky`
@@ -100,7 +104,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - controlled volatility
 
 ## Balancing Direction
-- Current tuned runtime profile: `eye-sky-math-v1.1`
+- Current tuned runtime profile: `eye-sky-math-v1.3`
 - Recommended target RTP band for Phase 1: `94.0% to 96.0%`
 - Recommended volatility band for Phase 1: `medium`
 - Bonus mode should contribute meaningful value without absorbing almost all RTP
@@ -133,6 +137,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - reset balance
 - dev/debug balancing controls
 - responsive professional UI shell
+- unrestricted autoplay count that stops naturally when balance can no longer fund the next spin
 - simulation tooling
 - first-pass original art asset pack for symbols, UI frame, logo, and atmospheric background
 - welcome ritual overlay with first-run bonus credits
@@ -219,6 +224,8 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - welcome overlay with first-run bonus credit grant
   - Pixi presentation upgrade with layered atmosphere, hover response, pooled particles, cascade dissolve, and stronger win/bonus feedback
   - richer synthetic sound manager with layered tones and optional stereo pan
+  - future-proof player-web folder structure with grouped components, gameplay hooks, state/assets libraries, and local README indexes
+  - CSS cleanup in progress toward single authoritative selector blocks with variable-driven desktop-band overrides
 - `In progress`
   - PRD-driven repo alignment
   - Zustand gameplay store migration
@@ -227,6 +234,57 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - `Not started`
   - Prisma schema implementation in runtime
   - NestJS module wiring beyond health/bootstrap
+
+## Verified Working Tree Differences Vs Latest Commit
+- `README.txt` is removed from the root and a new root `README.md` exists.
+- The previous flat `apps/player-web/components/*.tsx` files are absent from their old paths in the current working tree.
+- New grouped component folders exist under:
+  - `apps/player-web/components/board`
+  - `apps/player-web/components/controls`
+  - `apps/player-web/components/debug`
+  - `apps/player-web/components/layout`
+  - `apps/player-web/components/modals`
+  - `apps/player-web/components/presentation`
+  - `apps/player-web/components/archive`
+- The previous hook path `apps/player-web/hooks/use-slot-machine.ts` is absent and a new grouped path exists at `apps/player-web/hooks/gameplay/use-slot-machine.ts`.
+- The previous library paths `apps/player-web/lib/asset-manifest.ts` and `apps/player-web/lib/player-store.ts` are absent and new grouped paths exist at:
+  - `apps/player-web/lib/assets/asset-manifest.ts`
+  - `apps/player-web/lib/state/player-store.ts`
+- New local index files exist at:
+  - `apps/player-web/README.md`
+  - `apps/player-web/components/README.md`
+  - `apps/player-web/hooks/README.md`
+  - `apps/player-web/lib/README.md`
+  - `docs/INDEX.md`
+  - `packages/game-engine/README.md`
+- `apps/player-web/tsconfig.json` is modified and now includes local alias configuration for `@/*`.
+- The currently modified tracked files in the working tree are:
+  - `.gitignore`
+  - `apps/player-web/app/globals.css`
+  - `apps/player-web/app/page.tsx`
+  - `apps/player-web/tsconfig.json`
+  - `docs/architecture.md`
+  - `docs/prd.md`
+  - `docs/tasks.md`
+
+## Current Verified UI Work Remaining
+- The active shell CSS is still being refactored so the center board uses one authoritative sizing model instead of scattered selector overrides.
+- The center board is still being re-expanded so `boardFrameMain` occupies the intended full center playfield between the left and right rails.
+- The mini-stat strip is being kept as an overlay layer above the board instead of a row that permanently consumes board height.
+- The footer remains an overlay bar and the board is being kept visually above it through z-index ownership and overlap rules.
+- The scenic background is being calibrated together with the board footprint so the background remains visible behind the expanded playfield instead of disappearing under dead center-stage space.
+- Verified from the latest screenshot comparison: the `2K` presentation is closer to the intended target than `1920x1080`; the `1920x1080` board still leaves too much empty space around the center playfield.
+- Explicit board-footprint target, recorded from the latest user instruction: on `1920x1080`, the board should sit almost flush with the mini-stat strip above it and nearly touch the left rail, right rail, and footer below while remaining fully visible at browser zoom `100%`.
+- Explicit zoom-behavior target, recorded from the latest user instruction: browser zoom should scale the board more uniformly with the rest of the shell instead of making the surrounding UI feel closer while the board shrinks or drifts differently.
+- Current visual direction for the board-top stat strip: `Round / Cascades / Free Spins` should stay readable but use a translucent glass-like surface so the enlarged board remains visible behind them.
+- Current visual direction for `100%` browser zoom: after the aggressive enlargement pass, the board now needs slight reduction and a slightly lower placement so it remains fully visible without top or bottom crop.
+- Additional responsive target bands now required for board geometry:
+  - `2560x1440`
+  - `2868x1320`
+  - vertical / portrait `9:16`
+  - dual-screen style wide usage where the game still needs a stable center-board footprint
+- Responsive handling should be based on `width + height + aspect ratio` bands, not naive single-width breakpoints.
+- CSS organization direction is now explicit: the shell should be split into focused active stylesheets (`globals`, `main-board`, `footer-controls`, `rails`, `overlays`) instead of continuing to grow one monolithic file.
 
 ## Assumptions
 - Fake-money prototype remains the only supported scope in Phase 1.
@@ -239,6 +297,109 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Final volatility label after expanded simulations
 - Whether `3+ Samsara` and `meter full` should both trigger bonus in MVP or only one path initially
 - Whether pay-anywhere remains pure cluster adjacency or moves to symbol-count-without-adjacency later
+
+## Continuation Handoff
+Use this section as the operational handoff for the next chat so work can continue without re-discovery.
+
+### Authoritative UI Files
+- `apps/player-web/app/globals.css`
+  - owns global tokens, shared shell variables, footer shell, rails, and non-board shell styling
+- `apps/player-web/app/main-board.css`
+  - owns active main-board geometry, board-local overlays, board responsive sizing, and board-top mini-stat presentation
+- `apps/player-web/app/layout.tsx`
+  - imports `globals.css` first and `main-board.css` second, so board overrides are intentionally layered after the global shell
+- `apps/player-web/app/page.tsx`
+  - composes the live shell structure:
+    - `LeftSupportRail`
+    - `centerStage`
+    - `StageStatusStrip`
+    - `boardShell`
+    - `boardFrameMain`
+    - `RightOperatorRail`
+    - `bottomControlsDock`
+
+### Current Board Ownership
+- The main board is no longer supposed to be tuned from scattered rules inside `globals.css`.
+- The active board geometry work should happen in `apps/player-web/app/main-board.css`.
+- `main-board.css` currently controls:
+  - `--machine-stage-columns`
+  - `--machine-stage-gap`
+  - `--stage-status-width`
+  - `--board-frame-fit-height`
+  - `--board-frame-margin-bottom`
+  - `.boardMetaRow`
+  - `.boardShell`
+  - `.boardFrameMain`
+  - `.miniStat`
+  - board-specific responsive overrides
+
+### Current Verified Board State
+- The old `100% browser zoom` collapse bug was caused by a legacy `max-height: 768px` shell breakpoint creating a two-row viewport split.
+- That collapse is now explicitly overridden in `main-board.css`, so the board is visible again at browser zoom `100%`.
+- The board is currently intentionally larger than before and is now being fine-calibrated rather than rebuilt again from scratch.
+- The board-top mini stats (`Round / Cascades / Free Spins`) are now moving toward a translucent glass treatment instead of opaque solid cards.
+
+### Current UI Target
+- On `1920x1080`, the board should be large and close to:
+  - the mini-stat strip above
+  - the left rail
+  - the right rail
+  - the footer below
+- The board should remain fully visible at browser zoom `100%`.
+- The board should sit visually in front of the footer through z-index and overlap.
+- The board should feel centered and should not crop badly at the top or bottom.
+- The `2K` presentation is currently closer to the desired result than the `1920x1080` presentation.
+- Browser zoom should scale the board more uniformly with the rest of the shell instead of making the shell feel closer while the board shrinks or drifts differently.
+
+### Responsive Scope That Must Be Supported
+- `1920x1080`
+- `2560x1440`
+- `2868x1320`
+- portrait `9:16`
+- very wide / dual-screen style desktop usage
+
+Responsive handling should be based on:
+- width
+- height
+- aspect ratio
+
+and not only on naive width breakpoints.
+
+### Current Workflow Rules
+- Read `docs/prd.md` and `docs/tasks.md` before touching board or footer geometry.
+- For risky CSS experiments in board/footer layout:
+  - keep the previous working block commented or isolated
+  - activate the new block
+  - verify the new result
+  - only then delete the old block
+- For board work, prefer changing only `main-board.css` unless the issue is proven to come from shared shell variables in `globals.css`.
+- For CSS-only tweaks, avoid unnecessary build/test churn unless the change touches shared layout contracts in TypeScript.
+
+### Known User Preferences That Must Not Be Lost
+- The user wants the board as large as possible without broken crop.
+- The user prefers direct, practical fixes and gets frustrated by repeated “explanations” without visible effect.
+- The user wants docs kept updated continuously, especially PRD/tasks.
+- The user wants important reference examples recorded in docs when they are useful for math/UI tuning.
+- The user explicitly asked that the PRD contain enough context so a new chat can continue without uncertainty.
+
+### Benchmark / Reference Notes Already Captured
+- A user-provided strong slot reference was recorded in `docs/game-math.md` as a benchmark for:
+  - pay-anywhere payout-ladder readability
+  - three-band symbol-count structure
+  - separate scatter explanation
+  - mobile-friendly rules/paytable presentation
+- This benchmark is recorded as a quality reference, not a direct copy target.
+
+### Current Logical Next Steps
+1. Stabilize the `1920x1080` board footprint in `main-board.css`.
+2. Then split the remaining shell CSS into focused files:
+   - `footer-controls.css`
+   - `rails.css`
+   - `overlays.css`
+3. Then calibrate dedicated bands for:
+   - `2560x1440`
+   - `2868x1320`
+   - `9:16`
 
 ## Change Log
 - `2026-03-15`
@@ -298,3 +459,20 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - Added low-balance deposit prompting so players who enter with less than the minimum stake are guided back into a playable state instead of landing in a silently blocked wallet flow
   - Fixed wallet balance synchronization between the simulation wallet and the spin controller so deposits/withdrawals immediately unlock or relock play without stale balance states
   - Corrected small-win presentation formatting so legitimate low-value wins remain visible as money values instead of being rounded visually down to `0`
+- `2026-03-18`
+  - Retuned the live engine to `eye-sky-math-v1.3`, lowering the Samsara meter target to `16`, keeping the RTP target in a professional band, and making the bonus cadence feel healthier without reverting to pathological cascade depth
+  - Reorganized the `player-web` app into future-proof folders for `board`, `controls`, `layout`, `modals`, `presentation`, `debug`, `hooks/gameplay`, `lib/assets`, and `lib/state`, and added local README indexes so another engineer can navigate the codebase faster
+  - Restored PRD-first documentation discipline by resuming updates to the living docs after meaningful shell, math, and structure changes
+  - Changed autoplay so players can request any positive spin count and autoplay now stops naturally only when balance can no longer pay for the next spin, instead of blocking large counts up front
+  - Started a real CSS-governance cleanup for the active game shell so key layout selectors such as `stageStatusStrip`, `boardFrameMain`, `machineBottomBar`, and `balanceZone` are defined once and desktop breakpoints adjust only variables instead of scattering repeated selector overrides through the file
+  - Added a factual PRD audit section for the current working tree, listing the moved `player-web` folders, the new README indexes, the moved hook/library paths, and the currently modified tracked files
+  - Continued the active board-shell fix by keeping the mini-stat strip as an overlay layer and pushing `boardFrameMain` toward a full-height center-stage footprint above the footer overlay
+  - Continued the center-board geometry pass by moving the mini-stat strip to an absolute overlay, letting the center stage overflow visibly, and restoring a height-first `boardFrameMain` fit inside the full center playfield
+  - Replaced the unstable percentage-height board sizing with a viewport-height-driven board width fit so `boardFrameMain` scales from the available vertical playfield instead of collapsing at normal browser zoom
+  - Split the active main-board shell rules into a dedicated `apps/player-web/app/main-board.css` file, imported after `globals.css`, so center-board geometry can be tuned in one isolated stylesheet instead of being scattered through the global shell file
+  - Verified from desktop screenshots and CSS inspection that a legacy `max-height: 768px` shell breakpoint was still forcing `slotViewport` into two rows; the active `main-board.css` now overrides that breakpoint and forces `gameArea.machineStage` to span the full viewport grid
+- `2026-03-19`
+  - Recorded the current board-footprint target from the latest `1920x1080` and `2K` screenshot set, including the requirement that the board nearly touch the mini-stat strip, side rails, and footer while staying fully visible at browser zoom `100%`
+  - Recorded the active UI workflow rule for board/footer work: read the PRD/tasks first and keep risky CSS replacements isolated or commented until the new block is verified
+  - Continued the isolated `main-board.css` calibration by narrowing the shell rails, increasing the viewport-height board fit, and wiring `--board-frame-margin-bottom` into the live board footprint so the board can overlap the footer as an intentional foreground layer
+  - Calibrated the current enlarged-board pass back toward a safer `100%` footprint: the board-top stat chips now move toward a translucent glass treatment and the board fit was reduced slightly and lowered to avoid visible crop while preserving the larger-shell direction

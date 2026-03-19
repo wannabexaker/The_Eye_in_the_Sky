@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: presentation spin-state-machine labels
 */
 
-import { type SpinPhase } from "../lib/presentation/spin-state-machine";
+import { type SpinPhase } from "@/lib/presentation/spin-state-machine";
 
 type SpinButtonProps = {
   disabled: boolean;

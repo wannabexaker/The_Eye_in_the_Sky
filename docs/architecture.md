@@ -20,8 +20,9 @@ packages/
   ui/
 
 docs/
-  prd.md
+  INDEX.md
   architecture.md
+  assets.md
   game-math.md
   game-economy.md
   roadmap.md
@@ -35,18 +36,18 @@ docs/
 - Zustand UI/session state
 - Calls deterministic `resolveSpin` path
 - Renders outcomes only
-- presentation modules:
-  - spin state machine
-  - symbol/cascade animation orchestration
-  - sound manager
-  - HUD/control components
-  - current files:
-    - `hooks/use-slot-machine.ts`
-    - `components/pixi-temple-board.tsx`
-    - `components/game-header.tsx`
-    - `components/control-panel.tsx`
-    - `components/recent-rounds-panel.tsx`
-    - `components/debug-panel.tsx`
+- grouped by runtime concern:
+  - `components/board/`
+  - `components/controls/`
+  - `components/layout/`
+  - `components/modals/`
+  - `components/presentation/`
+  - `components/debug/`
+  - `hooks/gameplay/`
+  - `lib/assets/`
+  - `lib/audio/`
+  - `lib/presentation/`
+  - `lib/state/`
 - viewport contract:
   - fixed `100dvh` game shell
   - top HUD, central board area, bottom control bar

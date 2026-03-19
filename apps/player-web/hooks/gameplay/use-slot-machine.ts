@@ -14,22 +14,21 @@ import {
   type SpinResult
 } from "@eye/game-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { soundManager } from "../lib/audio/sound-manager";
+import { soundManager } from "@/lib/audio/sound-manager";
 import {
   PRESENTATION_TIMINGS,
   WIN_PRESENTATION_AUTO_DISMISS_MS,
   type SpinPhase
-} from "../lib/presentation/spin-state-machine";
+} from "@/lib/presentation/spin-state-machine";
 import type {
   BonusAnnouncementEntry,
   BonusSummaryEntry,
   WinPresentationEntry
-} from "../lib/presentation/win-presentation-types";
-import { usePlayerUiStore } from "../lib/player-store";
+} from "@/lib/presentation/win-presentation-types";
+import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const MIN_BET = 0.1;
 const DEFAULT_AUTOSPIN_COUNT = 10;
-const MAX_AUTOSPIN_COUNT = 1000;
 const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
@@ -275,7 +274,7 @@ export function useSlotMachine() {
     [availableBalance, bonusModeActive, rawMaxBet]
   );
 
-  const validateAutospinCount = useCallback(
+const validateAutospinCount = useCallback(
     (count: number | null) => {
       if (count === null) {
         return "Enter a valid autospin count.";
@@ -285,18 +284,9 @@ export function useSlotMachine() {
         return "Autospin count must be at least 1.";
       }
 
-      if (count > MAX_AUTOSPIN_COUNT) {
-        return `Autospin is capped at ${MAX_AUTOSPIN_COUNT}.`;
-      }
-
-      const required = getAutospinRequiredBalance(count, bet, activeBonusSpins);
-      if (required > availableBalance) {
-        return `Not enough balance for ${count} spins at current bet.`;
-      }
-
       return "";
     },
-    [activeBonusSpins, availableBalance, bet]
+    []
   );
 
   useEffect(() => {
@@ -360,9 +350,10 @@ export function useSlotMachine() {
     }
 
     const fallbackBet = rawMaxBet >= MIN_BET ? Math.max(MIN_BET, Math.min(bet, rawMaxBet)) : bet;
-    setBet(roundCurrency(fallbackBet));
-    setBetInput(String(roundCurrency(fallbackBet)));
-    setBetValidationMessage(error);
+    const normalizedFallbackBet = roundCurrency(fallbackBet);
+    setBet(normalizedFallbackBet);
+    setBetInput(String(normalizedFallbackBet));
+    setBetValidationMessage(normalizedFallbackBet === bet ? error : "");
   }, [areBetControlsLocked, bet, bonusModeActive, rawMaxBet, validateBetAmount]);
 
   useEffect(() => {
@@ -615,6 +606,7 @@ export function useSlotMachine() {
       setIsAutoSpinning(false);
       setAutospinStopRequested(false);
       setAutoSpinRemaining(0);
+      setAutospinValidationMessage("Autoplay stopped: insufficient balance for the next spin.");
       return null;
     }
 

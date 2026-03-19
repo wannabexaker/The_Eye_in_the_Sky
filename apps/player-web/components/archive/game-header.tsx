@@ -4,8 +4,8 @@ Layer: frontend (player-web)
 Uses: samsara-meter.tsx and the shared shell asset manifest
 */
 
-import { shellAssets } from "../lib/asset-manifest";
-import { SamsaraMeter } from "./samsara-meter";
+import { SamsaraMeter } from "@/components/board/samsara-meter";
+import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type GameHeaderProps = {
   balance: string;

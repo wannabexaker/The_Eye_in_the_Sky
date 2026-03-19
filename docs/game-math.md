@@ -124,6 +124,27 @@ Do not tune per symbol in isolation. Tune by bands:
 ### Design Rule
 Paytable should reward larger clusters with nonlinear lift, but not so steeply that a single common-symbol mega-cluster dominates RTP.
 
+### Benchmark Reference Note
+Keep the following external benchmark pattern in mind during future paytable tuning and paytable UI design.
+
+User-provided reference from a strong modern `pay-anywhere` slot shows this structure:
+- visible symbol-by-symbol payout table
+- three clear symbol-count bands:
+  - `8-9`
+  - `10-11`
+  - `12-30`
+- high symbols with much stronger top-band payout than low symbols
+- scatter explained separately as its own rule block
+- payout values presented in clean descending tiers, easy to scan on mobile
+
+This should be treated as a quality benchmark for:
+- payout ladder readability
+- symbol-value hierarchy
+- concise rules presentation
+- mobile-friendly paytable layout
+
+It is a reference example, not a direct copy target.
+
 ### Suggested Shape
 - cluster `7`
   - entry payout
@@ -133,6 +154,19 @@ Paytable should reward larger clusters with nonlinear lift, but not so steeply t
   - clear excitement threshold
 - cluster `12+`
   - major win threshold
+
+### Benchmark-Informed Ladder Direction
+The referenced strong-slot example uses larger count bands instead of many tiny count steps. That pattern is worth preserving conceptually:
+- entry band
+- mid band
+- top band
+
+For `The Eye in the Sky`, keep a similarly legible ladder philosophy:
+- one clear lower band
+- one clear mid band
+- one clear top band
+
+The exact thresholds can differ from the benchmark, but the structure should stay easy to understand and communicate.
 
 ### Paytable Philosophy
 - low symbols should mostly support small-to-mid wins
@@ -234,6 +268,14 @@ Bonus EV should mainly come from:
 - sticky / additive multiplier persistence
 
 It should not depend solely on extremely rare jackpot-like outliers.
+
+### Scatter / Special Rules Presentation Benchmark
+The user-provided benchmark also shows a good presentation rule for scatter-type symbols:
+- explain the scatter separately from the normal symbol grid
+- state explicitly that it can appear on all reels / positions
+- state explicitly that it pays anywhere
+
+That should remain the target style for the future `Eye in the Sky` paytable/help screen.
 
 ### Retrigger Control
 Retriggers should be allowed but capped by probability pressure, not by arbitrary hard-stop if possible.

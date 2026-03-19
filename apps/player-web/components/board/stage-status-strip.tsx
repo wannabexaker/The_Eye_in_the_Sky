@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: slot result and bonus state from page.tsx
 */
 
-import { BonusRunningTotalDisplay } from "./bonus-running-total-display";
+import { BonusRunningTotalDisplay } from "@/components/presentation/bonus-running-total-display";
 
 type StageStatusStripProps = {
   roundWin: number;

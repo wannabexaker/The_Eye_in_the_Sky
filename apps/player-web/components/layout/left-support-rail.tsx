@@ -8,7 +8,7 @@ Uses: wallet actions, status state, and samsara meter
 
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useState } from "react";
-import { SamsaraMeter } from "./samsara-meter";
+import { SamsaraMeter } from "@/components/board/samsara-meter";
 
 type LeftSupportRailProps = {
   currentBet: string;

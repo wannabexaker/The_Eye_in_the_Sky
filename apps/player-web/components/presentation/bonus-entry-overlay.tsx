@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: shared shell asset manifest and slot bonus announcement state
 */
 
-import { shellAssets } from "../lib/asset-manifest";
+import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type BonusEntryOverlayProps = {
   open: boolean;

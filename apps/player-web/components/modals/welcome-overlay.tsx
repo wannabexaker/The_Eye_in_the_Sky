@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: player store welcome state and wallet bonus action
 */
 
-import { shellAssets } from "../lib/asset-manifest";
+import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type WelcomeOverlayProps = {
   open: boolean;

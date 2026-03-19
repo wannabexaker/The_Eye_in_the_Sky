@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: player store payment methods and draft form
 */
 
-import { usePlayerUiStore } from "../lib/player-store";
+import { usePlayerUiStore } from "@/lib/state/player-store";
 
 export function PaymentMethodsModal() {
   const {

@@ -4,8 +4,8 @@ Layer: frontend (player-web)
 Uses: slot wallet/bet/autoplay state and spin-button.tsx
 */
 
-import type { SpinPhase } from "../lib/presentation/spin-state-machine";
-import { SpinButton } from "./spin-button";
+import { SpinButton } from "@/components/controls/spin-button";
+import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
 
 type ControlPanelProps = {
   balance: number;

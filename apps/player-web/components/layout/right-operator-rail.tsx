@@ -6,7 +6,7 @@ Uses: shell asset manifest and bonus state
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { shellAssetSources, shellAssets } from "../lib/asset-manifest";
+import { shellAssetSources, shellAssets } from "@/lib/assets/asset-manifest";
 
 type RightOperatorRailProps = {
   bonusActive: boolean;
