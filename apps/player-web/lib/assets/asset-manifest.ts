@@ -11,8 +11,9 @@ export const shellAssets = {
   bonusOverlay: "/assets/backgrounds/bonus-sky-opens.png",
   boardFrame: "/assets/ui/frame-board-main.png",
   bigWinGlowPlate: "/assets/ui/big-win-glow-plate.png",
+  hugeWinGlowPlate: "/assets/ui/huge-win-glow-plate.png",
   logo: "/assets/ui/logo-eye-in-the-sky.png",
-  meterEye: "/assets/ui/meter-eye-core.svg"
+  meterEye: "/assets/ui/meter-eye-core.png"
 } as const;
 
 export const shellAssetSources = {

@@ -166,7 +166,9 @@ const buildWinPresentation = (
     return null;
   }
 
-  const bigWin = result.totalWin >= result.bet * 5;
+  const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
+  const bigWin = winMultiple >= 5 && winMultiple < 10;
+  const hugeWin = winMultiple >= 10;
   const inBonus = result.mode === "bonus";
   const subtitleParts = [
     hasMultiplierEvent(result) ? `x${result.appliedWinMultiplier} multiplier applied` : null,
@@ -177,9 +179,11 @@ const buildWinPresentation = (
   ].filter(Boolean);
 
   return {
-    kind: bigWin ? "big_win" : "round_win",
-    title: bigWin
-      ? "BIG WIN"
+    kind: hugeWin ? "huge_win" : bigWin ? "big_win" : "round_win",
+    title: hugeWin
+      ? "HUGE WIN"
+      : bigWin
+        ? "BIG WIN"
       : inBonus
         ? "FREE SPIN WIN"
         : result.cascades.length > 1
@@ -190,12 +194,12 @@ const buildWinPresentation = (
     detailRows: getCascadeDetailRows(result),
     requireAcknowledgement:
       !autoContinueNeverStop &&
-      (bigWin || result.cascades.length >= 3 || result.bonusTriggered),
+      (bigWin || hugeWin || result.cascades.length >= 3 || result.bonusTriggered),
     continueLabel: result.bonusTriggered ? "Enter Bonus" : "Continue",
     autoDismissMs:
-      autoContinueNeverStop && bigWin
+      autoContinueNeverStop && (bigWin || hugeWin)
         ? BIG_WIN_AUTO_DISMISS_MS
-        : bigWin
+        : bigWin || hugeWin
           ? undefined
           : WIN_PRESENTATION_AUTO_DISMISS_MS
   };
@@ -606,7 +610,7 @@ const validateAutospinCount = useCallback(
       setIsAutoSpinning(false);
       setAutospinStopRequested(false);
       setAutoSpinRemaining(0);
-      setAutospinValidationMessage("Autoplay stopped: insufficient balance for the next spin.");
+      setAutospinValidationMessage("");
       return null;
     }
 

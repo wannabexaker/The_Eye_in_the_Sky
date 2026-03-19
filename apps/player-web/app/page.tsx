@@ -9,7 +9,6 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 import { defaultGameConfig } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
-import { StageStatusStrip } from "@/components/board/stage-status-strip";
 import { ControlPanel } from "@/components/controls/control-panel";
 import { DebugPanel } from "@/components/debug/debug-panel";
 import { LeftSupportRail } from "@/components/layout/left-support-rail";
@@ -131,10 +130,6 @@ export default function HomePage() {
         return;
       }
 
-      if (event.code !== "Space") {
-        return;
-      }
-
       if (isTypingTarget) {
         return;
       }
@@ -145,26 +140,28 @@ export default function HomePage() {
         Boolean(slot.winPresentation);
 
       if (hasPresentationOverlay) {
-        event.preventDefault();
+        if (event.code === "Space" || event.key === " ") {
+          event.preventDefault();
 
-        if (slot.bonusSummary) {
-          slot.dismissBonusSummary();
-          return;
-        }
+          if (slot.bonusSummary) {
+            slot.dismissBonusSummary();
+            return;
+          }
 
-        if (slot.bonusAnnouncement) {
-          slot.dismissBonusAnnouncement();
-          return;
-        }
+          if (slot.bonusAnnouncement) {
+            slot.dismissBonusAnnouncement();
+            return;
+          }
 
-        if (slot.winPresentation) {
-          slot.dismissWinPresentation();
+          if (slot.winPresentation) {
+            slot.dismissWinPresentation();
+          }
         }
 
         return;
       }
 
-      if (
+      const hasBlockingOverlay =
         welcomeOpen ||
         depositOpen ||
         withdrawOpen ||
@@ -172,7 +169,41 @@ export default function HomePage() {
         walletHistoryOpen ||
         historyOpen ||
         settingsOpen ||
-        debugPanelOpen ||
+        debugPanelOpen;
+
+      const wantsIncreaseBet =
+        event.key === "+" ||
+        (event.key === "=" && event.shiftKey) ||
+        event.code === "NumpadAdd";
+      const wantsDecreaseBet =
+        event.key === "-" || event.code === "Minus" || event.code === "NumpadSubtract";
+
+      if (wantsIncreaseBet) {
+        if (hasBlockingOverlay) {
+          return;
+        }
+
+        event.preventDefault();
+        slot.incrementBetByStep();
+        return;
+      }
+
+      if (wantsDecreaseBet) {
+        if (hasBlockingOverlay) {
+          return;
+        }
+
+        event.preventDefault();
+        slot.decrementBetByStep();
+        return;
+      }
+
+      if (event.code !== "Space" && event.key !== " ") {
+        return;
+      }
+
+      if (
+        hasBlockingOverlay ||
         !slot.canSpin
       ) {
         return;
@@ -233,8 +264,11 @@ export default function HomePage() {
       <section className="gameArea machineStage">
         <LeftSupportRail
           activeBonusSpins={slot.activeBonusSpins}
+          balance={formatMoney(wallet.balance)}
           bonusActive={Boolean(slot.gameState.bonusState)}
+          cascades={latestRound?.cascades.length ?? 0}
           currentBet={slot.headerStats[1]?.value ?? "0.00"}
+          freeSpins={slot.activeBonusSpins}
           totalDeposited={totalDeposited.toFixed(2)}
           totalWithdrawn={totalWithdrawn.toFixed(2)}
           history={slot.history}
@@ -242,18 +276,18 @@ export default function HomePage() {
           meterRatio={slot.meterRatio}
           meterTarget={defaultGameConfig.bonusMeterTarget}
           onDeposit={() => toggleModal("depositOpen")}
+          onToggleFullscreen={toggleFullscreen}
+          onToggleHistory={toggleHistory}
+          onToggleSettings={toggleSettings}
+          onToggleSound={toggleSound}
           onWithdraw={() => toggleModal("withdrawOpen")}
           phaseMessage={slot.phaseMessage}
+          roundWin={latestRound?.totalWin ?? 0}
+          fullscreenEnabled={fullscreenEnabled}
+          soundEnabled={soundEnabled}
         />
 
         <div className="centerStage">
-          <StageStatusStrip
-            bonusTotal={slot.gameState.bonusState?.totalBonusWin ?? null}
-            cascades={latestRound?.cascades.length ?? 0}
-            freeSpins={slot.activeBonusSpins}
-            roundWin={latestRound?.totalWin ?? 0}
-          />
-
           <div className="boardShell">
             <div aria-hidden="true" className="boardStageHalo" />
             <div className="boardFrame boardFrameMain">
@@ -288,14 +322,11 @@ export default function HomePage() {
           autospinValidationMessage={slot.autospinValidationMessage}
           autoContinueNeverStop={autoContinueNeverStop}
           areBetControlsLocked={slot.areBetControlsLocked}
-          balance={wallet.balance}
-          bet={slot.bet}
           betInput={slot.betInput}
           betRiskMessage={slot.betRiskMessage}
           betValidationMessage={slot.betValidationMessage}
           canSpin={slot.canSpin}
           canStartAutospin={slot.canStartAutospin}
-          fullscreenEnabled={fullscreenEnabled}
           isAutospinActive={slot.isAutospinActive}
           onCommitBetInput={slot.applyManualBet}
           onCommitAutospinInput={slot.applyManualAutospinCount}
@@ -306,12 +337,7 @@ export default function HomePage() {
           onSpin={slot.spin}
           onStartAutospin={slot.startAutoSpin}
           onStopAutoSpin={slot.stopAutoSpin}
-          onToggleFullscreen={toggleFullscreen}
           onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
-          onToggleHistory={toggleHistory}
-          onToggleSettings={toggleSettings}
-          onToggleSound={toggleSound}
-          soundEnabled={soundEnabled}
           spinPhase={slot.spinPhase}
           spinPulseKey={slot.spinPulseKey}
         />

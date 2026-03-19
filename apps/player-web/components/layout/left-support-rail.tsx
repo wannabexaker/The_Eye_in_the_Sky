@@ -11,7 +11,11 @@ import { useEffect, useState } from "react";
 import { SamsaraMeter } from "@/components/board/samsara-meter";
 
 type LeftSupportRailProps = {
+  balance: string;
   currentBet: string;
+  roundWin: number;
+  cascades: number;
+  freeSpins: number;
   totalDeposited: string;
   totalWithdrawn: string;
   activeBonusSpins: number;
@@ -21,8 +25,14 @@ type LeftSupportRailProps = {
   meterCurrent: number;
   meterTarget: number;
   history: SpinResult[];
+  soundEnabled: boolean;
+  fullscreenEnabled: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
+  onToggleSound: () => void;
+  onToggleHistory: () => void;
+  onToggleSettings: () => void;
+  onToggleFullscreen: () => void;
 };
 
 const formatWin = (result: SpinResult) =>
@@ -38,7 +48,11 @@ const DESKTOP_VISIBLE_ENTRIES = 5;
 const COMPACT_VISIBLE_ENTRIES = 3;
 
 export function LeftSupportRail({
+  balance,
   currentBet,
+  roundWin,
+  cascades,
+  freeSpins,
   totalDeposited,
   totalWithdrawn,
   activeBonusSpins,
@@ -48,8 +62,15 @@ export function LeftSupportRail({
   meterCurrent,
   meterTarget,
   history,
+  soundEnabled,
+  fullscreenEnabled,
   onDeposit,
   onWithdraw
+  ,
+  onToggleSound,
+  onToggleHistory,
+  onToggleSettings,
+  onToggleFullscreen
 }: LeftSupportRailProps) {
   const [compactView, setCompactView] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -100,27 +121,71 @@ export function LeftSupportRail({
         </div>
       </section>
 
-      <section className="compactPanel supportBlock">
-        <div className="panelHeader">
-          <p className="eyebrow">Bet Info</p>
-        </div>
-        <div className="supportSummary">
-          <strong>{currentBet}</strong>
-          <span>Current ritual stake</span>
+      <section className="compactPanel supportBlock supportBalanceBlock">
+        <div className="bottomBarZone balanceZone supportBalanceZone">
+          <div className="bottomBarStat">
+            <span>Balance</span>
+            <strong>{balance}</strong>
+          </div>
+          <div className="bottomBarStat">
+            <span>Bet</span>
+            <strong>{currentBet}</strong>
+          </div>
         </div>
       </section>
 
-      <section className="compactPanel supportBlock">
+      <section
+        className="compactPanel supportBlock"
+        title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
+      >
+        <div className="panelHeader">
+          <p className="eyebrow">Round Status</p>
+        </div>
+        <div className="supportStatusStrip">
+          <div
+            className="miniStat supportMiniStat supportMiniStatRound"
+            title="Round total win from the latest resolved spin."
+          >
+            <span>Round</span>
+            <strong>{roundWin.toFixed(2)}</strong>
+          </div>
+          <div className="supportStatusBottomRow">
+            <div
+              className="miniStat supportMiniStat"
+              title="Cascade count from the latest resolved spin."
+            >
+              <span>Cascade</span>
+              <strong>{cascades}</strong>
+            </div>
+            <div
+              className="miniStat supportMiniStat"
+              title="Bonus spins currently active or gained after bonus triggers."
+            >
+              <span>Spins</span>
+              <strong>{freeSpins}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="compactPanel supportBlock"
+        title={
+          bonusActive
+            ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
+            : "Fill the Samsara meter to trigger Sky Opens bonus spins."
+        }
+      >
         <div className="panelHeader">
           <p className="eyebrow">Samsara</p>
         </div>
         <SamsaraMeter current={meterCurrent} meterRatio={meterRatio} target={meterTarget} />
-        <p className="supportNote">
-          {bonusActive ? `${activeBonusSpins} spins remain in Sky Opens.` : "Fill the meter to open the sky."}
-        </p>
       </section>
 
-      <section className="compactPanel supportBlock">
+      <section
+        className="compactPanel supportBlock"
+        title="Recent ritual outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
+      >
         <div className="panelHeader">
           <p className="eyebrow">Ritual Log</p>
           {canToggleHistory ? (
@@ -147,6 +212,87 @@ export function LeftSupportRail({
           )}
         </div>
       </section>
+
+      <div className="supportRailUtilityBar">
+        <button
+          aria-label="Menu"
+          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
+          onClick={onToggleSettings}
+          title="Menu"
+          type="button"
+        >
+          <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+            <path d="M5 8h14" />
+            <path d="M5 12h14" />
+            <path d="M5 16h14" />
+          </svg>
+        </button>
+
+        <button
+          aria-label={soundEnabled ? "Mute sound" : "Unmute sound"}
+          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
+          onClick={onToggleSound}
+          title={soundEnabled ? "Mute" : "Unmute"}
+          type="button"
+        >
+          {soundEnabled ? (
+            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+              <path d="M4 10h4l5-4v12l-5-4H4z" />
+              <path d="M16.5 9a4 4 0 0 1 0 6" />
+              <path d="M18.7 6.8a7 7 0 0 1 0 10.4" />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+              <path d="M4 10h4l5-4v12l-5-4H4z" />
+              <path d="M16 9l4 6" />
+              <path d="M20 9l-4 6" />
+            </svg>
+          )}
+        </button>
+
+        <button
+          aria-label="Info"
+          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
+          onClick={onToggleHistory}
+          title="Info"
+          type="button"
+        >
+          <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" fill="none" r="8" />
+            <path d="M12 10v5" />
+            <path d="M11 15h2" />
+            <circle cx="12" cy="7.4" fill="currentColor" r="1" stroke="none" />
+          </svg>
+        </button>
+
+        <button
+          aria-label={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}
+          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
+          onClick={onToggleFullscreen}
+          title={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}
+          type="button"
+        >
+          {fullscreenEnabled ? (
+            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+              <path d="M9 5H5v4" />
+              <path d="M15 5h4v4" />
+              <path d="M9 19H5v-4" />
+              <path d="M15 19h4v-4" />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+              <path d="M9 5H5v4" />
+              <path d="M5 5l5 5" />
+              <path d="M15 5h4v4" />
+              <path d="M19 5l-5 5" />
+              <path d="M9 19H5v-4" />
+              <path d="M5 19l5-5" />
+              <path d="M15 19h4v-4" />
+              <path d="M19 19l-5-5" />
+            </svg>
+          )}
+        </button>
+      </div>
     </aside>
   );
 }

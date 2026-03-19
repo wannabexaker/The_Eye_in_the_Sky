@@ -20,7 +20,7 @@ export type BonusSummaryEntry = {
 };
 
 export type WinPresentationEntry = {
-  kind: "round_win" | "big_win";
+  kind: "round_win" | "big_win" | "huge_win";
   title: string;
   amount: number;
   subtitle?: string;

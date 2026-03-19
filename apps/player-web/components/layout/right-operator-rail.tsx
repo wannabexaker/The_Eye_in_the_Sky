@@ -28,7 +28,10 @@ export function RightOperatorRail({
 
   return (
     <aside className="sideRail rightRail brandingRail">
-      <section className="inlineRounds brandPanel">
+      <section
+        className="inlineRounds brandPanel"
+        title="The Eye in the Sky brand panel."
+      >
         <div
           aria-hidden="true"
           className="brandLogo"
@@ -37,7 +40,10 @@ export function RightOperatorRail({
         <p className="brandTagline">Sacred surveillance from beyond the temple gates.</p>
       </section>
 
-      <section className="inlineRounds brandScenePanel">
+      <section
+        className="inlineRounds brandScenePanel"
+        title={bonusActive ? `${activeBonusSpins} bonus spins are currently active in Sky Opens.` : "Temple Watch scenic panel."}
+      >
         <div
           aria-hidden="true"
           className={`brandSceneArt ${bonusActive ? "is-active" : ""}`}

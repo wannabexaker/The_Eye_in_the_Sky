@@ -52,7 +52,7 @@ export function DepositModal() {
     <div className="walletModalGrid">
       <section className="modalSection">
         <p className="eyebrow">Select Amount</p>
-        <div className="chipRow">
+        <div className="chipRow chipRowInlineInput">
           {depositAmounts.map((amount) => (
             <button
               className={`controlChip ${depositDraft.amount === amount ? "is-active" : ""}`}
@@ -63,13 +63,9 @@ export function DepositModal() {
               {amount}
             </button>
           ))}
-        </div>
-      </section>
-
-      <section className="modalSection formGrid">
-        <label className="inputGroup">
-          <span>Deposit Amount</span>
           <input
+            aria-label="Custom deposit amount"
+            className="chipInputInline"
             inputMode="decimal"
             onBlur={() => {
               const parsedAmount = parseAmount(amountInput);
@@ -92,11 +88,14 @@ export function DepositModal() {
                 }
               }
             }}
+            placeholder="1000"
             type="text"
             value={amountInput}
           />
-        </label>
+        </div>
+      </section>
 
+      <section className="modalSection formGrid">
         <label className="inputGroup">
           <span>Card Holder</span>
           <input

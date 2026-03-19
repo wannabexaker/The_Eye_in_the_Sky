@@ -17,6 +17,12 @@
 - `in_progress` Calibrate the board footprint specifically for `1920x1080` so it nearly touches the mini-stat strip, side rails, and footer while remaining fully visible at browser zoom `100%`
 - `in_progress` Keep browser-zoom behavior consistent so the board scales with the shell instead of shrinking or drifting differently from the surrounding UI
 - `in_progress` Stabilize footer interactivity and geometry so left/right control clusters remain clickable, centered spin remains visible, and the board center stays unobstructed
+- `in_progress` Move the footer `Balance / Bet` summary into the left support rail so the footer is reserved for gameplay controls only
+- `in_progress` Move the left footer utility icon cluster into the bottom of the support rail so the footer contains only gameplay controls
+- `in_progress` Move `Round / Cascades / Free Spins` out of the board-top overlay and into the left rail so the center stage belongs only to the board footprint
+- `in_progress` Anchor the spin CTA into the open right-side lane above the bet/autoplay controls so it no longer renders behind or inside the board footprint
+- `in_progress` Restore keyboard gameplay shortcuts so `Space` spins and `+ / -` adjust bet while no modal or text input is active
+- `in_progress` Keep deposit flow flexible by supporting typed custom deposit amounts alongside preset chips
 - `in_progress` Increase board-through transparency by reducing both CSS shell opacity and Pixi board-gap background opacity so more of the scenic background remains visible
 - `todo` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
 - `todo` Split the active shell CSS into focused files for board, footer controls, rails, and overlays so future responsive tuning stays isolated and predictable

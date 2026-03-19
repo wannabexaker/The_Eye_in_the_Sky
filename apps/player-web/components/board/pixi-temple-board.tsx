@@ -47,6 +47,8 @@ const easeOutBack = (t: number) => {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 };
 
+const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+
 const symbolPalette: Record<SymbolId, { fill: number; accent: number }> = {
   ashen_sigil: { fill: 0x2b1e24, accent: 0xdfc89a },
   broken_halo: { fill: 0x32232b, accent: 0xf2d37e },
@@ -840,7 +842,7 @@ export function PixiTempleBoard({
         const deltaMs = ticker.deltaMS ?? 16.6667;
 
         if (now > nextLightningFlashRef.current) {
-          lightningUntilRef.current = now + 140;
+          lightningUntilRef.current = now + 240;
           nextLightningFlashRef.current = now + 4200 + ((Math.sin(now / 2300) + 1) * 0.5 + 0.2) * 5200;
         }
 
@@ -999,7 +1001,9 @@ export function PixiTempleBoard({
 
         lightning.clear();
         if (lightningUntilRef.current > now) {
-          const alpha = ((lightningUntilRef.current - now) / 140) * 0.22;
+          const progress = 1 - (lightningUntilRef.current - now) / 240;
+          const pulse = Math.sin(Math.PI * Math.max(0, Math.min(1, progress)));
+          const alpha = easeInOutSine(pulse) * 0.09;
           lightning.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0xf8edd9, alpha });
         }
       });

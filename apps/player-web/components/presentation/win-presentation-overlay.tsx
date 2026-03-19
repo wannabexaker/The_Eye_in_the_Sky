@@ -32,11 +32,13 @@ export function WinPresentationOverlay({
         aria-label={presentation.title}
         className={`winPresentationCard ${presentation.requireAcknowledgement ? "is-ack" : "is-auto"}`}
       >
-        {presentation.kind === "big_win" ? (
+        {presentation.kind === "big_win" || presentation.kind === "huge_win" ? (
           <div
             aria-hidden="true"
             className="bigWinGlowPlate"
-            style={{ backgroundImage: `url(${shellAssets.bigWinGlowPlate})` }}
+            style={{
+              backgroundImage: `url(${presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
+            }}
           />
         ) : null}
         <span className="winPresentationLabel">{presentation.title}</span>

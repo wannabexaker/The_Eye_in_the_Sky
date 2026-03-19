@@ -291,6 +291,15 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - all footer and left-rail controls remain clickable without z-index hacks on the footer shell
   - the footer reads as separated left/right control clusters with a clear open center lane for the board/spin relationship
   - the board gap/background treatment remains intentionally transparent enough that the scenic backdrop is still visible behind the symbol field
+- Current desktop hierarchy direction:
+  - the center stage should contain only the board footprint and board-local visual layers
+  - the current board footprint is now treated as the accepted desktop target and should not be re-expanded casually
+  - the compact left support block directly under `Treasury` should use the same `Balance / Bet` summary previously shown in the footer
+  - the support-rail utility icons belong at the bottom of the left rail in one clean horizontal row, not in the left footer cluster
+  - `Round / Cascades / Free Spins` should live in the left support rail above the `Samsara` block instead of occupying board-top space
+  - the `Spin` CTA should live in the open right-side lane above the bet/autoplay controls, not inside or behind the board footprint
+  - keyboard ergonomics should support `Space = spin`, `+ = increase bet`, and `- = decrease bet` whenever no blocking modal or text input is active
+  - the deposit modal must support typed custom amounts in addition to quick preset chips
 
 ## Assumptions
 - Fake-money prototype remains the only supported scope in Phase 1.

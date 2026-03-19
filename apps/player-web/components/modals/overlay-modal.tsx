@@ -17,7 +17,6 @@ export function OverlayModal({ open, title, onClose, children }: OverlayModalPro
       <section aria-label={title} className="overlayModal">
         <header className="overlayHeader">
           <div className="overlayTitleBlock">
-            <span className="overlayEyebrow">Overlay</span>
             <h2>{title}</h2>
           </div>
           <button className="secondaryAction" onClick={onClose} type="button">
