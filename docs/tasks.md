@@ -149,3 +149,6 @@
 - Pixi board test pass: canvas frame kept in place but forced to alpha 0 for visual comparison against the GitHub baseline.
 
 - Board-frame isolation result: the unwanted inner/inset frame came from the Pixi `runeLayer` overlay (inner rounded rectangle plus corner strokes), not from the CSS shell frame stack.
+
+- Support balance block unified into a single panel: removed nested inner stat frames and replaced them with a single vertical divider between Balance and Bet.
+
