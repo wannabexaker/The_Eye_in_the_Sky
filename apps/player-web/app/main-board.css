@@ -34,6 +34,23 @@ These are the board-related custom properties currently owned by `.slotViewport`
 
   /* Fine vertical placement control so viewport-specific tuning does not require resizing the board again. */
   --board-frame-translate-y: 0px;
+
+  /* Frame/border system scales with viewport so the board skin stays proportional. */
+  --board-frame-radius: clamp(18px, 1.35vw, 34px);
+  --board-frame-border-width: clamp(1px, 0.09vw, 2px);
+  --board-frame-border-alpha: 0.06;
+  --board-frame-shadow-y: clamp(14px, 1.2vw, 24px);
+  --board-frame-shadow-blur: clamp(30px, 2.6vw, 52px);
+  --board-frame-shadow-alpha: 0.18;
+  --board-frame-inner-ring-alpha: 0.012;
+  --board-stage-halo-radius: clamp(30px, 2.2vw, 48px);
+  --board-stage-halo-blur: clamp(18px, 1.6vw, 30px);
+  --board-stage-halo-alpha: 0.18;
+  --board-stage-halo-soft-alpha: 0.08;
+  --board-art-inset-top: -17.5%;
+  --board-art-inset-right: -32.8%;
+  --board-art-inset-bottom: -14.2%;
+  --board-art-inset-left: -32.8%;
 }
 
 /*
@@ -47,11 +64,11 @@ Board atmosphere and frame art
   inset: 11% 9% 15%;
   z-index: var(--z-atmosphere);
   pointer-events: none;
-  border-radius: 42px;
+  border-radius: var(--board-stage-halo-radius);
   background:
-    radial-gradient(circle at center, rgba(226, 190, 112, 0.18), transparent 34%),
-    radial-gradient(circle at center, rgba(255, 244, 210, 0.08), transparent 18%);
-  filter: blur(24px);
+    radial-gradient(circle at center, rgba(226, 190, 112, var(--board-stage-halo-alpha)), transparent 34%),
+    radial-gradient(circle at center, rgba(255, 244, 210, var(--board-stage-halo-soft-alpha)), transparent 18%);
+  filter: blur(var(--board-stage-halo-blur));
 }
 
 .boardFrame {
@@ -60,14 +77,14 @@ Board atmosphere and frame art
   position: relative;
   z-index: var(--z-board-frame);
   min-height: 0;
-  border-radius: 24px;
-  border: 1px solid rgba(226, 190, 112, 0.06);
+  border-radius: var(--board-frame-radius);
+  border: var(--board-frame-border-width) solid rgba(226, 190, 112, var(--board-frame-border-alpha));
   background:
     radial-gradient(circle at center, rgba(197, 154, 75, 0.03), transparent 44%),
     linear-gradient(180deg, rgba(10, 10, 13, 0.2), rgba(8, 8, 11, 0.24));
   box-shadow:
-    0 18px 42px rgba(0, 0, 0, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.01);
+    0 var(--board-frame-shadow-y) var(--board-frame-shadow-blur) rgba(0, 0, 0, var(--board-frame-shadow-alpha)),
+    inset 0 0 0 var(--board-frame-border-width) rgba(255, 255, 255, var(--board-frame-inner-ring-alpha));
   overflow: hidden;
 }
 
@@ -97,7 +114,7 @@ Board atmosphere and frame art
 
 .boardArtFrame {
   /* Permanent frame art skin. Disabled in the current shell and not part of the active frame issue. */
-  inset: -17.5% -32.8% -14.2% -32.8%;
+  inset: var(--board-art-inset-top) var(--board-art-inset-right) var(--board-art-inset-bottom) var(--board-art-inset-left);
   opacity: 0;
   background-size: 100% 100%;
   background-position: center;
@@ -344,6 +361,10 @@ Board responsive variables and local overrides
     --board-inline-breathe: 78px;
     --board-frame-margin-bottom: -26px;
     --board-frame-translate-y: -14px;
+    --board-frame-radius: clamp(17px, 1.25vw, 30px);
+    --board-frame-border-width: clamp(1px, 0.085vw, 1.8px);
+    --board-stage-halo-radius: clamp(28px, 2vw, 42px);
+    --board-stage-halo-blur: clamp(16px, 1.45vw, 26px);
   }
 }
 
@@ -359,6 +380,14 @@ Board responsive variables and local overrides
     --board-inline-breathe: 64px;
     --board-frame-margin-bottom: -20px;
     --board-frame-translate-y: -10px;
+    --board-frame-radius: clamp(16px, 1.15vw, 26px);
+    --board-frame-border-width: clamp(1px, 0.08vw, 1.6px);
+    --board-stage-halo-radius: clamp(24px, 1.7vw, 34px);
+    --board-stage-halo-blur: clamp(14px, 1.25vw, 22px);
+    --board-art-inset-top: -16%;
+    --board-art-inset-right: -30%;
+    --board-art-inset-bottom: -13%;
+    --board-art-inset-left: -30%;
   }
 }
 
@@ -374,6 +403,14 @@ Board responsive variables and local overrides
     --board-inline-breathe: 56px;
     --board-frame-margin-bottom: -18px;
     --board-frame-translate-y: -8px;
+    --board-frame-radius: clamp(15px, 1.05vw, 24px);
+    --board-frame-border-width: clamp(1px, 0.075vw, 1.5px);
+    --board-stage-halo-radius: clamp(22px, 1.5vw, 30px);
+    --board-stage-halo-blur: clamp(13px, 1.1vw, 20px);
+    --board-art-inset-top: -15%;
+    --board-art-inset-right: -28%;
+    --board-art-inset-bottom: -12%;
+    --board-art-inset-left: -28%;
   }
 }
 
@@ -390,6 +427,14 @@ Board responsive variables and local overrides
     --board-frame-fit-height: calc(100dvh - 12px);
     --board-inline-breathe: 40px;
     --board-frame-margin-bottom: -10px;
+    --board-frame-radius: clamp(14px, 1vw, 22px);
+    --board-frame-border-width: 1px;
+    --board-stage-halo-radius: clamp(20px, 1.3vw, 28px);
+    --board-stage-halo-blur: clamp(12px, 1vw, 18px);
+    --board-art-inset-top: -14%;
+    --board-art-inset-right: -26%;
+    --board-art-inset-bottom: -11%;
+    --board-art-inset-left: -26%;
   }
 }
 
@@ -402,6 +447,14 @@ Board responsive variables and local overrides
     --board-frame-fit-height: calc(100dvh - 40px);
     --board-inline-breathe: 28px;
     --board-frame-margin-bottom: -6px;
+    --board-frame-radius: clamp(13px, 0.95vw, 20px);
+    --board-frame-border-width: 1px;
+    --board-stage-halo-radius: clamp(18px, 1.15vw, 24px);
+    --board-stage-halo-blur: clamp(10px, 0.85vw, 15px);
+    --board-art-inset-top: -13%;
+    --board-art-inset-right: -23%;
+    --board-art-inset-bottom: -10%;
+    --board-art-inset-left: -23%;
   }
 
   .phaseBadge {
@@ -427,6 +480,14 @@ Board responsive variables and local overrides
     --board-inline-breathe: 78px;
     --board-frame-margin-bottom: -46px;
     --board-frame-translate-y: -6px;
+    --board-frame-radius: clamp(24px, 1.6vw, 42px);
+    --board-frame-border-width: clamp(1.4px, 0.1vw, 2.6px);
+    --board-stage-halo-radius: clamp(38px, 2.5vw, 58px);
+    --board-stage-halo-blur: clamp(24px, 1.8vw, 36px);
+    --board-art-inset-top: -18.5%;
+    --board-art-inset-right: -34%;
+    --board-art-inset-bottom: -15%;
+    --board-art-inset-left: -34%;
   }
 }
 
@@ -442,6 +503,14 @@ Board responsive variables and local overrides
     --board-inline-breathe: 112px;
     --board-frame-margin-bottom: -34px;
     --board-frame-translate-y: -2px;
+    --board-frame-radius: clamp(22px, 1.4vw, 36px);
+    --board-frame-border-width: clamp(1.2px, 0.1vw, 2.2px);
+    --board-stage-halo-radius: clamp(34px, 2.1vw, 50px);
+    --board-stage-halo-blur: clamp(22px, 1.6vw, 32px);
+    --board-art-inset-top: -18%;
+    --board-art-inset-right: -33%;
+    --board-art-inset-bottom: -14.5%;
+    --board-art-inset-left: -33%;
   }
 }
 
@@ -450,11 +519,19 @@ Board responsive variables and local overrides
     /* Portrait 9:16 and close ratios: collapse shell to a single center stage with no side-rail dependence. */
     --machine-stage-columns: 1fr;
     --machine-stage-gap: 0;
-    --stage-status-width: min(100%, 332px);
-    --board-frame-fit-height: calc(100dvh - 196px);
-    --board-inline-breathe: 20px;
-    --board-frame-margin-bottom: -8px;
+    --stage-status-width: min(100%, 310px);
+    --board-frame-fit-height: clamp(320px, calc(100dvh - 232px), 560px);
+    --board-inline-breathe: 14px;
+    --board-frame-margin-bottom: -4px;
     --board-frame-translate-y: 0;
+    --board-frame-radius: clamp(10px, 2.8vw, 16px);
+    --board-frame-border-width: 1px;
+    --board-stage-halo-radius: clamp(12px, 3.2vw, 18px);
+    --board-stage-halo-blur: clamp(7px, 2vw, 10px);
+    --board-art-inset-top: -10%;
+    --board-art-inset-right: -16%;
+    --board-art-inset-bottom: -8%;
+    --board-art-inset-left: -16%;
   }
 
   .boardMetaRow {
@@ -464,13 +541,93 @@ Board responsive variables and local overrides
 
 @media (max-width: 900px) {
   .slotViewport {
-    /* Mobile/small-screen fallback for the board fit height. */
-    --board-frame-fit-height: calc(100dvh - 210px);
+    /* Mobile fallback: keep board readable and avoid cramped/stretched frame. */
+    --stage-status-width: min(100%, 300px);
+    --board-frame-fit-height: clamp(300px, calc(100dvh - 244px), 520px);
+    --board-inline-breathe: 12px;
+    --board-frame-margin-bottom: -2px;
+    --board-frame-radius: clamp(10px, 3vw, 15px);
+    --board-stage-halo-radius: clamp(11px, 3vw, 16px);
+    --board-stage-halo-blur: clamp(6px, 1.8vw, 9px);
+  }
+
+  .boardShell {
+    inset: 0 0 -12px 0;
   }
 
   .roundChips {
     /* Hide the horizontal chip row in the narrowest layout band. */
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .slotViewport {
+    /* Ultra-small mobile: keep board fully readable and avoid frame overflow. */
+    --stage-status-width: min(100%, 272px);
+    --board-frame-fit-height: clamp(268px, calc(100dvh - 262px), 430px);
+    --board-inline-breathe: 8px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0;
+    --board-frame-radius: clamp(8px, 2.4vw, 12px);
+    --board-frame-border-width: 1px;
+    --board-stage-halo-radius: clamp(9px, 2.2vw, 13px);
+    --board-stage-halo-blur: clamp(5px, 1.2vw, 7px);
+    --board-art-inset-top: -8%;
+    --board-art-inset-right: -12%;
+    --board-art-inset-bottom: -6%;
+    --board-art-inset-left: -12%;
+  }
+
+  .boardShell {
+    inset: 0 0 -4px 0;
+  }
+
+  .boardMetaRow {
+    min-height: 42px;
+  }
+
+  .roundChips.stageStatusStrip {
+    grid-auto-columns: minmax(74px, auto);
+    gap: 4px;
+  }
+}
+
+@media (min-width: 1880px) and (max-width: 1960px) and (min-height: 1020px) and (max-height: 1120px) {
+  .slotViewport {
+    /* Full HD lock: tighter visual balance between rails and center board frame. */
+    --machine-stage-columns: 258px minmax(0, 1fr) 300px;
+    --left-rail-max-width: 258px;
+    --right-rail-max-width: 300px;
+    --machine-stage-gap: 12px;
+    --stage-status-width: min(100%, 356px);
+    --board-frame-fit-height: calc(100dvh + 22px);
+    --board-inline-breathe: 70px;
+    --board-frame-margin-bottom: -28px;
+    --board-frame-translate-y: -12px;
+    --board-frame-radius: clamp(18px, 1.28vw, 30px);
+    --board-frame-border-width: clamp(1.1px, 0.088vw, 1.9px);
+    --board-stage-halo-radius: clamp(30px, 2.05vw, 44px);
+    --board-stage-halo-blur: clamp(17px, 1.48vw, 27px);
+  }
+}
+
+@media (min-width: 2520px) and (max-width: 2640px) and (min-height: 1390px) and (max-height: 1490px) {
+  .slotViewport {
+    /* 2560x1440 lock: scale frame skin up while avoiding rail dominance and art stretching. */
+    --machine-stage-columns: clamp(248px, 12.4vw, 310px) minmax(0, 1fr) clamp(272px, 13.6vw, 344px);
+    --left-rail-max-width: 310px;
+    --right-rail-max-width: 344px;
+    --machine-stage-gap: 14px;
+    --stage-status-width: min(100%, 572px);
+    --board-frame-fit-height: calc(100dvh - 88px);
+    --board-inline-breathe: 72px;
+    --board-frame-margin-bottom: -48px;
+    --board-frame-translate-y: -6px;
+    --board-frame-radius: clamp(25px, 1.62vw, 42px);
+    --board-frame-border-width: clamp(1.45px, 0.102vw, 2.65px);
+    --board-stage-halo-radius: clamp(40px, 2.6vw, 60px);
+    --board-stage-halo-blur: clamp(25px, 1.85vw, 37px);
   }
 }
 

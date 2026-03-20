@@ -14,6 +14,14 @@ const parseAmount = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const formatMoneyCompactEur = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(value);
+
 export function DepositModal() {
   const {
     depositDraft,
@@ -44,7 +52,7 @@ export function DepositModal() {
 
     window.setTimeout(() => {
       completeDeposit();
-      setLocalMessage("Deposit successful");
+      setLocalMessage(`Deposit successful: ${formatMoneyCompactEur(parsedAmount)}`);
     }, 900);
   };
 
@@ -60,7 +68,7 @@ export function DepositModal() {
               onClick={() => setDepositAmount(amount)}
               type="button"
             >
-              {amount}
+              {formatMoneyCompactEur(amount)}
             </button>
           ))}
           <input
@@ -131,7 +139,11 @@ export function DepositModal() {
 
       <section className="modalSection modalFooterRow">
         <div className="modalFeedback">
-          <strong>{localMessage || depositDraft.successMessage || `+${depositDraft.amount} ready`}</strong>
+          <strong>
+            {localMessage ||
+              depositDraft.successMessage ||
+              `${formatMoneyCompactEur(depositDraft.amount)} ready`}
+          </strong>
           <span>Simulation only. No real payment is processed.</span>
         </div>
         <button className="welcomeButton compactPrimary" onClick={confirmDeposit} type="button">

@@ -35,6 +35,14 @@ const formatMoney = (value: number) =>
     maximumFractionDigits: 2
   }).format(value);
 
+const formatMoneyCompactEur = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(value);
+
 const symbolLabels: Record<string, string> = {
   ashen_sigil: "Ashen Sigil",
   broken_halo: "Broken Halo",
@@ -63,8 +71,6 @@ export default function HomePage() {
     soundEnabled,
     autoContinueNeverStop,
     wallet,
-    totalDeposited,
-    totalWithdrawn,
     walletTransactions,
     claimWelcomeBonus,
     setModal,
@@ -213,13 +219,11 @@ export default function HomePage() {
       <section className="gameArea machineStage">
         <LeftSupportRail
           activeBonusSpins={slot.activeBonusSpins}
-          balance={formatMoney(wallet.balance)}
+          balance={formatMoneyCompactEur(wallet.balance)}
           bonusActive={Boolean(slot.gameState.bonusState)}
           cascades={latestRound?.cascades.length ?? 0}
-          currentBet={slot.headerStats[1]?.value ?? "0.00"}
+          currentBet={formatMoneyCompactEur(slot.bet)}
           freeSpins={slot.activeBonusSpins}
-          totalDeposited={totalDeposited.toFixed(2)}
-          totalWithdrawn={totalWithdrawn.toFixed(2)}
           history={slot.history}
           meterCurrent={slot.gameState.bonusMeter}
           meterRatio={slot.meterRatio}

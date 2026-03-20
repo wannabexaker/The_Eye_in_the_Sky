@@ -14,6 +14,14 @@ const parseAmount = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const formatMoneyCompactEur = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(value);
+
 export function WithdrawModal() {
   const {
     wallet,
@@ -48,7 +56,7 @@ export function WithdrawModal() {
       const result = completeWithdrawal();
       setLocalMessage(
         result.ok
-          ? "Withdrawal requested. Funds sent successfully (simulation)."
+          ? `Withdrawal requested: ${formatMoneyCompactEur(parsedAmount)} (simulation).`
           : result.reason ?? "Withdrawal failed."
       );
     }, 900);
@@ -66,7 +74,7 @@ export function WithdrawModal() {
               onClick={() => setWithdrawalAmount(amount)}
               type="button"
             >
-              {amount}
+              {formatMoneyCompactEur(amount)}
             </button>
           ))}
 
@@ -121,7 +129,11 @@ export function WithdrawModal() {
 
       <section className="modalSection modalFooterRow">
         <div className="modalFeedback">
-          <strong>{localMessage || withdrawalDraft.successMessage || `Balance ${wallet.balance.toFixed(2)}`}</strong>
+          <strong>
+            {localMessage ||
+              withdrawalDraft.successMessage ||
+              `Balance ${formatMoneyCompactEur(wallet.balance)}`}
+          </strong>
           <span>Simulation only. No external payout is sent.</span>
         </div>
         <button className="welcomeButton compactPrimary" onClick={requestWithdrawal} type="button">

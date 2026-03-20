@@ -422,7 +422,7 @@ p {
 
 .samsaraMeterBody {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
   align-items: center;
 }
@@ -433,18 +433,134 @@ p {
 }
 
 .samsaraEye {
-  width: 22px;
-  height: 22px;
+  position: absolute;
+  left: calc(var(--meter-progress, 0) * 100%);
+  top: 0;
+  width: 33px;
+  height: 33px;
+  transform: translate(-50%, calc(-100% - 6px));
   border-radius: 999px;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  filter: drop-shadow(0 0 10px rgba(226, 190, 112, 0.16));
+  filter:
+    saturate(calc(0.78 + (var(--meter-gold, 0) * 0.9)))
+    brightness(calc(0.8 + (var(--meter-light, 0) * 0.55)))
+    drop-shadow(0 0 calc(3px + (var(--meter-light, 0) * 10px)) rgba(248, 239, 221, calc(var(--meter-light, 0) * 0.58)))
+    drop-shadow(0 0 calc(var(--meter-gold, 0) * 12px) rgba(226, 190, 112, calc(var(--meter-gold, 0) * 0.72)));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.samsaraEye::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 0, 0, calc(0.68 - (var(--meter-light, 0) * 0.46))) 0%,
+    rgba(255, 245, 228, calc(var(--meter-light, 0) * 0.26)) 38%,
+    rgba(226, 190, 112, calc(var(--meter-gold, 0) * 0.34)) 62%,
+    rgba(0, 0, 0, 0) 76%
+  );
+  filter: blur(1.5px);
+  opacity: calc(0.08 + (var(--meter-light, 0) * 0.9));
+  animation: samsaraAuraBreath 2.4s ease-in-out infinite;
+  z-index: -1;
+}
+
+.samsaraEye::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 1px);
+  width: 2px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, calc(var(--meter-light, 0) * 0.88)) 0%,
+    rgba(226, 190, 112, calc(var(--meter-gold, 0) * 0.9)) 54%,
+    rgba(226, 190, 112, 0) 100%
+  );
+  box-shadow: 0 0 calc(4px + (var(--meter-gold, 0) * 10px)) rgba(226, 190, 112, calc(var(--meter-gold, 0) * 0.55));
+  opacity: calc(var(--meter-light, 0) * 0.96);
+  animation: samsaraMeterGuidePulse 1.9s ease-in-out infinite;
+}
+
+@keyframes samsaraAuraBreath {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: calc(0.06 + (var(--meter-light, 0) * 0.82));
+  }
+
+  50% {
+    transform: scale(1.04);
+    opacity: calc(0.12 + (var(--meter-light, 0) * 0.95));
+  }
+}
+
+@keyframes samsaraMeterGuidePulse {
+  0%,
+  100% {
+    opacity: 0.64;
+    height: 16px;
+  }
+
+  50% {
+    opacity: 1;
+    height: 20px;
+  }
+}
+
+.samsaraEye.is-critical {
+  animation: samsaraCriticalBlink 560ms steps(2, end) infinite;
+}
+
+.samsaraEye.is-critical::before {
+  background: radial-gradient(
+    circle,
+    rgba(255, 248, 232, 0.7) 0%,
+    rgba(226, 190, 112, 0.5) 44%,
+    rgba(171, 36, 29, 0.5) 66%,
+    rgba(0, 0, 0, 0) 80%
+  );
+}
+
+.samsaraEye.is-critical::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(226, 190, 112, 0.9) 44%, rgba(171, 36, 29, 0.28) 100%);
+  opacity: 1;
+}
+
+@keyframes samsaraCriticalBlink {
+  0%,
+  100% {
+    opacity: 1;
+    filter:
+      sepia(0.2)
+      saturate(1.35)
+      brightness(1.02)
+      drop-shadow(0 0 12px rgba(255, 244, 214, 0.55))
+      drop-shadow(0 0 10px rgba(189, 28, 18, 0.42));
+  }
+
+  50% {
+    opacity: 0.56;
+    filter:
+      sepia(0.66)
+      saturate(1.95)
+      brightness(0.86)
+      hue-rotate(-16deg)
+      drop-shadow(0 0 16px rgba(171, 36, 29, 0.82));
+  }
 }
 
 .samsaraTrack {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   height: 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
@@ -1410,6 +1526,26 @@ p {
   filter: drop-shadow(0 0 26px rgba(226, 190, 112, 0.2));
 }
 
+.simpleWinGlowPlate {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(480px, 88%);
+  height: clamp(126px, 20vw, 188px);
+  transform: translate(-50%, -50%);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.56;
+  pointer-events: none;
+  z-index: 0;
+  filter: drop-shadow(0 0 18px rgba(226, 190, 112, 0.16));
+}
+
+.winPresentationLayer.is-round_win .winPresentationHero > *:not(.simpleWinGlowPlate) {
+  position: relative;
+  z-index: 1;
+}
+
 .winPresentationLayer.is-big_win .winPresentationHero > *:not(.bigWinGlowPlate),
 .winPresentationLayer.is-huge_win .winPresentationHero > *:not(.bigWinGlowPlate) {
   position: relative;
@@ -2239,7 +2375,8 @@ Current shell calibration:
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   width: 100%;
-  min-height: 62px;
+  /* backup: min-height: 62px; */
+  min-height: 52px;
 }
 
 .supportBalanceZone::after {
@@ -2262,8 +2399,12 @@ Current shell calibration:
 }
 
 .supportRail .bottomBarStat {
+  /* backup:
   min-height: 62px;
   padding: 10px 14px;
+  */
+  min-height: 52px;
+  padding: 7px 10px;
   border-radius: 0;
   border: 0;
   background: none;
@@ -2272,19 +2413,71 @@ Current shell calibration:
 }
 
 .supportBalanceZone .bottomBarStat:first-child {
-  justify-items: start;
-  text-align: left;
+  justify-items: center;
+  text-align: center;
 }
 
 .supportBalanceZone .bottomBarStat:last-child {
-  justify-items: end;
-  text-align: right;
+  justify-items: center;
+  text-align: center;
+}
+
+.supportRail .panelHeader {
+  position: relative;
+  justify-content: center;
+  text-align: center;
+}
+
+.supportRail .panelHeader .eyebrow {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.supportRail .panelHeader .supportToggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.supportRail .panelHeader .supportToggle {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.supportToggleIcon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 180ms ease;
+}
+
+.supportToggle[aria-expanded="true"] .supportToggleIcon {
+  transform: rotate(180deg);
+}
+
+.supportRail .bottomBarStat span,
+.supportRail .bottomBarStat strong,
+.supportRail .supportMiniStat span,
+.supportRail .supportMiniStat strong,
+.supportRail .samsaraMeter small {
+  width: 100%;
+  text-align: center;
 }
 
 .supportRail .bottomBarStat strong {
   color: var(--gold-bright);
   font-family: var(--font-display), Georgia, serif;
-  font-size: 1rem;
+  font-size: 0.93rem;
 }
 
 .supportSummary strong {
@@ -2326,6 +2519,26 @@ Current shell calibration:
   display: grid;
   gap: 5px;
   margin-top: 6px;
+}
+
+.supportHistory.is-scrollable {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.supportHistory.is-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.supportHistory.is-scrollable::-webkit-scrollbar-track {
+  background: rgba(9, 10, 14, 0.78);
+  border-radius: 999px;
+}
+
+.supportHistory.is-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(226, 190, 112, 0.42);
+  border-radius: 999px;
 }
 
 .supportHistoryRow {
@@ -3237,6 +3450,29 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
 .dockAutoInlineInput::placeholder {
   color: rgba(226, 190, 112, 0.52);
+}
+
+.dockPopoverAnchor.is-open .dockAutoInlineInput {
+  animation: autoplayInputReveal 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.dockPopoverAnchor.is-open .autoplayButton.is-open {
+  border-color: rgba(255, 214, 131, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 131, 0.36),
+    0 0 14px rgba(226, 190, 112, 0.34);
+}
+
+@keyframes autoplayInputReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(5px) scale(0.94);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Floating dock override: compact autoplay popover that stays visible and above controls */

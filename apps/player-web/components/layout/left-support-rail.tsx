@@ -7,7 +7,7 @@ Uses: wallet actions, status state, and samsara meter
 "use client";
 
 import type { SpinResult } from "@eye/game-engine";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SamsaraMeter } from "@/components/board/samsara-meter";
 
 type LeftSupportRailProps = {
@@ -16,8 +16,6 @@ type LeftSupportRailProps = {
   roundWin: number;
   cascades: number;
   freeSpins: number;
-  totalDeposited: string;
-  totalWithdrawn: string;
   activeBonusSpins: number;
   bonusActive: boolean;
   phaseMessage: string;
@@ -43,7 +41,7 @@ const formatWin = (result: SpinResult) =>
       }).format(result.totalWin)}`
     : "LOSS";
 
-const MAX_RITUAL_LOG_ENTRIES = 10;
+const MAX_RITUAL_LOG_ENTRIES = 100;
 const DESKTOP_VISIBLE_ENTRIES = 5;
 const COMPACT_VISIBLE_ENTRIES = 3;
 
@@ -53,8 +51,6 @@ export function LeftSupportRail({
   roundWin,
   cascades,
   freeSpins,
-  totalDeposited,
-  totalWithdrawn,
   activeBonusSpins,
   bonusActive,
   phaseMessage,
@@ -74,6 +70,8 @@ export function LeftSupportRail({
 }: LeftSupportRailProps) {
   const [compactView, setCompactView] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
+  const supportHistoryRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1600px), (max-height: 900px)");
@@ -95,6 +93,34 @@ export function LeftSupportRail({
     }
   }, [defaultVisibleEntries, ritualEntries.length, showMore]);
 
+  useEffect(() => {
+    if (!showMore) {
+      setExpandedHistoryMaxHeight(null);
+      return;
+    }
+
+    const updateExpandedHeight = () => {
+      if (!supportHistoryRef.current) {
+        return;
+      }
+
+      const { top } = supportHistoryRef.current.getBoundingClientRect();
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const availableHeight = Math.max(120, Math.floor(viewportHeight - top - 12));
+      setExpandedHistoryMaxHeight(availableHeight);
+    };
+
+    const frame = window.requestAnimationFrame(updateExpandedHeight);
+    window.addEventListener("resize", updateExpandedHeight);
+    window.addEventListener("orientationchange", updateExpandedHeight);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateExpandedHeight);
+      window.removeEventListener("orientationchange", updateExpandedHeight);
+    };
+  }, [showMore, ritualEntries.length]);
+
   return (
     <aside className="leftRail supportRail">
       <section className="compactPanel supportBlock treasuryBlock">
@@ -108,16 +134,6 @@ export function LeftSupportRail({
           <button className="walletAction" onClick={onWithdraw} type="button">
             Withdraw
           </button>
-        </div>
-        <div className="treasuryTotals">
-          <div className="treasuryTotalRow">
-            <span>Deposited</span>
-            <strong>{totalDeposited}</strong>
-          </div>
-          <div className="treasuryTotalRow">
-            <span>Withdrawn</span>
-            <strong>{totalWithdrawn}</strong>
-          </div>
         </div>
       </section>
 
@@ -192,14 +208,27 @@ export function LeftSupportRail({
             <button
               className="supportToggle"
               onClick={() => setShowMore((current) => !current)}
+              aria-expanded={showMore}
+              aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
+              title={showMore ? "Collapse ritual log" : "Expand ritual log"}
               type="button"
             >
-              {showMore ? "Less" : "More"}
+              <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
             </button>
           ) : null}
         </div>
         <p className="supportNote">{phaseMessage}</p>
-        <div className={`supportHistory ${showMore ? "is-scrollable" : ""}`}>
+        <div
+          className={`supportHistory ${showMore ? "is-scrollable" : ""}`}
+          ref={supportHistoryRef}
+          style={
+            showMore && expandedHistoryMaxHeight
+              ? { maxHeight: `${expandedHistoryMaxHeight}px` }
+              : undefined
+          }
+        >
           {history.length === 0 ? (
             <span className="supportMuted">No rounds yet.</span>
           ) : (

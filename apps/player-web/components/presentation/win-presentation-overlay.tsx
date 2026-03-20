@@ -26,7 +26,8 @@ export function WinPresentationOverlay({
     return null;
   }
 
-  const hasWinPlate = presentation.kind === "big_win" || presentation.kind === "huge_win";
+  const hasWinPlate =
+    presentation.kind === "round_win" || presentation.kind === "big_win" || presentation.kind === "huge_win";
 
   return (
     <div className={`winPresentationLayer is-${presentation.kind}`} onClick={onContinue} role="presentation">
@@ -40,9 +41,9 @@ export function WinPresentationOverlay({
           {hasWinPlate ? (
             <div
               aria-hidden="true"
-              className="bigWinGlowPlate"
+              className={presentation.kind === "round_win" ? "simpleWinGlowPlate" : "bigWinGlowPlate"}
               style={{
-                backgroundImage: `url(${presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
+                backgroundImage: `url(${presentation.kind === "round_win" ? shellAssets.winFlowPlate : presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
               }}
             />
           ) : null}

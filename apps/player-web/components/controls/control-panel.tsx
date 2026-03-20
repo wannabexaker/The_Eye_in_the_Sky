@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: slot wallet/bet/autoplay state and spin-button.tsx
 */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
 import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
 
@@ -66,12 +66,22 @@ export function ControlPanel({
   onToggleAutoContinueNeverStop
 }: ControlPanelProps) {
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
+  const autoplayInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isAutospinActive) {
       setAutoplayInputOpen(false);
     }
   }, [isAutospinActive]);
+
+  useEffect(() => {
+    if (!autoplayInputOpen || isAutospinActive || !autoplayInputRef.current) {
+      return;
+    }
+
+    autoplayInputRef.current.focus();
+    autoplayInputRef.current.select();
+  }, [autoplayInputOpen, isAutospinActive]);
 
   const handleAutoplayPress = () => {
     if (isAutospinActive) {
@@ -170,9 +180,10 @@ export function ControlPanel({
 
           {/* Autoplay Controls */}
           <div className="dockAutoCluster">
-            <div className="autoplayPopoverAnchor dockPopoverAnchor">
+            <div className={`autoplayPopoverAnchor dockPopoverAnchor ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""}`}>
               {autoplayInputOpen && !isAutospinActive ? (
                 <input
+                  ref={autoplayInputRef}
                   aria-label="Autoplay spin count"
                   className="dockAutoInlineInput"
                   inputMode="numeric"
@@ -202,7 +213,7 @@ export function ControlPanel({
               ) : null}
 
               <button
-                className="dockSmallButton is-active autoplayButton"
+                className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""}`}
                 disabled={!canStartAutospin && !isAutospinActive}
                 onClick={handleAutoplayPress}
                 title={isAutospinActive ? "Stop autoplay" : autoplayInputOpen ? "Start autoplay" : "Set autoplay count"}
