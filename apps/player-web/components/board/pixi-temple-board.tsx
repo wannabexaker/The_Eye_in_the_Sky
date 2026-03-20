@@ -401,7 +401,12 @@ export function PixiTempleBoard({
   const drawRuneLayer = (graphics: Graphics, now: number) => {
     graphics.clear();
 
-    const alpha = 0.06 + (Math.sin(now / 1500) + 1) * 0.025;
+    // Board-frame debugging result:
+    // This Pixi rune layer draws the inner rounded rectangle plus the small corner strokes.
+    // In screenshot review this was the visually intrusive "green/inset" frame, not the CSS shell
+    // and not the heavier Pixi canvas frame. We intentionally keep the drawing code in place with
+    // alpha 0 so the layer remains easy to re-enable for future art direction tests.
+    const alpha = 0;
 
     graphics.stroke({ color: 0xf0ca72, width: 2, alpha });
     graphics.roundRect(boardOffsetX - 16, boardOffsetY - 16, logicalWidth - 48, logicalHeight - 56, 26);
@@ -700,8 +705,12 @@ export function PixiTempleBoard({
         width: 2,
         alpha: 0.1
       });
-      frame.x = -12;
-      frame.y = -12;
+      // This is the larger Pixi board frame.
+      // During layer isolation it matched the outer/yellow frame, not the unwanted inset frame.
+      // It stays active as part of the accepted board look.
+      frame.alpha = 1;
+      frame.x = -15;
+      frame.y = -14;
       boardContainer.addChild(frame);
 
       const clouds: DriftSprite[] = [];

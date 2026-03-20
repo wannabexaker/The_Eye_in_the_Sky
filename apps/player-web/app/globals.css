@@ -485,6 +485,7 @@ p {
 }
 
 .boardStageHalo {
+  /* Ambient glow bed behind the whole board. Isolation pass confirmed this is not the intrusive inset frame. */
   position: absolute;
   inset: 11% 9% 15%;
   z-index: var(--z-atmosphere);
@@ -497,6 +498,7 @@ p {
 }
 
 .boardFrame {
+  /* Main CSS board shell. Isolation pass confirmed this maps to the outer/red shell boundary. */
   position: relative;
   z-index: var(--z-board-frame);
   min-height: 0;
@@ -512,6 +514,7 @@ p {
 }
 
 .boardFrame::after {
+  /* Inner vignette only. Isolation pass confirmed this darkens the board surface but is not the inset frame we chased. */
   content: "";
   position: absolute;
   inset: 0;
@@ -533,14 +536,16 @@ p {
 }
 
 .boardArtFrame {
+  /* Decorative art skin layer. Currently disabled and not participating in the active board framing stack. */
   inset: -1px;
-  opacity: 0.92;
+  opacity: 0;
   background-size: 100% 100%;
   mix-blend-mode: screen;
   filter: saturate(0.92) brightness(0.9) contrast(1.02);
 }
 
 .boardBonusArt {
+  /* Bonus-only art wash. Disabled in the normal shell and not part of the current frame issue. */
   background-position: center 24%;
   background-size: cover;
   opacity: 0;

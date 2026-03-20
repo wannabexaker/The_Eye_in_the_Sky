@@ -298,6 +298,9 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - the support-rail utility icons belong at the bottom of the left rail in one clean horizontal row, not in the left footer cluster
   - `Round / Cascades / Free Spins` should live in the left support rail above the `Samsara` block instead of occupying board-top space
   - the `Spin` CTA should live in the open right-side lane above the bet/autoplay controls, not inside or behind the board footprint
+  - on larger-than-`1920x1080` desktop bands, the right branding scene should scale up with the viewport instead of staying locked to the Full HD footprint
+  - the spin CTA should sit slightly lower and read as visually tied to the autoplay controls, not as a detached floating object
+  - the board shell should avoid stacked decorative frame layers; current direction is to collapse the board into one holistic frame treatment instead of multiple CSS and Pixi frame/glow layers
   - keyboard ergonomics should support `Space = spin`, `+ = increase bet`, and `- = decrease bet` whenever no blocking modal or text input is active
   - the deposit modal must support typed custom amounts in addition to quick preset chips
 
@@ -497,3 +500,19 @@ and not only on naive width breakpoints.
   - Recorded the active UI workflow rule for board/footer work: read the PRD/tasks first and keep risky CSS replacements isolated or commented until the new block is verified
   - Continued the isolated `main-board.css` calibration by narrowing the shell rails, increasing the viewport-height board fit, and wiring `--board-frame-margin-bottom` into the live board footprint so the board can overlap the footer as an intentional foreground layer
   - Calibrated the current enlarged-board pass back toward a safer `100%` footprint: the board-top stat chips now move toward a translucent glass treatment and the board fit was reduced slightly and lowered to avoid visible crop while preserving the larger-shell direction
+  - Documented the board-frame isolation findings: the intrusive inset frame was the Pixi `runeLayer` inner rounded-rectangle/corner-stroke pass, while the CSS `boardFrame`, CSS `boardFrame::after`, CSS `boardStageHalo`, and the larger Pixi `frame` mapped to other accepted shell layers
+
+## Board Frame Layer Findings
+- The unwanted inner/inset frame was not a CSS shell selector. It was the Pixi `runeLayer` pass inside [pixi-temple-board.tsx](/c:/Projects/MyTests/Tsogos/apps/player-web/components/board/pixi-temple-board.tsx), which draws:
+  - one inner rounded rectangle
+  - four short corner lines
+- The larger Pixi `frame` in the same file is a different layer. In screenshot isolation it mapped to the accepted outer/yellow frame, not the intrusive inset frame.
+- The CSS shell layers were isolated and are now explicitly documented as separate concerns:
+  - `boardFrame`: main outer shell / red boundary
+  - `boardFrame::after`: inner vignette/darkening layer
+  - `boardStageHalo`: ambient glow bed behind the board
+  - `boardArtFrame` / `boardBonusArt`: currently disabled decorative art layers
+- Debugging rule for future shell work:
+  - isolate one layer at a time
+  - restore the previous layer before testing the next one
+  - keep code comments on board-layer ownership so shell debugging does not restart from zero

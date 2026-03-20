@@ -41,7 +41,8 @@ Board atmosphere and frame art
 */
 
 .boardStageHalo {
-  /* Soft light bed behind the board so the center stage reads before the background. */
+  /* Soft light bed behind the board so the center stage reads before the background.
+     Isolation pass confirmed this is not the intrusive inset frame. */
   position: absolute;
   inset: 11% 9% 15%;
   z-index: var(--z-atmosphere);
@@ -54,7 +55,8 @@ Board atmosphere and frame art
 }
 
 .boardFrame {
-  /* Physical board shell: frame, obsidian surface, and clipping root for board art. */
+  /* Physical board shell: frame, obsidian surface, and clipping root for board art.
+     Isolation pass confirmed this maps to the outer shell boundary, not the inset frame. */
   position: relative;
   z-index: var(--z-board-frame);
   min-height: 0;
@@ -70,7 +72,8 @@ Board atmosphere and frame art
 }
 
 .boardFrame::after {
-  /* Vignette and inner darkening that keep the symbols readable over the art frame. */
+  /* Vignette and inner darkening that keep the symbols readable over the art frame.
+     Isolation pass confirmed this is a surface darkening layer, not the inset frame we removed. */
   content: "";
   position: absolute;
   inset: 0;
@@ -93,7 +96,7 @@ Board atmosphere and frame art
 }
 
 .boardArtFrame {
-  /* Permanent frame art skin. */
+  /* Permanent frame art skin. Disabled in the current shell and not part of the active frame issue. */
   inset: -17.5% -32.8% -14.2% -32.8%;
   opacity: 0;
   background-size: 100% 100%;
@@ -104,7 +107,8 @@ Board atmosphere and frame art
 }
 
 .boardBonusArt {
-  /* Legacy bonus-only scenic wash kept disabled after moving the bonus swap into the main frame art. */
+  /* Legacy bonus-only scenic wash kept disabled after moving the bonus swap into the main frame art.
+     Not part of the active frame issue. */
   background-position: center 24%;
   background-size: cover;
   opacity: 0;

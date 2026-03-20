@@ -21,9 +21,12 @@
 - `in_progress` Move the left footer utility icon cluster into the bottom of the support rail so the footer contains only gameplay controls
 - `in_progress` Move `Round / Cascades / Free Spins` out of the board-top overlay and into the left rail so the center stage belongs only to the board footprint
 - `in_progress` Anchor the spin CTA into the open right-side lane above the bet/autoplay controls so it no longer renders behind or inside the board footprint
+- `in_progress` Make the right branding rail scale up on larger desktop bands instead of staying fixed at the Full HD scenic size
+- `in_progress` Lower the spin CTA slightly and visually tie it more clearly to the autoplay control group
 - `in_progress` Restore keyboard gameplay shortcuts so `Space` spins and `+ / -` adjust bet while no modal or text input is active
 - `in_progress` Keep deposit flow flexible by supporting typed custom deposit amounts alongside preset chips
 - `in_progress` Increase board-through transparency by reducing both CSS shell opacity and Pixi board-gap background opacity so more of the scenic background remains visible
+- `in_progress` Collapse the board shell into one holistic frame treatment by disabling redundant CSS/Pixi frame and glow layers before rebuilding a cleaner final board skin
 - `todo` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
 - `todo` Split the active shell CSS into focused files for board, footer controls, rails, and overlays so future responsive tuning stays isolated and predictable
 - `done` Wire public art assets into the player runtime with PNG-first and SVG fallback preview support
@@ -140,3 +143,9 @@
   - Recorded the approximate payout structure from a user-provided screenshot of a strong well-known slot into `docs/game-math.md` so the project keeps a permanent benchmark for three-band pay-anywhere ladder design, high/mid/low symbol separation, and separate scatter presentation
   - Added `docs/variant-simple.md` to define the first simpler Eye sub-variant around a benchmark-informed `count-anywhere` model, shared shell/art reuse, reduced special-symbol complexity, and the recommended working name `Constellation`
   - Recalibrated the active Full HD shell so the center board sits slightly smaller inside clearer left/right ownership lanes, the board stack renders in front of neighboring shell layers more decisively, and the bottom footer bar uses a lighter transparent glass treatment instead of the previous heavier opaque block
+
+- Pixi canvas full-board overlay washes (spin/win/bonus veils) were flattened to keep the board surface clean and avoid false shell layering inside pixiStageShell.
+
+- Pixi board test pass: canvas frame kept in place but forced to alpha 0 for visual comparison against the GitHub baseline.
+
+- Board-frame isolation result: the unwanted inner/inset frame came from the Pixi `runeLayer` overlay (inner rounded rectangle plus corner strokes), not from the CSS shell frame stack.
