@@ -222,7 +222,7 @@ Board stage and Pixi shell
   padding-top: 0;
   z-index: calc(var(--z-surface) + 4);
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .boardMetaRow {
@@ -275,7 +275,7 @@ Board stage and Pixi shell
     calc(100% - var(--board-inline-breathe)),
     calc(var(--board-frame-fit-height) * 766 / 646)
   );
-  max-height: none;
+  max-height: var(--board-frame-fit-height);
   height: auto;
   aspect-ratio: 766 / 646;
   justify-self: center;
@@ -396,6 +396,19 @@ Board responsive variables and local overrides
   }
 }
 
+@media (min-width: 2560px), (min-height: 1440px) {
+  .slotViewport {
+    /* 4K and larger displays: scale board + controls up proportionally. */
+    --machine-stage-columns: 380px minmax(0, 1fr) 440px;
+    --machine-stage-gap: 18px;
+    --stage-status-width: min(100%, 520px);
+    --board-frame-fit-height: calc(100dvh - 150px);
+    --board-inline-breathe: 120px;
+    --board-frame-margin-bottom: -40px;
+    --board-frame-translate-y: 0px;
+  }
+}
+
 @media (max-width: 900px) {
   .slotViewport {
     /* Mobile/small-screen fallback for the board fit height. */
@@ -406,4 +419,225 @@ Board responsive variables and local overrides
     /* Hide the horizontal chip row in the narrowest layout band. */
     display: none;
   }
+}
+
+/*
+Plan 3 controls: keep spin anchored and tighten spin/bet/autoplay/stop into one cluster.
+*/
+
+.plan3BetZone {
+  padding-right: 0;
+}
+
+.plan3AutoplayZone {
+  margin-left: 2px;
+  padding-left: 8px;
+}
+
+.plan3AutoplayRow {
+  grid-template-columns: auto;
+  gap: 4px;
+}
+
+.plan3AutoplayControls {
+  justify-content: center;
+}
+
+.plan3AutoplayButton {
+  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.autoplayPopoverAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.plan3NonstopButton {
+  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.plan3SpeedButton {
+  min-width: 84px;
+}
+
+.plan3SpeedButton:disabled {
+  opacity: 0.58;
+}
+
+.plan3SpinAnchorGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan3StopHex {
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  background:
+    radial-gradient(circle at 50% 25%, rgba(226, 190, 112, 0.16), rgba(11, 11, 14, 0.98) 70%),
+    linear-gradient(180deg, rgba(13, 13, 17, 0.98), rgba(8, 8, 11, 0.98));
+  clip-path: polygon(25% 6%, 75% 6%, 95% 50%, 75% 94%, 25% 94%, 5% 50%);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.plan3StopHexCore {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #f4e3b0;
+}
+
+.plan3StopHex:disabled {
+  opacity: 0.45;
+}
+
+.autoplayActionIcon,
+.nonstopIcon {
+  width: 13px;
+  height: 13px;
+}
+
+/* Inline slide-up panel anchored above autoplay button */
+.autoplayPopoverSheet {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: calc(var(--z-dropdown) + 4);
+  width: clamp(176px, 18vw, 228px);
+  transform: translate(-50%, 10px);
+  opacity: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: auto auto;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  background: linear-gradient(180deg, rgba(14, 14, 18, 0.98), rgba(10, 10, 13, 0.98));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.34);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.autoplayPopoverSheet.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.autoplayModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid rgba(226, 190, 112, 0.1);
+}
+
+.autoplayModalTitle {
+  margin: 0;
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.autoplayModalCloseButton {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+
+.autoplayModalIcon {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.autoplayModalBody {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.autoplayModalDescription {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--font-sm);
+}
+
+.autoplayCountInput {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.74rem;
+  text-align: center;
+  padding: 6px 8px;
+}
+
+.autoplayCountInput:focus {
+  outline: none;
+  border-color: rgba(226, 190, 112, 0.34);
+  box-shadow: 0 0 0 2px rgba(226, 190, 112, 0.1);
+}
+
+.autoplayCountInput.has-error {
+  border-color: rgba(240, 177, 138, 0.46);
+}
+
+.autoplayValidationError {
+  color: #f0b18a;
+  font-size: var(--font-xs);
+}
+
+.autoplayModalFooter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 10px 10px;
+  border-top: 1px solid rgba(226, 190, 112, 0.1);
+}
+
+.autoplayModalButton {
+  min-height: 26px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.autoplayModalButtonSecondary {
+  border: 1px solid rgba(226, 190, 112, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.autoplayModalButtonPrimary {
+  border: 0;
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.95), rgba(197, 154, 75, 0.95));
+  color: #17120f;
 }

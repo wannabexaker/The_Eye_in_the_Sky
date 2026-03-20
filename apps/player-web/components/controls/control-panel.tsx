@@ -4,13 +4,16 @@ Layer: frontend (player-web)
 Uses: slot wallet/bet/autoplay state and spin-button.tsx
 */
 
+import { useEffect, useState } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
 import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
 
 type ControlPanelProps = {
   betInput: string;
   betRiskMessage: string;
+  betRiskTooltip: string;
   betValidationMessage: string;
+  betValidationTooltip: string;
   areBetControlsLocked: boolean;
   autospinRemaining: number;
   autospinCountInput: string;
@@ -37,7 +40,9 @@ type ControlPanelProps = {
 export function ControlPanel({
   betInput,
   betRiskMessage,
+  betRiskTooltip,
   betValidationMessage,
+  betValidationTooltip,
   areBetControlsLocked,
   autospinRemaining,
   autospinCountInput,
@@ -60,146 +65,188 @@ export function ControlPanel({
   onStopAutoSpin,
   onToggleAutoContinueNeverStop
 }: ControlPanelProps) {
+  const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
+
+  useEffect(() => {
+    if (isAutospinActive) {
+      setAutoplayInputOpen(false);
+    }
+  }, [isAutospinActive]);
+
+  const handleAutoplayPress = () => {
+    if (isAutospinActive) {
+      onStopAutoSpin();
+      return;
+    }
+
+    if (!autoplayInputOpen) {
+      setAutoplayInputOpen(true);
+      return;
+    }
+
+    const parsedCount = onCommitAutospinInput();
+    if (!parsedCount) {
+      return;
+    }
+
+    onStartAutospin();
+    setAutoplayInputOpen(false);
+  };
+
   return (
-    <>
-      <footer className="controlBar machineBottomBar">
-        <div className="machineFooterCluster machineFooterClusterRight">
-          <div className="bottomBarZone betAdjustZone">
-            <div className="betAdjustControls">
-              <button
-                aria-label="Decrease bet"
-                className="controlChip compactChip iconOnlyAction betAdjustIconButton"
-                disabled={areBetControlsLocked}
-                onClick={onDecreaseBet}
-                title="Decrease bet"
-                type="button"
-              >
-                <svg aria-hidden="true" className="utilityIcon betAdjustIcon" viewBox="0 0 24 24">
-                  <path d="M7 12h10" />
-                </svg>
-              </button>
-              <input
-                aria-label="Bet amount"
-                className="controlInput bottomBarInput betAmountInput"
-                disabled={areBetControlsLocked}
-                inputMode="decimal"
-                onBlur={onCommitBetInput}
-                onChange={(event) => onBetInputChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    onCommitBetInput();
-                  }
-                }}
-                type="text"
-                value={betInput}
-              />
-              <button
-                aria-label="Increase bet"
-                className="controlChip compactChip iconOnlyAction betAdjustIconButton"
-                disabled={areBetControlsLocked}
-                onClick={onIncreaseBet}
-                title="Increase bet"
-                type="button"
-              >
-                <svg aria-hidden="true" className="utilityIcon betAdjustIcon" viewBox="0 0 24 24">
-                  <path d="M7 12h10" />
-                  <path d="M12 7v10" />
-                </svg>
-              </button>
-            </div>
-            <div className="betMetaRow">
-              {betRiskMessage ? <span className="betRiskNotice inline">{betRiskMessage}</span> : null}
-              {betValidationMessage ? <span className="validationText inline">{betValidationMessage}</span> : null}
-            </div>
+    <div className="floatingGameDock">
+      <div className="floatingGameDockInner">
+        {/* Top Row: Spin + Stop */}
+        <div className="dockTopRow">
+          <div className="dockSpinWrapper">
+            <SpinButton
+              disabled={!canSpin}
+              onClick={onSpin}
+              pulseKey={spinPulseKey}
+              spinPhase={spinPhase}
+            />
           </div>
 
-          <div className="bottomBarZone autoplayZone">
-            <div className="autoplayActionRow">
-              <div className="autoplayModeStack">
-                <div className="autoplayModeGroup" role="group" aria-label="Autoplay controls">
-                  <button
-                    className="controlChip is-active compactChip autoplayModeButton autoplayModeButtonStart"
-                    disabled={!canStartAutospin || isAutospinActive}
-                    onClick={onStartAutospin}
-                    title="Start autoplay with the selected spin count"
-                    type="button"
-                  >
-                    Auto
-                  </button>
+          <button
+            aria-label="Stop autoplay now"
+            className="dockStopButton"
+            disabled={!isAutospinActive && !autospinStopRequested}
+            onClick={onStopAutoSpin}
+            title="Stop autoplay"
+            type="button"
+          >
+            <span aria-hidden="true" className="dockStopCore" />
+          </button>
+        </div>
 
-                  <button
-                    className="controlChip subtle compactChip autoplayModeButton autoplayModeButtonEnd"
-                    disabled={!isAutospinActive}
-                    onClick={onStopAutoSpin}
-                    title="Stop autoplay after the current spin finishes"
-                    type="button"
-                  >
-                    {autospinStopRequested ? "Stopping" : "Stop"}
-                  </button>
-                </div>
+        {/* Bottom Row: Bet Controls + Autoplay */}
+        <div className="dockBottomRow">
+          {/* Bet Controls */}
+          <div className="dockBetCluster">
+            <button
+              aria-label="Decrease bet"
+              className="dockSmallButton iconOnlyAction betAdjustIconButton"
+              disabled={areBetControlsLocked}
+              onClick={onDecreaseBet}
+              title="Decrease bet"
+              type="button"
+            >
+              <svg aria-hidden="true" className="dockSmallIcon betAdjustIcon" viewBox="0 0 24 24">
+                <path d="M7 12h10" />
+              </svg>
+            </button>
 
-                <div className="autoplayControls">
-                  <input
-                    aria-label="Autoplay count"
-                    className="controlInput bottomBarInput autoplayCountInput"
-                    disabled={isAutospinActive}
-                    inputMode="numeric"
-                    onBlur={onCommitAutospinInput}
-                    onChange={(event) => onAutospinInputChange(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        onCommitAutospinInput();
+            <input
+              aria-label="Bet amount"
+              className="dockBetInput"
+              disabled={areBetControlsLocked}
+              inputMode="decimal"
+              onBlur={onCommitBetInput}
+              onChange={(event) => onBetInputChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onCommitBetInput();
+                }
+              }}
+              type="text"
+              value={betInput}
+            />
+
+            <button
+              aria-label="Increase bet"
+              className="dockSmallButton iconOnlyAction betAdjustIconButton"
+              disabled={areBetControlsLocked}
+              onClick={onIncreaseBet}
+              title="Increase bet"
+              type="button"
+            >
+              <svg aria-hidden="true" className="dockSmallIcon betAdjustIcon" viewBox="0 0 24 24">
+                <path d="M7 12h10" />
+                <path d="M12 7v10" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Autoplay Controls */}
+          <div className="dockAutoCluster">
+            <div className="autoplayPopoverAnchor dockPopoverAnchor">
+              {autoplayInputOpen && !isAutospinActive ? (
+                <input
+                  aria-label="Autoplay spin count"
+                  className="dockAutoInlineInput"
+                  inputMode="numeric"
+                  onBlur={onCommitAutospinInput}
+                  onChange={(event) => onAutospinInputChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      const parsedCount = onCommitAutospinInput();
+                      if (!parsedCount) {
+                        return;
                       }
-                    }}
-                    title="Number of automatic spins to run"
-                    type="text"
-                    value={autospinCountInput}
-                  />
-                </div>
-              </div>
+
+                      onStartAutospin();
+                      setAutoplayInputOpen(false);
+                    }
+
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      setAutoplayInputOpen(false);
+                    }
+                  }}
+                  placeholder="50"
+                  type="text"
+                  value={autospinCountInput}
+                />
+              ) : null}
 
               <button
-                aria-label={autoContinueNeverStop ? "Disable non-stop auto continue" : "Enable non-stop auto continue"}
-                className={`controlChip compactChip iconOnlyAction autoContinueToggle ${autoContinueNeverStop ? "is-active" : ""}`}
-                onClick={onToggleAutoContinueNeverStop}
-                title={
-                  autoContinueNeverStop
-                    ? "Non-stop auto continue is enabled"
-                    : "Keep autoplay moving through win and bonus presentations"
-                }
+                className="dockSmallButton is-active autoplayButton"
+                disabled={!canStartAutospin && !isAutospinActive}
+                onClick={handleAutoplayPress}
+                title={isAutospinActive ? "Stop autoplay" : autoplayInputOpen ? "Start autoplay" : "Set autoplay count"}
                 type="button"
               >
-                <svg aria-hidden="true" className="utilityIcon skipIcon" viewBox="0 0 24 24">
-                  <path d="M5 7 11 12 5 17V7Z" />
-                  <path d="M12 7 18 12 12 17V7Z" />
+                <svg aria-hidden="true" className="dockSmallIcon autoplayActionIcon" viewBox="0 0 24 24">
+                  <path d="M13 4l8 8-8 8" />
+                  <path d="M3 4l8 8-8 8" />
                 </svg>
               </button>
             </div>
 
-            <div className="autoplayMetaRow">
-              {isAutospinActive || autospinStopRequested ? (
-                <span className="controlHelper inline">{autospinRemaining} autospins left</span>
-              ) : null}
-              {autospinValidationMessage ? (
-                <span className="validationText inline">{autospinValidationMessage}</span>
-              ) : null}
-            </div>
+            <button
+              aria-label={autoContinueNeverStop ? "Disable nonstop" : "Enable nonstop"}
+              className={`dockSmallButton iconOnlyAction ${autoContinueNeverStop ? "is-active" : ""}`}
+              onClick={onToggleAutoContinueNeverStop}
+              title={autoContinueNeverStop ? "Nonstop enabled: skip win overlays" : "Nonstop disabled"}
+              type="button"
+            >
+              <svg aria-hidden="true" className="dockSmallIcon nonstopIcon" viewBox="0 0 24 24">
+                <path d="M9 6l6 6-6 6" />
+                <path d="M4 6l6 6-6 6" />
+                <path d="M17 6v12" />
+              </svg>
+            </button>
           </div>
         </div>
-      </footer>
 
-      <div className="machineFooterSpinDock">
-        <div className="betSpinAnchor">
-          <SpinButton
-            disabled={!canSpin}
-            onClick={onSpin}
-            pulseKey={spinPulseKey}
-            spinPhase={spinPhase}
-          />
+        {/* Meta Info */}
+        <div className="dockMetaInfo">
+          {betRiskMessage ? <span className="betRiskNotice inline" title={betRiskTooltip}>{betRiskMessage}</span> : null}
+          {betValidationMessage ? <span className="validationText inline" title={betValidationTooltip}>{betValidationMessage}</span> : null}
+          {isAutospinActive || autospinStopRequested ? (
+            <span className="controlHelper inline">
+              {Number.isFinite(autospinRemaining)
+                ? `${autospinRemaining} spins`
+                : "Running"}
+            </span>
+          ) : null}
+          {autospinValidationMessage ? (
+            <span className="validationText inline">{autospinValidationMessage}</span>
+          ) : null}
         </div>
       </div>
-    </>
+    </div>
   );
 }

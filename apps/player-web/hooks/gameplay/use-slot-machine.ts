@@ -29,6 +29,7 @@ import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const MIN_BET = 0.1;
 const DEFAULT_AUTOSPIN_COUNT = 10;
+const INFINITE_AUTOSPIN_COUNT = Number.POSITIVE_INFINITY;
 const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
@@ -222,7 +223,9 @@ export function useSlotMachine() {
   const [bet, setBet] = useState(MIN_BET);
   const [betInput, setBetInput] = useState(String(MIN_BET));
   const [betValidationMessage, setBetValidationMessage] = useState("");
+  const [betValidationTooltip, setBetValidationTooltip] = useState("");
   const [betRiskMessage, setBetRiskMessage] = useState("");
+  const [betRiskTooltip, setBetRiskTooltip] = useState("");
   const [winMultiplier, setWinMultiplier] = useState(1);
   const [history, setHistory] = useState<SpinResult[]>([]);
   const [requestedAutospinCount, setRequestedAutospinCount] = useState(DEFAULT_AUTOSPIN_COUNT);
@@ -258,28 +261,44 @@ export function useSlotMachine() {
   const validateBetAmount = useCallback(
     (amount: number | null) => {
       if (amount === null) {
-        return "Enter a valid bet amount.";
+        return {
+          message: "❌ Invalid",
+          tooltip: "Please enter a valid bet amount."
+        };
       }
 
       if (amount < MIN_BET) {
-        return `Minimum bet is ${formatMoney(MIN_BET)}.`;
+        return {
+          message: "❌ Min bet",
+          tooltip: `Minimum bet is ${formatMoney(MIN_BET)}.`
+        };
       }
 
       if (!bonusModeActive && rawMaxBet < MIN_BET) {
-        return `Balance too low. Minimum bet is ${formatMoney(MIN_BET)}.`;
+        return {
+          message: "❌ Insufficient",
+          tooltip: `Balance too low. Minimum required: ${formatMoney(MIN_BET)}.`
+        };
       }
 
       if (!bonusModeActive && amount > availableBalance) {
-        return "Bet cannot be higher than current balance.";
+        return {
+          message: "❌ Exceeds balance",
+          tooltip: `Your bet cannot exceed your balance of ${formatMoney(availableBalance)}.`
+        };
       }
 
-      return "";
+      return { message: "", tooltip: "" };
     },
     [availableBalance, bonusModeActive, rawMaxBet]
   );
 
 const validateAutospinCount = useCallback(
     (count: number | null) => {
+      if (count === INFINITE_AUTOSPIN_COUNT) {
+        return "";
+      }
+
       if (count === null) {
         return "Enter a valid autospin count.";
       }
@@ -347,9 +366,10 @@ const validateAutospinCount = useCallback(
       return;
     }
 
-    const error = validateBetAmount(bet);
-    if (!error) {
+    const validation = validateBetAmount(bet);
+    if (!validation.message) {
       setBetValidationMessage("");
+      setBetValidationTooltip("");
       return;
     }
 
@@ -357,19 +377,28 @@ const validateAutospinCount = useCallback(
     const normalizedFallbackBet = roundCurrency(fallbackBet);
     setBet(normalizedFallbackBet);
     setBetInput(String(normalizedFallbackBet));
-    setBetValidationMessage(normalizedFallbackBet === bet ? error : "");
+    if (normalizedFallbackBet === bet) {
+      setBetValidationMessage(validation.message);
+      setBetValidationTooltip(validation.tooltip);
+    } else {
+      setBetValidationMessage("");
+      setBetValidationTooltip("");
+    }
   }, [areBetControlsLocked, bet, bonusModeActive, rawMaxBet, validateBetAmount]);
 
   useEffect(() => {
     if (bet <= recommendedRiskThreshold || recommendedRiskThreshold < MIN_BET) {
       setBetRiskMessage("");
+      setBetRiskTooltip("");
       return;
     }
 
-    setBetRiskMessage(
-      `High-risk bet: above the recommended ${formatMoney(recommendedRiskThreshold)} threshold.`
+    const remainingBalance = Math.max(0, availableBalance - bet);
+    setBetRiskMessage("⚠️ High-risk");
+    setBetRiskTooltip(
+      `High-risk bet: above the recommended ${formatMoney(recommendedRiskThreshold)} threshold. Remaining balance: ${formatMoney(remainingBalance)}.`
     );
-  }, [bet, recommendedRiskThreshold]);
+  }, [bet, recommendedRiskThreshold, availableBalance]);
 
   useEffect(() => {
     if (!isAutoSpinning || spinPhase !== "IDLE") {
@@ -394,11 +423,11 @@ const validateAutospinCount = useCallback(
   }, []);
 
   const canAffordSpin = bonusModeActive || availableBalance >= bet;
-  const betValidationError = validateBetAmount(bet);
+  const betValidationCheck = validateBetAmount(bet);
   const needsDepositPrompt = !bonusModeActive && availableBalance < MIN_BET;
   const canSpin =
     canAffordSpin &&
-    !betValidationError &&
+    !betValidationCheck.message &&
     spinPhase === "IDLE" &&
     !bonusAnnouncement &&
     !bonusSummary &&
@@ -408,12 +437,14 @@ const validateAutospinCount = useCallback(
     (nextBet: number | null) => {
       if (areBetControlsLocked) {
         setBetValidationMessage("Bet is locked while autospin is active. Press Stop first.");
+        setBetValidationTooltip("");
         return false;
       }
 
-      const error = validateBetAmount(nextBet);
-      if (error) {
-        setBetValidationMessage(error);
+      const validation = validateBetAmount(nextBet);
+      if (validation.message) {
+        setBetValidationMessage(validation.message);
+        setBetValidationTooltip(validation.tooltip);
         return false;
       }
 
@@ -421,6 +452,7 @@ const validateAutospinCount = useCallback(
       setBet(normalizedBet);
       setBetInput(String(normalizedBet));
       setBetValidationMessage("");
+      setBetValidationTooltip("");
       return true;
     },
     [areBetControlsLocked, validateBetAmount]
@@ -455,6 +487,12 @@ const validateAutospinCount = useCallback(
   );
 
   const applyManualAutospinCount = useCallback(() => {
+    if (autospinCountInput.trim() === "") {
+      setRequestedAutospinCount(INFINITE_AUTOSPIN_COUNT);
+      setAutospinValidationMessage("");
+      return INFINITE_AUTOSPIN_COUNT;
+    }
+
     const parsed = parsePositiveInteger(autospinCountInput);
     const error = validateAutospinCount(parsed);
 
@@ -686,7 +724,7 @@ const validateAutospinCount = useCallback(
 
     if (spinPhase !== "IDLE") {
       setAutospinStopRequested(true);
-      setAutospinValidationMessage("Stopping after the current spin completes.");
+      setAutospinValidationMessage("Stopping now. Current spin will finish, next auto spin is cancelled.");
       return;
     }
 
@@ -724,7 +762,7 @@ const validateAutospinCount = useCallback(
     const timer = window.setTimeout(() => {
       const result = runSpin();
       if (result) {
-        setAutoSpinRemaining((current) => current - 1);
+        setAutoSpinRemaining((current) => (Number.isFinite(current) ? current - 1 : current));
       }
     }, 180);
 
@@ -763,6 +801,22 @@ const validateAutospinCount = useCallback(
 
     return () => window.clearTimeout(timer);
   }, [autoContinueNeverStop, bonusSummary]);
+
+  useEffect(() => {
+    if (!autoContinueNeverStop || !winPresentation) {
+      return;
+    }
+
+    // If nonstop is enabled while a blocking big/huge overlay is already open,
+    // dismiss it automatically so autospin can continue without manual clicks.
+    if (winPresentation.requireAcknowledgement) {
+      const timer = window.setTimeout(() => {
+        setWinPresentation(null);
+      }, 180);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [autoContinueNeverStop, winPresentation]);
 
   const dismissBonusAnnouncement = useCallback(() => {
     setBonusAnnouncement(null);
@@ -810,7 +864,14 @@ const validateAutospinCount = useCallback(
       { label: "Bet", value: formatMoney(bet) },
       { label: "Last Win", value: formatMoney(gameState.lastTotalWin) },
       { label: "Mode", value: gameState.bonusState ? "Sky Opens" : "Base Game" },
-      { label: "Autospin", value: isAutoSpinning ? `${autoSpinRemaining} left` : "Off" }
+      {
+        label: "Autospin",
+        value: isAutoSpinning
+          ? Number.isFinite(autoSpinRemaining)
+            ? `${autoSpinRemaining} left`
+            : "Infinite"
+          : "Off"
+      }
     ],
     [
       autoSpinRemaining,
@@ -832,7 +893,9 @@ const validateAutospinCount = useCallback(
     betInput,
     betOptions: buildBetPresets(rawMaxBet >= MIN_BET ? rawMaxBet : MIN_BET),
     betRiskMessage,
+    betRiskTooltip,
     betValidationMessage,
+    betValidationTooltip,
     minBet: MIN_BET,
     maxBet: rawMaxBet,
     requestedAutospinCount,

@@ -2079,10 +2079,12 @@ Current shell calibration:
   max-width: 206px;
   padding-top: 4px;
   justify-self: end;
-  height: min(calc(100% - 84px), 470px);
-  max-height: 470px;
+  height: min(calc(100% - 84px), 540px);
+  max-height: min(calc(100dvh - 98px), 540px);
   align-self: start;
   z-index: var(--z-surface);
+  overflow: auto;
+  overflow-x: hidden;
 }
 
 .supportBlock,
@@ -2462,8 +2464,8 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
 .machineFooterSpinDock {
   position: absolute;
-  right: 108px;
-  bottom: 86px;
+  right: clamp(60px, 5.6vw, 180px);
+  bottom: clamp(70px, 7.2vh, 140px);
   z-index: var(--z-button);
   pointer-events: auto;
   overflow: visible;
@@ -2862,6 +2864,410 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   height: 10px;
   display: block;
   margin: 0 auto;
+}
+
+/* Floating Game Dock — 2-Row Layout (Spin + Stop / Bet + Auto) */
+
+.floatingGameDock {
+  position: fixed;
+  right: clamp(20px, 3.2vw, 60px);
+  bottom: clamp(20px, 3.6vh, 60px);
+  z-index: calc(var(--z-button) + 2);
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.floatingGameDockInner {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  column-gap: clamp(8px, 1.2vw, 14px);
+  row-gap: clamp(5px, 0.6vh, 8px);
+  padding: clamp(8px, 0.8vh, 10px) clamp(10px, 0.8vw, 12px);
+  border-radius: 16px;
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  background:
+    linear-gradient(180deg, rgba(14, 14, 18, 0.88), rgba(10, 10, 13, 0.92)),
+    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.08), transparent 28%);
+  backdrop-filter: blur(16px) saturate(0.92);
+  box-shadow:
+    0 -16px 38px rgba(0, 0, 0, 0.26),
+    0 0 1px rgba(226, 190, 112, 0.12),
+    inset 0 0 0 1px rgba(226, 190, 112, 0.06);
+  overflow: visible;
+}
+
+/* Top Row: Spin + Stop */
+.dockTopRow {
+  display: contents;
+}
+
+.dockSpinWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transform: translateY(-3px);
+}
+
+.floatingGameDock .spinCta {
+  width: clamp(67px, 5.5vw, 82px);
+  height: clamp(67px, 5.5vw, 82px);
+  min-width: clamp(67px, 5.5vw, 82px);
+  min-height: clamp(67px, 5.5vw, 82px);
+  flex-shrink: 0;
+}
+
+.floatingGameDock .spinText {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.floatingGameDock .ouroborosRing {
+  width: clamp(55px, 4.6vw, 67px);
+  height: clamp(55px, 4.6vw, 67px);
+}
+
+.floatingGameDock .spinCore {
+  inset: clamp(16px, 2.2vw, 19px);
+}
+
+.dockStopButton {
+  height: clamp(32px, 2.6vw, 40px);
+  min-height: clamp(32px, 2.6vw, 40px);
+  width: clamp(32px, 2.6vw, 40px);
+  min-width: clamp(32px, 2.6vw, 40px);
+  padding: 0;
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(226, 190, 112, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+  flex-shrink: 0;
+}
+
+.dockStopButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(226, 190, 112, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dockStopButton:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.dockStopCore {
+  position: relative;
+  width: clamp(7px, 0.8vw, 9px);
+  height: clamp(7px, 0.8vw, 9px);
+  display: block;
+  border-radius: 2px;
+  background: rgba(226, 190, 112, 0.76);
+}
+
+/* Bottom Row: Bet + Autoplay */
+.dockBottomRow {
+  display: contents;
+}
+
+.dockBetCluster,
+.dockAutoCluster {
+  display: flex;
+  align-items: center;
+  gap: clamp(2px, 0.3vw, 4px);
+  flex-wrap: nowrap;
+}
+
+.dockSpinWrapper,
+.dockStopButton,
+.dockBetCluster,
+.dockAutoCluster {
+  justify-self: center;
+  align-self: center;
+}
+
+.dockSmallButton {
+  height: clamp(24px, 2vw, 30px);
+  min-height: clamp(24px, 2vw, 30px);
+  width: auto;
+  min-width: clamp(24px, 2vw, 30px);
+  padding: clamp(2px, 0.2vw, 4px) clamp(4px, 0.3vw, 6px);
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+  flex-shrink: 0;
+}
+
+.dockSmallButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(226, 190, 112, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dockSmallButton:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.dockSmallButton.is-active {
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.9), rgba(163, 118, 49, 0.92));
+  border-color: rgba(226, 190, 112, 0.34);
+  color: #171210;
+  font-weight: 600;
+}
+
+.dockSmallIcon {
+  width: 10px;
+  height: 10px;
+  display: block;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  margin: 0;
+}
+
+.dockBetInput {
+  height: clamp(24px, 2vw, 30px);
+  min-height: clamp(24px, 2vw, 30px);
+  width: clamp(28px, 3.2vw, 36px);
+  padding: clamp(2px, 0.2vw, 4px) clamp(4px, 0.3vw, 6px);
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  border-radius: 10px;
+  background: rgba(10, 10, 13, 0.56);
+  color: var(--gold-bright);
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.dockBetInput:focus {
+  outline: none;
+  border-color: rgba(226, 190, 112, 0.28);
+  box-shadow: 0 0 0 2px rgba(226, 190, 112, 0.06);
+}
+
+.dockBetInput:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dockPopoverAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.dockAutoInlineInput {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  width: clamp(24px, 2vw, 30px);
+  min-width: clamp(24px, 2vw, 30px);
+  height: clamp(24px, 2vw, 30px);
+  min-height: clamp(24px, 2vw, 30px);
+  padding: 0 3px;
+  border: 1px solid rgba(226, 190, 112, 0.28);
+  border-radius: 8px;
+  background: rgba(10, 10, 13, 0.96);
+  color: var(--gold-bright);
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1;
+  z-index: calc(var(--z-button) + 6);
+}
+
+.dockAutoInlineInput:focus {
+  outline: none;
+  border-color: rgba(226, 190, 112, 0.42);
+  box-shadow: 0 0 0 2px rgba(226, 190, 112, 0.12);
+}
+
+.dockAutoInlineInput::placeholder {
+  color: rgba(226, 190, 112, 0.52);
+}
+
+/* Floating dock override: compact autoplay popover that stays visible and above controls */
+.floatingGameDock .autoplayPopoverSheet {
+  left: auto;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: calc(var(--z-button) + 8);
+  width: clamp(138px, 16vw, 172px);
+  max-width: min(172px, calc(100vw - 18px));
+  transform: translate(0, 8px);
+  border-radius: 10px;
+}
+
+.floatingGameDock .autoplayPopoverSheet.is-visible {
+  transform: translate(0, 0);
+}
+
+.floatingGameDock .autoplayModalHeader {
+  gap: 6px;
+  padding: 6px 8px 5px;
+}
+
+.floatingGameDock .autoplayModalTitle {
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+}
+
+.floatingGameDock .autoplayModalCloseButton {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+}
+
+.floatingGameDock .autoplayModalBody {
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+.floatingGameDock .autoplayCountInput {
+  min-height: 24px;
+  font-size: 0.66rem;
+  padding: 4px 6px;
+}
+
+.floatingGameDock .autoplayValidationError {
+  font-size: 0.54rem;
+  line-height: 1.2;
+}
+
+.floatingGameDock .autoplayModalFooter {
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+
+.floatingGameDock .autoplayModalButton {
+  min-height: 22px;
+  font-size: 0.52rem;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 900px), (max-height: 720px) {
+  .floatingGameDock .autoplayPopoverSheet {
+    width: min(154px, calc(100vw - 14px));
+    right: -2px;
+  }
+}
+
+.dockMetaInfo {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  min-height: 0;
+  margin-top: clamp(1px, 0.3vh, 2px);
+  font-size: 0.58rem;
+  line-height: 1;
+  color: rgba(244, 239, 230, 0.54);
+}
+
+.dockMetaInfo .validationText {
+  color: #d5a35f;
+}
+
+.dockMetaInfo .betRiskNotice {
+  color: #d7a969;
+}
+
+.dockMetaInfo .controlHelper {
+  color: rgba(244, 239, 230, 0.48);
+}
+
+/* Responsive Breakpoints */
+
+@media (max-height: 720px) {
+  .floatingGameDock {
+    right: clamp(16px, 3vw, 52px);
+    bottom: clamp(14px, 2.8vh, 44px);
+  }
+
+  .floatingGameDockInner {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+
+  .floatingGameDock .spinCta {
+    width: clamp(60px, 4.8vw, 72px);
+    height: clamp(60px, 4.8vw, 72px);
+  }
+
+  .floatingGameDock .ouroborosRing {
+    width: clamp(49px, 3.9vw, 60px);
+    height: clamp(49px, 3.9vw, 60px);
+  }
+
+  .dockStopButton {
+    height: clamp(28px, 2.2vw, 34px);
+    min-width: clamp(28px, 2.2vw, 34px);
+  }
+
+  .dockSmallButton,
+  .dockBetInput {
+    height: clamp(22px, 1.8vw, 26px);
+  }
+
+  .dockSmallButton {
+    min-width: clamp(22px, 1.8vw, 26px);
+    padding: 2px 3px;
+  }
+
+  .dockBetInput {
+    width: clamp(24px, 3vw, 32px);
+    font-size: 0.62rem;
+  }
+
+  .dockMetaInfo {
+    font-size: 0.56rem;
+  }
+}
+
+@media (max-width: 1280px) {
+  .floatingGameDock {
+    right: clamp(16px, 2.8vw, 52px);
+    bottom: clamp(18px, 4vh, 56px);
+  }
+}
+
+@media (max-width: 900px) {
+  .floatingGameDock {
+    right: clamp(12px, 2.4vw, 44px);
+    bottom: clamp(14px, 3.6vh, 48px);
+  }
+
+  .floatingGameDockInner {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+
+  .dockBottomRow {
+    gap: 6px;
+  }
+
+  .dockBetCluster,
+  .dockAutoCluster {
+    gap: 1px;
+  }
 }
 
 @media (max-width: 1180px) {

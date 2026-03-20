@@ -314,34 +314,34 @@ export default function HomePage() {
         />
       </section>
 
-      <div className="controlsDock bottomControlsDock">
-        <ControlPanel
-          autospinCountInput={slot.autospinCountInput}
-          autospinRemaining={slot.autospinRemaining}
-          autospinStopRequested={slot.autospinStopRequested}
-          autospinValidationMessage={slot.autospinValidationMessage}
-          autoContinueNeverStop={autoContinueNeverStop}
-          areBetControlsLocked={slot.areBetControlsLocked}
-          betInput={slot.betInput}
-          betRiskMessage={slot.betRiskMessage}
-          betValidationMessage={slot.betValidationMessage}
-          canSpin={slot.canSpin}
-          canStartAutospin={slot.canStartAutospin}
-          isAutospinActive={slot.isAutospinActive}
-          onCommitBetInput={slot.applyManualBet}
-          onCommitAutospinInput={slot.applyManualAutospinCount}
-          onAutospinInputChange={slot.setAutospinCountInput}
-          onBetInputChange={slot.setBetInput}
-          onDecreaseBet={slot.decrementBetByStep}
-          onIncreaseBet={slot.incrementBetByStep}
-          onSpin={slot.spin}
-          onStartAutospin={slot.startAutoSpin}
-          onStopAutoSpin={slot.stopAutoSpin}
-          onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
-          spinPhase={slot.spinPhase}
-          spinPulseKey={slot.spinPulseKey}
-        />
-      </div>
+      <ControlPanel
+        autospinCountInput={slot.autospinCountInput}
+        autospinRemaining={slot.autospinRemaining}
+        autospinStopRequested={slot.autospinStopRequested}
+        autospinValidationMessage={slot.autospinValidationMessage}
+        autoContinueNeverStop={autoContinueNeverStop}
+        areBetControlsLocked={slot.areBetControlsLocked}
+        betInput={slot.betInput}
+        betRiskMessage={slot.betRiskMessage}
+        betRiskTooltip={slot.betRiskTooltip}
+        betValidationMessage={slot.betValidationMessage}
+        betValidationTooltip={slot.betValidationTooltip}
+        canSpin={slot.canSpin}
+        canStartAutospin={slot.canStartAutospin}
+        isAutospinActive={slot.isAutospinActive}
+        onCommitBetInput={slot.applyManualBet}
+        onCommitAutospinInput={slot.applyManualAutospinCount}
+        onAutospinInputChange={slot.setAutospinCountInput}
+        onBetInputChange={slot.setBetInput}
+        onDecreaseBet={slot.decrementBetByStep}
+        onIncreaseBet={slot.incrementBetByStep}
+        onSpin={slot.spin}
+        onStartAutospin={slot.startAutoSpin}
+        onStopAutoSpin={slot.stopAutoSpin}
+        onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
+        spinPhase={slot.spinPhase}
+        spinPulseKey={slot.spinPulseKey}
+      />
 
       <OverlayModal onClose={toggleHistory} open={historyOpen} title="Round History">
         <div className="history overlayHistory">
