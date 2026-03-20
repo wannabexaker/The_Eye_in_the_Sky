@@ -88,9 +88,11 @@ p {
 
 .slotViewport {
   --machine-stage-columns:
-    clamp(124px, 8.8vw, 152px)
+    clamp(148px, 10.2vw, 238px)
     minmax(0, 1fr)
-    clamp(156px, 10.8vw, 188px);
+    clamp(188px, 13.4vw, 312px);
+  --left-rail-max-width: clamp(148px, 10.2vw, 238px);
+  --right-rail-max-width: clamp(188px, 13.4vw, 312px);
   --machine-stage-gap: clamp(8px, 0.7vw, 12px);
   --machine-panel-padding: 12px;
   --support-block-padding: 10px;
@@ -921,6 +923,10 @@ p {
   transform: scale(1.05);
 }
 
+.spinCta:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 .spinCta:disabled {
   cursor: default;
   opacity: 0.82;
@@ -948,6 +954,17 @@ p {
   width: 74px;
   height: 74px;
   display: block;
+  filter: drop-shadow(0 0 8px rgba(226, 190, 112, 0.24));
+}
+
+.ouroborosRing::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  border: 1px dashed rgba(255, 235, 184, 0.22);
+  opacity: 0.4;
+  animation: serpentHalo 2.8s linear infinite;
 }
 
 .ouroborosBody {
@@ -957,10 +974,11 @@ p {
   border: 8px solid rgba(214, 170, 90, 0.96);
   box-shadow:
     0 0 0 2px rgba(74, 54, 22, 0.92) inset,
-    0 0 16px rgba(226, 190, 112, 0.12);
+    0 0 18px rgba(226, 190, 112, 0.2);
   background:
     radial-gradient(circle at 30% 28%, rgba(255, 245, 214, 0.16), transparent 18%),
     radial-gradient(circle at 70% 70%, rgba(111, 75, 22, 0.22), transparent 24%);
+  animation: serpentShimmer 1.2s ease-in-out infinite;
 }
 
 .ouroborosHead {
@@ -974,7 +992,7 @@ p {
   border-radius: 14px 14px 10px 10px;
   background: linear-gradient(180deg, #f5d48f 0%, #b07a2d 100%);
   transform: rotate(38deg);
-  box-shadow: 0 0 10px rgba(226, 190, 112, 0.14);
+  box-shadow: 0 0 12px rgba(226, 190, 112, 0.22);
 }
 
 .ouroborosHead::before {
@@ -985,6 +1003,19 @@ p {
   border-left: 6px solid #f2d590;
   border-top: 4px solid transparent;
   border-bottom: 4px solid transparent;
+}
+
+.ouroborosHead::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: -8px;
+  width: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f3c06e 0%, #d94848 100%);
+  transform-origin: left center;
+  animation: tongueFlick 360ms ease-in-out infinite;
 }
 
 .ouroborosEye {
@@ -1013,7 +1044,18 @@ p {
 }
 
 .spinCta.is-spinning .ouroborosRing {
-  animation: iconSpin 1s linear infinite;
+  animation: iconSpin 0.82s linear infinite;
+}
+
+.spinCta.is-spinning .ouroborosBody {
+  animation: serpentShimmer 620ms ease-in-out infinite;
+}
+
+.spinCta.is-spinning .spinCore {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 205, 0.48),
+    inset 0 -8px 16px rgba(84, 55, 17, 0.28),
+    0 0 16px rgba(226, 190, 112, 0.28);
 }
 
 .spinText {
@@ -1328,6 +1370,7 @@ p {
   z-index: 1;
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 10px;
   min-width: min(460px, 100%);
   max-width: min(640px, calc(100vw - 48px));
@@ -1343,22 +1386,32 @@ p {
   overflow: hidden;
 }
 
+.winPresentationHero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: clamp(132px, 21vw, 212px);
+  isolation: isolate;
+}
+
 .bigWinGlowPlate {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: min(540px, 88%);
-  height: clamp(140px, 24vw, 220px);
-  transform: translate(-50%, -56%);
+  width: min(560px, 92%);
+  height: clamp(152px, 24vw, 230px);
+  transform: translate(-50%, -50%);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  opacity: 0.88;
+  opacity: 0.92;
   pointer-events: none;
   z-index: 0;
-  filter: drop-shadow(0 0 24px rgba(226, 190, 112, 0.18));
+  filter: drop-shadow(0 0 26px rgba(226, 190, 112, 0.2));
 }
 
-.winPresentationLayer.is-big_win .winPresentationCard > *:not(.bigWinGlowPlate) {
+.winPresentationLayer.is-big_win .winPresentationHero > *:not(.bigWinGlowPlate),
+.winPresentationLayer.is-huge_win .winPresentationHero > *:not(.bigWinGlowPlate) {
   position: relative;
   z-index: 1;
 }
@@ -1370,6 +1423,7 @@ p {
 }
 
 .winPresentationLayer.is-big_win .winPresentationAmount,
+.winPresentationLayer.is-huge_win .winPresentationAmount,
 .winPresentationLayer.is-bonus_complete .winPresentationAmount {
   font-size: clamp(2.4rem, 4.4vw, 4rem);
 }
@@ -1387,6 +1441,7 @@ p {
   font-family: var(--font-display), Georgia, serif;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1;
+  text-align: center;
   text-shadow: 0 0 16px rgba(226, 190, 112, 0.2);
 }
 
@@ -1873,6 +1928,42 @@ button:disabled {
   }
 }
 
+@keyframes serpentShimmer {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+  }
+
+  50% {
+    filter: saturate(1.16) brightness(1.08);
+  }
+}
+
+@keyframes serpentHalo {
+  from {
+    transform: rotate(0deg);
+    opacity: 0.42;
+  }
+
+  to {
+    transform: rotate(360deg);
+    opacity: 0.22;
+  }
+}
+
+@keyframes tongueFlick {
+  0%,
+  100% {
+    transform: scaleX(0.5);
+    opacity: 0.25;
+  }
+
+  40% {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+}
+
 @keyframes liquidPulse {
   0%,
   100% {
@@ -2066,7 +2157,7 @@ Current shell calibration:
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 248px;
+  max-width: min(var(--left-rail-max-width), 300px);
   padding-top: 2px;
   gap: 7px;
   min-height: 0;
@@ -2076,15 +2167,14 @@ Current shell calibration:
 
 .brandingRail {
   width: 100%;
-  max-width: 206px;
+  max-width: min(var(--right-rail-max-width), 336px);
   padding-top: 4px;
   justify-self: end;
   height: min(calc(100% - 84px), 540px);
   max-height: min(calc(100dvh - 98px), 540px);
   align-self: start;
   z-index: var(--z-surface);
-  overflow: auto;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .supportBlock,
@@ -2303,27 +2393,37 @@ Current shell calibration:
   gap: 2px;
   justify-items: center;
   text-align: center;
+  padding: 6px 0 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .brandLogo {
-  width: 205%;
-  max-width: none;
-  height: clamp(100px, 11.6dvh, 150px);
+  width: min(100%, 32.45vw);
+  --brand-logo-scale: 1.246;
+  max-width: 100%;
+  aspect-ratio: 16 / 7;
+  height: auto;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
   filter:
-    drop-shadow(0 0 18px rgba(226, 190, 112, 0.14))
-    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.24));
-  transform: scale(1.3);
+    drop-shadow(0 0 42px rgba(226, 190, 112, 0.16))
+    drop-shadow(0 14px 26px rgba(0, 0, 0, 0.34));
+  transform-origin: center;
+  animation: brandLogoFloat 5.2s ease-in-out infinite;
 }
 
 .brandTagline {
   color: rgba(244, 239, 230, 0.7);
   font-size: var(--font-sm);
   line-height: 1.38;
+  max-width: min(26ch, 100%);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -2390,6 +2490,23 @@ Current shell calibration:
   font-size: var(--font-md);
   line-height: 1.32;
   max-width: 18ch;
+}
+
+@keyframes brandLogoFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(var(--brand-logo-scale, 1));
+    filter:
+      drop-shadow(0 0 42px rgba(226, 190, 112, 0.16))
+      drop-shadow(0 14px 26px rgba(0, 0, 0, 0.34));
+  }
+
+  50% {
+    transform: translateY(-4px) scale(var(--brand-logo-scale, 1));
+    filter:
+      drop-shadow(0 0 50px rgba(226, 190, 112, 0.2))
+      drop-shadow(0 18px 30px rgba(0, 0, 0, 0.38));
+  }
 }
 
 /* Active Machine Layout: Center Stage
@@ -2869,6 +2986,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 /* Floating Game Dock — 2-Row Layout (Spin + Stop / Bet + Auto) */
 
 .floatingGameDock {
+  --dock-stop-footprint: clamp(32px, 2.6vw, 40px);
   position: fixed;
   right: clamp(20px, 3.2vw, 60px);
   bottom: clamp(20px, 3.6vh, 60px);
@@ -2878,11 +2996,12 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .floatingGameDockInner {
+  position: relative;
   display: grid;
   grid-template-columns: max-content max-content;
   column-gap: clamp(8px, 1.2vw, 14px);
   row-gap: clamp(5px, 0.6vh, 8px);
-  padding: clamp(8px, 0.8vh, 10px) clamp(10px, 0.8vw, 12px);
+  padding: clamp(8px, 0.8vh, 10px) clamp(10px, 0.8vw, 12px) clamp(22px, 2.4vh, 26px);
   border-radius: 16px;
   border: 1px solid rgba(226, 190, 112, 0.12);
   background:
@@ -2902,19 +3021,37 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .dockSpinWrapper {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--dock-stop-footprint);
+  min-width: var(--dock-stop-footprint);
+  height: var(--dock-stop-footprint);
+  min-height: var(--dock-stop-footprint);
   flex-shrink: 0;
-  transform: translateY(-3px);
+  overflow: visible;
+  transform: translateX(-20px);
 }
 
 .floatingGameDock .spinCta {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(calc(-50% - 20px), calc(-50% - 40px));
   width: clamp(67px, 5.5vw, 82px);
   height: clamp(67px, 5.5vw, 82px);
   min-width: clamp(67px, 5.5vw, 82px);
   min-height: clamp(67px, 5.5vw, 82px);
   flex-shrink: 0;
+}
+
+.floatingGameDock .spinCta:hover {
+  transform: translate(calc(-50% - 20px), calc(-50% - 40px)) scale(1.05);
+}
+
+.floatingGameDock .spinCta:active:not(:disabled) {
+  transform: translate(calc(-50% - 20px), calc(-50% - 40px)) scale(0.97);
 }
 
 .floatingGameDock .spinText {
@@ -2933,10 +3070,10 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .dockStopButton {
-  height: clamp(32px, 2.6vw, 40px);
-  min-height: clamp(32px, 2.6vw, 40px);
-  width: clamp(32px, 2.6vw, 40px);
-  min-width: clamp(32px, 2.6vw, 40px);
+  height: var(--dock-stop-footprint);
+  min-height: var(--dock-stop-footprint);
+  width: var(--dock-stop-footprint);
+  min-width: var(--dock-stop-footprint);
   padding: 0;
   border: 1px solid rgba(226, 190, 112, 0.12);
   border-radius: 12px;
@@ -3169,17 +3306,32 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .dockMetaInfo {
-  grid-column: 1 / -1;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(6px, 0.7vh, 9px);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 3px;
-  min-height: 0;
-  margin-top: clamp(1px, 0.3vh, 2px);
+  min-height: 12px;
+  margin-top: 0;
+  padding: 0 clamp(6px, 0.6vw, 10px);
+  max-width: 100%;
+  overflow: hidden;
   font-size: 0.58rem;
   line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: rgba(244, 239, 230, 0.54);
+}
+
+.dockMetaInfo > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 48%;
 }
 
 .dockMetaInfo .validationText {
@@ -3204,7 +3356,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .floatingGameDockInner {
     gap: 4px;
-    padding: 6px 8px;
+    padding: 6px 8px 20px;
   }
 
   .floatingGameDock .spinCta {
@@ -3218,8 +3370,8 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   }
 
   .dockStopButton {
-    height: clamp(28px, 2.2vw, 34px);
-    min-width: clamp(28px, 2.2vw, 34px);
+    height: var(--dock-stop-footprint);
+    min-width: var(--dock-stop-footprint);
   }
 
   .dockSmallButton,
@@ -3295,6 +3447,35 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .betMetaRow {
     justify-content: flex-start;
+  }
+}
+
+@media (orientation: portrait) and (max-aspect-ratio: 10/16) {
+  .slotViewport {
+    --machine-stage-columns: 1fr;
+    --machine-footer-columns: 1fr;
+    --machine-footer-gap: 10px;
+    --balance-zone-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .supportRail,
+  .brandingRail {
+    display: none;
+  }
+
+  .utilityZone,
+  .betAdjustZone,
+  .autoplayZone {
+    justify-content: center;
+  }
+
+  .betAdjustZone,
+  .autoplayZone {
+    justify-items: center;
+  }
+
+  .betMetaRow {
+    justify-content: center;
   }
 }
 

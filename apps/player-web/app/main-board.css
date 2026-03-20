@@ -336,6 +336,8 @@ Board responsive variables and local overrides
   .slotViewport {
     /* Full HD target: smaller board, clearer left lane, clearer right lane. */
     --machine-stage-columns: 264px minmax(0, 1fr) 304px;
+    --left-rail-max-width: 264px;
+    --right-rail-max-width: 304px;
     --machine-stage-gap: 12px;
     --stage-status-width: min(100%, 348px);
     --board-frame-fit-height: calc(100dvh + 18px);
@@ -349,12 +351,29 @@ Board responsive variables and local overrides
   .slotViewport {
     /* Large desktop but below Full HD: keep the same ownership pattern with a slightly tighter center. */
     --machine-stage-columns: 228px minmax(0, 1fr) 270px;
+    --left-rail-max-width: 228px;
+    --right-rail-max-width: 270px;
     --machine-stage-gap: 10px;
     --stage-status-width: min(100%, 336px);
     --board-frame-fit-height: calc(100dvh + 8px);
     --board-inline-breathe: 64px;
     --board-frame-margin-bottom: -20px;
     --board-frame-translate-y: -10px;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1920px) and (max-aspect-ratio: 16/10) {
+  .slotViewport {
+    /* 16:10 laptop band: keep board dominant while preventing footer/rail crowding in shorter-width viewports. */
+    --machine-stage-columns: 212px minmax(0, 1fr) 246px;
+    --left-rail-max-width: 212px;
+    --right-rail-max-width: 246px;
+    --machine-stage-gap: 10px;
+    --stage-status-width: min(100%, 332px);
+    --board-frame-fit-height: calc(100dvh - 8px);
+    --board-inline-breathe: 56px;
+    --board-frame-margin-bottom: -18px;
+    --board-frame-translate-y: -8px;
   }
 }
 
@@ -398,14 +417,48 @@ Board responsive variables and local overrides
 
 @media (min-width: 2560px), (min-height: 1440px) {
   .slotViewport {
-    /* 4K and larger displays: scale board + controls up proportionally. */
-    --machine-stage-columns: 380px minmax(0, 1fr) 440px;
-    --machine-stage-gap: 18px;
-    --stage-status-width: min(100%, 520px);
-    --board-frame-fit-height: calc(100dvh - 150px);
-    --board-inline-breathe: 120px;
-    --board-frame-margin-bottom: -40px;
-    --board-frame-translate-y: 0px;
+    /* 2K/4K desktop: cap rail growth and push more area to the center board frame. */
+    --machine-stage-columns: clamp(240px, 12.2vw, 300px) minmax(0, 1fr) clamp(264px, 13.4vw, 336px);
+    --left-rail-max-width: 300px;
+    --right-rail-max-width: 336px;
+    --machine-stage-gap: 14px;
+    --stage-status-width: min(100%, 560px);
+    --board-frame-fit-height: calc(100dvh - 96px);
+    --board-inline-breathe: 78px;
+    --board-frame-margin-bottom: -46px;
+    --board-frame-translate-y: -6px;
+  }
+}
+
+@media (min-width: 2160px) and (min-aspect-ratio: 21/9) {
+  .slotViewport {
+    /* Ultrawide desktop: keep rails visually constrained so center board remains dominant. */
+    --machine-stage-columns: clamp(232px, 10.4vw, 292px) minmax(0, 1fr) clamp(256px, 11.8vw, 328px);
+    --left-rail-max-width: 292px;
+    --right-rail-max-width: 328px;
+    --machine-stage-gap: 12px;
+    --stage-status-width: min(100%, 480px);
+    --board-frame-fit-height: calc(100dvh - 102px);
+    --board-inline-breathe: 112px;
+    --board-frame-margin-bottom: -34px;
+    --board-frame-translate-y: -2px;
+  }
+}
+
+@media (orientation: portrait) and (max-aspect-ratio: 10/16) {
+  .slotViewport {
+    /* Portrait 9:16 and close ratios: collapse shell to a single center stage with no side-rail dependence. */
+    --machine-stage-columns: 1fr;
+    --machine-stage-gap: 0;
+    --stage-status-width: min(100%, 332px);
+    --board-frame-fit-height: calc(100dvh - 196px);
+    --board-inline-breathe: 20px;
+    --board-frame-margin-bottom: -8px;
+    --board-frame-translate-y: 0;
+  }
+
+  .boardMetaRow {
+    top: 4px;
   }
 }
 

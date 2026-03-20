@@ -26,23 +26,28 @@ export function WinPresentationOverlay({
     return null;
   }
 
+  const hasWinPlate = presentation.kind === "big_win" || presentation.kind === "huge_win";
+
   return (
     <div className={`winPresentationLayer is-${presentation.kind}`} onClick={onContinue} role="presentation">
       <section
         aria-label={presentation.title}
         className={`winPresentationCard ${presentation.requireAcknowledgement ? "is-ack" : "is-auto"}`}
       >
-        {presentation.kind === "big_win" || presentation.kind === "huge_win" ? (
-          <div
-            aria-hidden="true"
-            className="bigWinGlowPlate"
-            style={{
-              backgroundImage: `url(${presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
-            }}
-          />
-        ) : null}
         <span className="winPresentationLabel">{presentation.title}</span>
-        <strong className="winPresentationAmount">{formatMoney(presentation.amount)}</strong>
+
+        <div className="winPresentationHero">
+          {hasWinPlate ? (
+            <div
+              aria-hidden="true"
+              className="bigWinGlowPlate"
+              style={{
+                backgroundImage: `url(${presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
+              }}
+            />
+          ) : null}
+          <strong className="winPresentationAmount">{formatMoney(presentation.amount)}</strong>
+        </div>
 
         {presentation.subtitle ? (
           <p className="winPresentationSubtitle">{presentation.subtitle}</p>

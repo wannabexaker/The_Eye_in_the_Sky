@@ -7,13 +7,13 @@ Uses: game-engine resolveSpin, sound-manager.ts, and player-store.ts
 "use client";
 
 import {
-  defaultGameConfig,
   initialGameState,
   resolveSpin,
   type GameState,
   type SpinResult
 } from "@eye/game-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { activeGameConfig } from "@/lib/game-config";
 import { soundManager } from "@/lib/audio/sound-manager";
 import {
   PRESENTATION_TIMINGS,
@@ -29,9 +29,10 @@ import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const MIN_BET = 0.1;
 const DEFAULT_AUTOSPIN_COUNT = 10;
-const INFINITE_AUTOSPIN_COUNT = Number.POSITIVE_INFINITY;
 const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
+const CUSTOM_BET_STEP = 1000;
 const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
@@ -51,6 +52,25 @@ const parsePositiveNumber = (value: string) => {
   const parsed = Number(value.replace(",", ".").trim());
   return Number.isFinite(parsed) ? roundCurrency(parsed) : null;
 };
+
+const sanitizeBetInputValue = (value: string) => {
+  const normalized = value.replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const firstDotIndex = normalized.indexOf(".");
+  const collapsedDots =
+    firstDotIndex === -1
+      ? normalized
+      : `${normalized.slice(0, firstDotIndex + 1)}${normalized.slice(firstDotIndex + 1).replace(/\./g, "")}`;
+  const [integerPart = "", decimalPart] = collapsedDots.split(".");
+  const trimmedInteger = integerPart.replace(/^0+(?=\d)/, "");
+
+  if (decimalPart !== undefined) {
+    return `${trimmedInteger || "0"}.${decimalPart.slice(0, 2)}`;
+  }
+
+  return trimmedInteger;
+};
+
+const sanitizeAutospinInputValue = (value: string) => value.replace(/\D/g, "");
 
 const parsePositiveInteger = (value: string) => {
   const parsed = Number(value.trim());
@@ -86,6 +106,25 @@ const getPreviousLadderBet = (currentBet: number, availableBalance: number) => {
   }
 
   return null;
+};
+
+const getNextBetValue = (currentBet: number, availableBalance: number) => {
+  if (currentBet < MAX_PRESET_BET) {
+    const ladderNext = getNextLadderBet(currentBet, Math.max(availableBalance, MAX_PRESET_BET));
+    if (ladderNext !== null) {
+      return ladderNext;
+    }
+  }
+
+  return roundCurrency(currentBet + CUSTOM_BET_STEP);
+};
+
+const getPreviousBetValue = (currentBet: number, availableBalance: number) => {
+  if (currentBet > MAX_PRESET_BET) {
+    return roundCurrency(Math.max(MAX_PRESET_BET, currentBet - CUSTOM_BET_STEP));
+  }
+
+  return getPreviousLadderBet(currentBet, Math.max(availableBalance, MAX_PRESET_BET));
 };
 
 const hasBonusTrigger = (result: SpinResult) =>
@@ -176,7 +215,7 @@ const buildWinPresentation = (
     inBonus && result.bonusStateAfter
       ? `Bonus total ${formatMoney(result.bonusStateAfter.totalBonusWin)}`
       : null,
-    result.bonusTriggered ? `${defaultGameConfig.bonusSpinsAwarded} free spins awarded` : null
+    result.bonusTriggered ? `${activeGameConfig.bonusSpinsAwarded} free spins awarded` : null
   ].filter(Boolean);
 
   return {
@@ -295,10 +334,6 @@ export function useSlotMachine() {
 
 const validateAutospinCount = useCallback(
     (count: number | null) => {
-      if (count === INFINITE_AUTOSPIN_COUNT) {
-        return "";
-      }
-
       if (count === null) {
         return "Enter a valid autospin count.";
       }
@@ -459,14 +494,18 @@ const validateAutospinCount = useCallback(
   );
 
   const incrementBetByStep = useCallback(() => {
-    const nextBet = getNextLadderBet(bet, rawMaxBet);
+    const parsedInputBet = parsePositiveNumber(betInput);
+    const currentValue = parsedInputBet ?? bet;
+    const nextBet = getNextBetValue(currentValue, rawMaxBet);
     return nextBet ? applyBetValue(nextBet) : false;
-  }, [applyBetValue, bet, rawMaxBet]);
+  }, [applyBetValue, bet, betInput, rawMaxBet]);
 
   const decrementBetByStep = useCallback(() => {
-    const previousBet = getPreviousLadderBet(bet, rawMaxBet);
+    const parsedInputBet = parsePositiveNumber(betInput);
+    const currentValue = parsedInputBet ?? bet;
+    const previousBet = getPreviousBetValue(currentValue, rawMaxBet);
     return previousBet ? applyBetValue(previousBet) : false;
-  }, [applyBetValue, bet, rawMaxBet]);
+  }, [applyBetValue, bet, betInput, rawMaxBet]);
 
   const applyManualBet = useCallback(() => {
     const parsed = parsePositiveNumber(betInput);
@@ -488,9 +527,8 @@ const validateAutospinCount = useCallback(
 
   const applyManualAutospinCount = useCallback(() => {
     if (autospinCountInput.trim() === "") {
-      setRequestedAutospinCount(INFINITE_AUTOSPIN_COUNT);
-      setAutospinValidationMessage("");
-      return INFINITE_AUTOSPIN_COUNT;
+      setAutospinValidationMessage("Enter a valid autospin count.");
+      return null;
     }
 
     const parsed = parsePositiveInteger(autospinCountInput);
@@ -659,7 +697,7 @@ const validateAutospinCount = useCallback(
       bet: currentBet,
       state: currentState,
       winMultiplier: currentWinMultiplier
-    });
+    }, activeGameConfig);
 
     gameStateRef.current = result.nextState;
     setGameState(result.nextState);
@@ -918,7 +956,7 @@ const validateAutospinCount = useCallback(
     autospinStopRequested,
     autoContinueNeverStop,
     winMultiplier,
-    winMultiplierOptions: defaultGameConfig.winMultiplierOptions,
+    winMultiplierOptions: activeGameConfig.winMultiplierOptions,
     spin,
     startAutoSpin,
     stopAutoSpin,
@@ -927,13 +965,13 @@ const validateAutospinCount = useCallback(
     incrementBetByStep,
     decrementBetByStep,
     setBetInput: (value: string) => {
-      setBetInput(value);
+      setBetInput(sanitizeBetInputValue(value));
       setBetValidationMessage("");
     },
     applyManualBet,
     setRequestedAutospinCount: applyAutospinCount,
     setAutospinCountInput: (value: string) => {
-      setAutospinCountInput(value);
+      setAutospinCountInput(sanitizeAutospinInputValue(value));
       setAutospinValidationMessage("");
     },
     applyManualAutospinCount,
@@ -953,13 +991,13 @@ const validateAutospinCount = useCallback(
     dismissWinPresentation,
     headerStats,
     activeBonusSpins,
-    meterRatio: gameState.bonusMeter / defaultGameConfig.bonusMeterTarget,
+    meterRatio: gameState.bonusMeter / activeGameConfig.bonusMeterTarget,
     boardRules: [
-      `${defaultGameConfig.cols} columns x ${defaultGameConfig.rows} rows`,
-      `${defaultGameConfig.clusterThreshold}+ adjacent symbols required for a win`,
-      `Cascades resolve up to ${defaultGameConfig.maxCascadeSteps} steps per spin`,
+      `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
+      `${activeGameConfig.clusterThreshold}+ adjacent symbols required for a win`,
+      `Cascades resolve up to ${activeGameConfig.maxCascadeSteps} steps per spin`,
       "Winning symbols dissolve before cascade drops",
-      "Bonus mode: 8 free spins with persistent multiplier carry"
+      `Bonus mode: ${activeGameConfig.bonusSpinsAwarded} free spins with persistent multiplier carry`
     ]
   };
 }

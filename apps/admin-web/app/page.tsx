@@ -1,9 +1,37 @@
+"use client";
+
+import { MathProfileSelector } from "@/components/math-profile-selector";
+import { GameStatsViewer } from "@/components/game-stats-viewer";
+import { SafetyNote } from "@/components/safety-note";
+
 const sections = [
-  "Math profile comparison",
-  "Symbol weights editor",
-  "Paytable editor",
-  "Simulation runner",
-  "Round and audit viewer"
+  {
+    title: "Math profile selector",
+    description: "Switch between pre-validated math profiles (v1.3 legacy, v2.0 base).",
+    component: MathProfileSelector,
+    ready: true
+  },
+  {
+    title: "Game analytics",
+    description: "View real-time game statistics and performance metrics (read-only).",
+    component: GameStatsViewer,
+    ready: true
+  },
+  {
+    title: "Symbol weights editor",
+    description: "Modify symbol frequencies and rarity (Phase 2 — requires auth).",
+    ready: false
+  },
+  {
+    title: "Paytable editor",
+    description: "Adjust payout values per symbol cluster (Phase 2 — requires auth).",
+    ready: false
+  },
+  {
+    title: "Audit log viewer",
+    description: "Review all game changes, profile switches, and admin actions (Phase 2).",
+    ready: false
+  }
 ];
 
 export default function AdminPage() {
@@ -23,18 +51,20 @@ export default function AdminPage() {
         </p>
         <h1 style={{ marginTop: 0, fontSize: 48 }}>The Eye in the Sky Admin</h1>
         <p style={{ maxWidth: 720, color: "#bda98d" }}>
-          Phase 1 admin shell for balancing, simulation, audit review, and profile management.
+          Phase 1 admin shell for balancing, analytics, and safe profile management. Read-only by default; edit
+          operations require secure authentication (Phase 2).
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-          {sections.map((title) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 24, marginTop: 32 }}>
+          {sections.map((section) => (
             <section
-              key={title}
+              key={section.title}
               style={{
                 borderRadius: 20,
-                border: "1px solid rgba(240, 202, 114, 0.14)",
+                border: section.ready ? "1px solid rgba(240, 202, 114, 0.24)" : "1px solid rgba(240, 202, 114, 0.08)",
                 padding: 20,
-                background: "rgba(20, 14, 18, 0.84)"
+                background: section.ready ? "rgba(20, 14, 18, 0.84)" : "rgba(20, 14, 18, 0.5)",
+                opacity: section.ready ? 1 : 0.7
               }}
             >
               <p
@@ -43,16 +73,36 @@ export default function AdminPage() {
                   fontSize: 12,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#c6933c"
+                  color: section.ready ? "#a8d5a8" : "#c6933c"
                 }}
               >
-                Phase 1
+                {section.ready ? "✅ Ready" : "⏳ Phase 2"}
               </p>
-              <h2 style={{ margin: 0 }}>{title}</h2>
-              <p style={{ margin: "12px 0 0", color: "#bda98d" }}>Placeholder panel ready for implementation.</p>
+              <h2 style={{ margin: 0, fontSize: 18, marginBottom: 6 }}>{section.title}</h2>
+              <p style={{ margin: "0 0 16px", color: "#bda98d", fontSize: 13 }}>{section.description}</p>
+
+              {section.component ? (
+                <div style={{ marginTop: 0 }}>
+                  <section.component />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    background: "rgba(198, 147, 60, 0.08)",
+                    color: "#d5a35f",
+                    fontSize: 12
+                  }}
+                >
+                  🔐 Coming in Phase 2. Requires authentication and audit logging.
+                </div>
+              )}
             </section>
           ))}
         </div>
+
+        <SafetyNote />
       </div>
     </main>
   );

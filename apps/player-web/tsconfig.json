@@ -3,7 +3,13 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@eye/game-engine": ["../../packages/game-engine/src/index.ts"],
+      "@eye/game-engine/*": ["../../packages/game-engine/src/*"],
+      "@eye/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@eye/shared-types/*": ["../../packages/shared-types/src/*"],
+      "@eye/ui": ["../../packages/ui/src/index.tsx"],
+      "@eye/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
       {

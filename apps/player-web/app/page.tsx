@@ -6,7 +6,6 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 
 "use client";
 
-import { defaultGameConfig } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
@@ -21,6 +20,7 @@ import { WithdrawModal } from "@/components/modals/withdraw-modal";
 import { WinPresentationController } from "@/components/presentation/win-presentation-controller";
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { shellAssets } from "@/lib/assets/asset-manifest";
+import { activeGameConfig } from "@/lib/game-config";
 import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
@@ -77,8 +77,8 @@ export default function HomePage() {
   } = usePlayerUiStore();
   const slot = useSlotMachine();
 
-  const board = slot.lastResult?.board ?? Array.from({ length: defaultGameConfig.rows }, () =>
-    Array.from({ length: defaultGameConfig.cols }, () => "ashen_sigil")
+  const board = slot.lastResult?.board ?? Array.from({ length: activeGameConfig.rows }, () =>
+    Array.from({ length: activeGameConfig.cols }, () => "ashen_sigil")
   );
 
   const fullHistory = slot.history.slice(0, 10);
@@ -112,14 +112,6 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const tagName = target?.tagName;
-      const isTypingTarget =
-        tagName === "INPUT" ||
-        tagName === "TEXTAREA" ||
-        tagName === "SELECT" ||
-        target?.isContentEditable;
-
       if (event.code === "Escape") {
         if (!slot.isAutospinActive && !slot.autospinStopRequested) {
           return;
@@ -130,47 +122,6 @@ export default function HomePage() {
         return;
       }
 
-      if (isTypingTarget) {
-        return;
-      }
-
-      const hasPresentationOverlay =
-        Boolean(slot.bonusAnnouncement) ||
-        Boolean(slot.bonusSummary) ||
-        Boolean(slot.winPresentation);
-
-      if (hasPresentationOverlay) {
-        if (event.code === "Space" || event.key === " ") {
-          event.preventDefault();
-
-          if (slot.bonusSummary) {
-            slot.dismissBonusSummary();
-            return;
-          }
-
-          if (slot.bonusAnnouncement) {
-            slot.dismissBonusAnnouncement();
-            return;
-          }
-
-          if (slot.winPresentation) {
-            slot.dismissWinPresentation();
-          }
-        }
-
-        return;
-      }
-
-      const hasBlockingOverlay =
-        welcomeOpen ||
-        depositOpen ||
-        withdrawOpen ||
-        paymentMethodsOpen ||
-        walletHistoryOpen ||
-        historyOpen ||
-        settingsOpen ||
-        debugPanelOpen;
-
       const wantsIncreaseBet =
         event.key === "+" ||
         (event.key === "=" && event.shiftKey) ||
@@ -179,20 +130,12 @@ export default function HomePage() {
         event.key === "-" || event.code === "Minus" || event.code === "NumpadSubtract";
 
       if (wantsIncreaseBet) {
-        if (hasBlockingOverlay) {
-          return;
-        }
-
         event.preventDefault();
         slot.incrementBetByStep();
         return;
       }
 
       if (wantsDecreaseBet) {
-        if (hasBlockingOverlay) {
-          return;
-        }
-
         event.preventDefault();
         slot.decrementBetByStep();
         return;
@@ -202,14 +145,20 @@ export default function HomePage() {
         return;
       }
 
-      if (
-        hasBlockingOverlay ||
-        !slot.canSpin
-      ) {
-        return;
+      event.preventDefault();
+
+      if (slot.bonusSummary) {
+        slot.dismissBonusSummary();
       }
 
-      event.preventDefault();
+      if (slot.bonusAnnouncement) {
+        slot.dismissBonusAnnouncement();
+      }
+
+      if (slot.winPresentation) {
+        slot.dismissWinPresentation();
+      }
+
       slot.spin();
     };
 
@@ -274,7 +223,7 @@ export default function HomePage() {
           history={slot.history}
           meterCurrent={slot.gameState.bonusMeter}
           meterRatio={slot.meterRatio}
-          meterTarget={defaultGameConfig.bonusMeterTarget}
+          meterTarget={activeGameConfig.bonusMeterTarget}
           onDeposit={() => toggleModal("depositOpen")}
           onToggleFullscreen={toggleFullscreen}
           onToggleHistory={toggleHistory}
@@ -417,7 +366,7 @@ export default function HomePage() {
         <section className="modalSection">
           <p className="eyebrow">Paytable</p>
           <div className="paytableGrid">
-            {defaultGameConfig.paytable.map((entry) => (
+            {activeGameConfig.paytable.map((entry) => (
               <article className="paytableCard" key={entry.symbol}>
                 <strong>{symbolLabels[entry.symbol] ?? entry.symbol}</strong>
                 <div className="paytableRows">
