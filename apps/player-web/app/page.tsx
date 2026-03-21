@@ -20,6 +20,7 @@ import { WithdrawModal } from "@/components/modals/withdraw-modal";
 import { WinPresentationController } from "@/components/presentation/win-presentation-controller";
 import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytics-overlay";
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
+import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
 import { shellAssets } from "@/lib/assets/asset-manifest";
 import { activeGameConfig } from "@/lib/game-config";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
@@ -59,6 +60,10 @@ export default function HomePage() {
   const shellRef = useRef<HTMLElement | null>(null);
   const depositPromptShownRef = useRef(false);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
+
+  // Keep screen awake while game is active
+  useScreenWakeLock();
+
   const {
     hasHydrated,
     debugPanelOpen,

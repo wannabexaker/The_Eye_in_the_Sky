@@ -3879,6 +3879,8 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     --machine-footer-gap: 8px;
     --balance-zone-columns: repeat(2, minmax(0, 1fr));
     --portrait-spin-size: 136px; /* test A: -15% */
+    --portrait-bottom-safe: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    --portrait-dock-footprint: clamp(154px, 37vw, 206px);
   }
 
   .gameArea.machineStage {
@@ -3931,21 +3933,25 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   .supportRail {
     grid-row: 3;
     display: grid !important;
-    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    grid-template-columns: minmax(104px, 1.08fr) minmax(86px, 0.92fr);
+    grid-template-rows: minmax(56px, auto) auto auto auto;
     grid-template-areas:
-      "history treasury"
-      "history balance"
+      "treasury balance"
       "history status"
       "history meter"
       "history utility";
     gap: 6px;
-    width: min(60vw, 760px);
-    max-width: min(60vw, 760px);
+    position: fixed;
+    left: clamp(10px, 3vw, 18px);
+    bottom: var(--portrait-bottom-safe);
+    z-index: calc(var(--z-surface) + 8);
+    width: min(calc(100vw - var(--portrait-dock-footprint) - 30px), 232px);
+    max-width: 232px;
     height: auto;
     max-height: none;
     padding-top: 0;
     justify-self: start;
-    align-content: start;
+    align-content: end;
   }
 
   .supportRail .supportBlock {
@@ -3957,6 +3963,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .supportRail .treasuryBlock {
     grid-area: treasury;
+    align-self: end;
   }
 
   .supportRail .supportBalanceBlock {
@@ -3973,10 +3980,11 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .supportRail .supportHistoryBlock {
     grid-area: history;
-    min-height: clamp(300px, 35vh, 520px);
+    min-height: clamp(132px, 18vh, 184px);
+    max-height: clamp(132px, 18vh, 184px);
     width: 100%;
     justify-self: start;
-    align-self: stretch;
+    align-self: end;
   }
 
   .supportRail .supportHistoryBlock .supportNote {
@@ -3988,6 +3996,8 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   .supportRail .supportHistory {
     gap: 4px;
     margin-top: 4px;
+    max-height: clamp(76px, 11vh, 112px);
+    overflow-y: auto;
   }
 
   .supportRail .supportHistoryRow {
@@ -4010,7 +4020,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     grid-area: utility;
     margin-top: 0;
     padding-top: 2px;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .treasuryBlock .supportActions {
@@ -4042,21 +4052,25 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .floatingGameDock {
     left: auto;
-    right: clamp(50px, 5vw, 80px);
-    bottom: clamp(350px, 21vh, 540px);
+    right: clamp(10px, 3vw, 18px);
+    bottom: var(--portrait-bottom-safe);
     transform: none;
   }
 
+  .floatingGameDock .dockSpinWrapper {
+    transform: translate(20px, -28px);
+  }
+
   .floatingGameDock .spinCta {
-    transform: translate(calc(-50% - 20px), calc(-50% - 63px));
+    transform: translate(-50%, calc(-50% - 58px));
   }
 
   .floatingGameDock .spinCta:hover {
-    transform: translate(calc(-50% - 20px), calc(-50% - 63px)) scale(1.05);
+    transform: translate(-50%, calc(-50% - 58px)) scale(1.05);
   }
 
   .floatingGameDock .spinCta:active:not(:disabled) {
-    transform: translate(calc(-50% - 20px), calc(-50% - 63px)) scale(0.97);
+    transform: translate(-50%, calc(-50% - 58px)) scale(0.97);
   }
 
   .floatingGameDock .primarySpinCluster {
@@ -4107,14 +4121,18 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 @media (orientation: portrait) and (min-width: 1020px) and (max-width: 1120px) and (min-height: 1820px) and (max-height: 1980px) {
   .slotViewport {
     --portrait-spin-size: 147px; /* test B: -15% */
+    --portrait-dock-footprint: clamp(172px, 34vw, 230px);
   }
 
   .supportRail {
     gap: 8px;
     align-content: start;
-    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
-    width: min(60vw, 820px);
-    max-width: min(60vw, 820px);
+    grid-template-columns: minmax(118px, 1.12fr) minmax(94px, 0.88fr);
+    grid-template-rows: minmax(64px, auto) auto auto auto;
+    left: clamp(14px, 3vw, 22px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    width: min(calc(100vw - var(--portrait-dock-footprint) - 40px), 268px);
+    max-width: 268px;
   }
 
   .supportRail .supportBlock {
@@ -4123,7 +4141,8 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   }
 
   .supportRail .supportHistoryBlock {
-    min-height: clamp(280px, 35vh, 520px);
+    min-height: clamp(148px, 17vh, 204px);
+    max-height: clamp(148px, 17vh, 204px);
   }
 
   .brandingRail .brandPanel {
@@ -4140,20 +4159,24 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .floatingGameDock {
     left: auto;
-    right: clamp(60px, 6vw, 100px);
-    bottom: clamp(358px, calc(23vh - 32px), 588px);
+    right: clamp(14px, 3vw, 22px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  }
+
+  .floatingGameDock .dockSpinWrapper {
+    transform: translate(22px, -30px);
   }
 
   .floatingGameDock .spinCta {
-    transform: translate(calc(-50% - 20px), calc(-50% - 75px));
+    transform: translate(-50%, calc(-50% - 68px));
   }
 
   .floatingGameDock .spinCta:hover {
-    transform: translate(calc(-50% - 20px), calc(-50% - 75px)) scale(1.05);
+    transform: translate(-50%, calc(-50% - 68px)) scale(1.05);
   }
 
   .floatingGameDock .spinCta:active:not(:disabled) {
-    transform: translate(calc(-50% - 20px), calc(-50% - 75px)) scale(0.97);
+    transform: translate(-50%, calc(-50% - 68px)) scale(0.97);
   }
 
   .floatingGameDock .primarySpinCluster {
