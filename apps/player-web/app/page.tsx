@@ -18,6 +18,7 @@ import { PaymentMethodsModal } from "@/components/modals/payment-methods-modal";
 import { WelcomeOverlay } from "@/components/modals/welcome-overlay";
 import { WithdrawModal } from "@/components/modals/withdraw-modal";
 import { WinPresentationController } from "@/components/presentation/win-presentation-controller";
+import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytics-overlay";
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { shellAssets } from "@/lib/assets/asset-manifest";
 import { activeGameConfig } from "@/lib/game-config";
@@ -67,11 +68,13 @@ export default function HomePage() {
     withdrawOpen,
     paymentMethodsOpen,
     walletHistoryOpen,
+    analyticsOpen,
     welcomeOpen,
     soundEnabled,
     autoContinueNeverStop,
     wallet,
     walletTransactions,
+    roundsLog,
     claimWelcomeBonus,
     setModal,
     toggleDebugPanel,
@@ -290,6 +293,7 @@ export default function HomePage() {
         onIncreaseBet={slot.incrementBetByStep}
         onSpin={slot.spin}
         onStartAutospin={slot.startAutoSpin}
+        onStartAutospinInfinite={slot.startAutoSpinInfinite}
         onStopAutoSpin={slot.stopAutoSpin}
         onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
         spinPhase={slot.spinPhase}
@@ -387,6 +391,25 @@ export default function HomePage() {
         </section>
 
         <section className="modalSection">
+          <p className="eyebrow">Session Analytics</p>
+          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+            {roundsLog.length > 0
+              ? `${roundsLog.length.toLocaleString()} rounds tracked. View RTP trend, win distribution, cascade histogram, and export CSV.`
+              : "Play rounds to start tracking analytics."}
+          </p>
+          <button
+            className="welcomeButton compactPrimary"
+            onClick={() => {
+              toggleSettings();
+              toggleModal("analyticsOpen");
+            }}
+            type="button"
+          >
+            Open Session Analytics
+          </button>
+        </section>
+
+        <section className="modalSection">
           <p className="eyebrow">Special Symbols</p>
           <ul className="statsList">
             <li>Seraphim Eye: adds wilds and can boost the bonus multiplier.</li>
@@ -420,6 +443,14 @@ export default function HomePage() {
         title="Payment Methods"
       >
         <PaymentMethodsModal />
+      </OverlayModal>
+
+      <OverlayModal
+        onClose={() => toggleModal("analyticsOpen")}
+        open={analyticsOpen}
+        title="Session Analytics"
+      >
+        <SessionAnalyticsOverlay rounds={roundsLog} />
       </OverlayModal>
 
       <OverlayModal onClose={toggleDebugPanel} open={debugPanelOpen} title="Debug">

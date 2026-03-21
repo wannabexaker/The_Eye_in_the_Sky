@@ -5,6 +5,7 @@ Uses: presentation spin-state-machine labels
 */
 
 import { type SpinPhase } from "@/lib/presentation/spin-state-machine";
+import { type MouseEvent as ReactMouseEvent } from "react";
 
 type SpinButtonProps = {
   disabled: boolean;
@@ -21,11 +22,16 @@ export function SpinButton({
 }: SpinButtonProps) {
   const spinning = spinPhase !== "IDLE" && spinPhase !== "ROUND_END";
 
+  const suppressSelectionOnMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
+
   return (
     <button
       className={`spinCta ${spinning ? "is-spinning" : ""}`}
       data-phase={spinPhase}
       disabled={disabled}
+      onMouseDown={suppressSelectionOnMouseDown}
       onClick={onClick}
       type="button"
     >

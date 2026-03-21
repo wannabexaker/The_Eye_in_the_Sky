@@ -24,20 +24,54 @@ interface GameConfigState {
   };
 }
 
+const FALLBACK_PROFILES: GameConfigProfile[] = [
+  {
+    id: "legacy_v1_3",
+    label: "Legacy Math v1.3",
+    version: "eye-sky-math-v1.3",
+    isLegacy: true,
+    targetRtp: 0.955,
+    volatility: "medium"
+  },
+  {
+    id: "math_base_v2_0",
+    label: "Math Base v2.0",
+    version: "eye-sky-math-v2.0",
+    isLegacy: false,
+    targetRtp: 0.954,
+    volatility: "medium"
+  }
+];
+
+const FALLBACK_STATE: GameConfigState = {
+  activeProfileId: "math_base_v2_0",
+  activeConfig: {
+    version: "eye-sky-math-v2.0",
+    targetRtp: 0.954,
+    volatility: "medium",
+    rows: 5,
+    cols: 6,
+    bonusMeterTarget: 17,
+    bonusSpinsAwarded: 8
+  }
+};
+
 export function MathProfileSelector() {
   const [profiles, setProfiles] = useState<GameConfigProfile[]>([]);
   const [activeState, setActiveState] = useState<GameConfigState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selecting, setSelecting] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError("");
+        setOfflineMode(false);
 
         const [profilesRes, stateRes] = await Promise.all([
           fetch(`${apiBase}/game-config/profiles`),
@@ -54,7 +88,10 @@ export function MathProfileSelector() {
         setProfiles(profilesData);
         setActiveState(stateData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setProfiles(FALLBACK_PROFILES);
+        setActiveState(FALLBACK_STATE);
+        setOfflineMode(true);
+        setError("API unreachable. Running in local preview mode.");
       } finally {
         setLoading(false);
       }
@@ -64,6 +101,23 @@ export function MathProfileSelector() {
   }, [apiBase]);
 
   const selectProfile = async (profileId: string) => {
+    if (offlineMode) {
+      setActiveState((current) => {
+        const profile = FALLBACK_PROFILES.find((entry) => entry.id === profileId) ?? FALLBACK_PROFILES[1];
+        return {
+          activeProfileId: profile.id,
+          activeConfig: {
+            ...FALLBACK_STATE.activeConfig,
+            version: profile.version,
+            targetRtp: profile.targetRtp,
+            volatility: profile.volatility,
+            bonusMeterTarget: profile.id === "legacy_v1_3" ? 16 : 17
+          }
+        };
+      });
+      return;
+    }
+
     try {
       setSelecting(true);
       setError("");
@@ -81,7 +135,14 @@ export function MathProfileSelector() {
       const newState = await res.json();
       setActiveState(newState);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError("Profile switch failed. Falling back to local preview mode.");
+      setOfflineMode(true);
+      setProfiles(FALLBACK_PROFILES);
+      setActiveState((current) =>
+        current
+          ? current
+          : FALLBACK_STATE
+      );
     } finally {
       setSelecting(false);
     }
@@ -94,12 +155,12 @@ export function MathProfileSelector() {
           style={{
             padding: 12,
             borderRadius: 8,
-            background: "rgba(255, 100, 100, 0.14)",
-            color: "#ff6464",
+            background: offlineMode ? "rgba(214, 168, 84, 0.16)" : "rgba(255, 100, 100, 0.14)",
+            color: offlineMode ? "#f0c886" : "#ff6464",
             fontSize: 13
           }}
         >
-          ⚠️ {error}
+          {offlineMode ? "⚠️" : "❌"} {error}
         </div>
       )}
 

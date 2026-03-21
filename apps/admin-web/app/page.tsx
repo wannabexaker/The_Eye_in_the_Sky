@@ -3,6 +3,7 @@
 import { MathProfileSelector } from "@/components/math-profile-selector";
 import { GameStatsViewer } from "@/components/game-stats-viewer";
 import { SafetyNote } from "@/components/safety-note";
+import { WinTierPreview } from "@/components/win-tier-preview";
 
 const sections = [
   {
@@ -15,6 +16,12 @@ const sections = [
     title: "Game analytics",
     description: "View real-time game statistics and performance metrics (read-only).",
     component: GameStatsViewer,
+    ready: true
+  },
+  {
+    title: "Win tier QA preview",
+    description: "Trigger WIN/BIG/HUGE/SUPER visuals instantly for art direction and staging checks.",
+    component: WinTierPreview,
     ready: true
   },
   {

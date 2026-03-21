@@ -6,6 +6,7 @@ Uses: slot presentation state from use-slot-machine.ts
 
 import type { WinPresentationEntry } from "@/lib/presentation/win-presentation-types";
 import { shellAssets } from "@/lib/assets/asset-manifest";
+import type { CSSProperties } from "react";
 
 type WinPresentationOverlayProps = {
   presentation: WinPresentationEntry | null;
@@ -27,10 +28,39 @@ export function WinPresentationOverlay({
   }
 
   const hasWinPlate =
-    presentation.kind === "round_win" || presentation.kind === "big_win" || presentation.kind === "huge_win";
+    presentation.kind === "round_win" ||
+    presentation.kind === "big_win" ||
+    presentation.kind === "huge_win" ||
+    presentation.kind === "super_win";
+
+  const plateClassName =
+    presentation.kind === "round_win"
+      ? "simpleWinGlowPlate"
+      : presentation.kind === "super_win"
+        ? "superWinGlowPlate"
+        : "bigWinGlowPlate";
+
+  const plateBackground =
+    presentation.kind === "round_win"
+      ? shellAssets.winFlowPlate
+      : presentation.kind === "huge_win"
+        ? shellAssets.hugeWinGlowPlate
+        : presentation.kind === "super_win"
+          ? shellAssets.superWinGlowPlate
+          : shellAssets.bigWinGlowPlate;
 
   return (
-    <div className={`winPresentationLayer is-${presentation.kind}`} onClick={onContinue} role="presentation">
+    <div
+      className={`winPresentationLayer is-${presentation.kind}`}
+      onClick={onContinue}
+      role="presentation"
+      style={
+        {
+          "--win-glow-level": presentation.glowLevel,
+          "--win-multiple": presentation.winMultiple
+        } as CSSProperties
+      }
+    >
       <section
         aria-label={presentation.title}
         className={`winPresentationCard ${presentation.requireAcknowledgement ? "is-ack" : "is-auto"}`}
@@ -41,9 +71,9 @@ export function WinPresentationOverlay({
           {hasWinPlate ? (
             <div
               aria-hidden="true"
-              className={presentation.kind === "round_win" ? "simpleWinGlowPlate" : "bigWinGlowPlate"}
+              className={plateClassName}
               style={{
-                backgroundImage: `url(${presentation.kind === "round_win" ? shellAssets.winFlowPlate : presentation.kind === "huge_win" ? shellAssets.hugeWinGlowPlate : shellAssets.bigWinGlowPlate})`
+                backgroundImage: `url(${plateBackground})`
               }}
             />
           ) : null}

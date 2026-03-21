@@ -516,26 +516,63 @@ Board responsive variables and local overrides
 
 @media (orientation: portrait) and (max-aspect-ratio: 10/16) {
   .slotViewport {
-    /* Portrait 9:16 and close ratios: collapse shell to a single center stage with no side-rail dependence. */
+    /* Portrait 9:16 and close ratios: keep rails visible via stacked composition and give the board a larger portrait footprint. */
     --machine-stage-columns: 1fr;
     --machine-stage-gap: 0;
-    --stage-status-width: min(100%, 310px);
-    --board-frame-fit-height: clamp(320px, calc(100dvh - 232px), 560px);
-    --board-inline-breathe: 14px;
-    --board-frame-margin-bottom: -4px;
+    --stage-status-width: min(100%, 420px);
+    --board-frame-fit-height: clamp(520px, calc(100dvh - 420px), 920px);
+    --board-inline-breathe: 22px;
+    --board-frame-margin-bottom: -10px;
     --board-frame-translate-y: 0;
-    --board-frame-radius: clamp(10px, 2.8vw, 16px);
+    --board-frame-radius: clamp(14px, 2.6vw, 20px);
     --board-frame-border-width: 1px;
-    --board-stage-halo-radius: clamp(12px, 3.2vw, 18px);
-    --board-stage-halo-blur: clamp(7px, 2vw, 10px);
-    --board-art-inset-top: -10%;
-    --board-art-inset-right: -16%;
-    --board-art-inset-bottom: -8%;
-    --board-art-inset-left: -16%;
+    --board-stage-halo-radius: clamp(18px, 3vw, 24px);
+    --board-stage-halo-blur: clamp(10px, 2.1vw, 14px);
+    --board-art-inset-top: -13%;
+    --board-art-inset-right: -20%;
+    --board-art-inset-bottom: -10%;
+    --board-art-inset-left: -20%;
+  }
+
+  .gameArea.machineStage {
+    grid-template-columns: 1fr;
+    grid-template-rows: min-content minmax(0, 1fr) min-content;
+    gap: 8px;
+    align-content: start;
+  }
+
+  .supportRail,
+  .brandingRail {
+    display: grid !important;
+    justify-self: stretch;
+    max-width: none;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .supportRail .supportBlock,
+  .brandingRail .brandPanel,
+  .brandingRail .brandScenePanel {
+    min-height: 0;
+  }
+
+  .centerStage {
+    min-height: 0;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .boardShell {
+    inset: 0 0 -10px 0;
   }
 
   .boardMetaRow {
-    top: 4px;
+    top: 3px;
   }
 }
 

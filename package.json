@@ -8,6 +8,7 @@
     "dev:player": "corepack pnpm --filter player-web dev",
     "dev:admin": "corepack pnpm --filter admin-web dev",
     "dev:api": "corepack pnpm --filter api start:dev",
+    "dev:apps": "corepack pnpm --filter player-web --filter admin-web --parallel dev",
     "build": "corepack pnpm -r build",
     "lint": "corepack pnpm -r lint",
     "simulate": "corepack pnpm --filter @eye/game-engine simulate"

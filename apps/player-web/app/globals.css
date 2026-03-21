@@ -1070,79 +1070,116 @@ p {
   width: 74px;
   height: 74px;
   display: block;
-  filter: drop-shadow(0 0 8px rgba(226, 190, 112, 0.24));
+  filter:
+    drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26))
+    drop-shadow(0 0 10px rgba(226, 190, 112, 0.24));
 }
 
 .ouroborosRing::before {
   content: "";
   position: absolute;
-  inset: 3px;
+  inset: 4px;
   border-radius: 999px;
-  border: 1px dashed rgba(255, 235, 184, 0.22);
-  opacity: 0.4;
-  animation: serpentHalo 2.8s linear infinite;
+  border: 1px solid rgba(255, 235, 184, 0.16);
+  opacity: 0.34;
+  box-shadow: inset 0 0 8px rgba(226, 190, 112, 0.16);
+  animation: serpentHalo 3.1s linear infinite;
+}
+
+.ouroborosRing::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 62% 58%, rgba(96, 132, 86, 0.11), transparent 56%),
+    radial-gradient(circle at 36% 36%, rgba(76, 108, 68, 0.08), transparent 52%);
+  filter: blur(4px);
+  opacity: 0.34;
+  pointer-events: none;
 }
 
 .ouroborosBody {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  border: 8px solid rgba(214, 170, 90, 0.96);
+  border: 7px solid transparent;
+  border-top-color: rgba(244, 217, 152, 0.98);
+  border-right-color: rgba(215, 168, 84, 0.97);
+  border-bottom-color: rgba(179, 126, 48, 0.97);
+  border-left-color: rgba(227, 190, 113, 0.97);
   box-shadow:
-    0 0 0 2px rgba(74, 54, 22, 0.92) inset,
-    0 0 18px rgba(226, 190, 112, 0.2);
+    0 0 0 1px rgba(80, 56, 22, 0.94) inset,
+    0 0 0 2px rgba(34, 23, 10, 0.4),
+    0 0 22px rgba(226, 190, 112, 0.24),
+    0 8px 12px rgba(0, 0, 0, 0.2);
   background:
-    radial-gradient(circle at 30% 28%, rgba(255, 245, 214, 0.16), transparent 18%),
-    radial-gradient(circle at 70% 70%, rgba(111, 75, 22, 0.22), transparent 24%);
-  animation: serpentShimmer 1.2s ease-in-out infinite;
+    radial-gradient(circle at 30% 22%, rgba(255, 243, 200, 0.2), transparent 22%),
+    radial-gradient(circle at 72% 76%, rgba(111, 75, 22, 0.2), transparent 30%);
+  animation: serpentShimmer 1.5s ease-in-out infinite;
+}
+
+.ouroborosBody::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 999px;
+  border: 2px dashed rgba(84, 55, 19, 0.34);
+  opacity: 0.52;
+  mix-blend-mode: multiply;
 }
 
 .ouroborosHead {
   position: absolute;
-  top: 6px;
-  left: 50%;
+  top: 15px;
+  right: -1px;
   z-index: 1;
-  width: 18px;
-  height: 18px;
-  margin-left: 18px;
-  border-radius: 14px 14px 10px 10px;
-  background: linear-gradient(180deg, #f5d48f 0%, #b07a2d 100%);
-  transform: rotate(38deg);
-  box-shadow: 0 0 12px rgba(226, 190, 112, 0.22);
+  width: 14px;
+  height: 14px;
+  border-radius: 12px 12px 10px 10px;
+  background: linear-gradient(180deg, #f4d894 0%, #b2762d 100%);
+  transform: rotate(74deg);
+  box-shadow:
+    0 0 10px rgba(226, 190, 112, 0.28),
+    0 0 0 1px rgba(73, 49, 20, 0.5) inset;
 }
 
 .ouroborosHead::before {
   content: "";
   position: absolute;
-  right: -4px;
-  top: 5px;
-  border-left: 6px solid #f2d590;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
+  right: -2px;
+  top: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #f7e2b1;
 }
 
 .ouroborosHead::after {
   content: "";
   position: absolute;
-  top: 7px;
-  right: -8px;
-  width: 8px;
-  height: 2px;
+  top: 6px;
+  right: -6px;
+  width: 6px;
+  height: 1.6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f3c06e 0%, #d94848 100%);
+  background: linear-gradient(90deg, #f3c06e 0%, #ca3f3f 100%);
   transform-origin: left center;
-  animation: tongueFlick 360ms ease-in-out infinite;
+  animation: tongueFlick 480ms ease-in-out infinite;
 }
 
 .ouroborosEye {
   position: absolute;
-  top: 15px;
-  right: 14px;
+  top: 21px;
+  right: 6px;
   z-index: 2;
-  width: 4px;
-  height: 4px;
+  width: 2.6px;
+  height: 2.6px;
   border-radius: 999px;
-  background: #351010;
+  background: #2f0f0f;
+  box-shadow:
+    0 0 4px rgba(255, 110, 110, 0.2),
+    0 0 5px rgba(126, 166, 108, 0.18);
 }
 
 .spinCore {
@@ -1463,6 +1500,8 @@ p {
 }
 
 .winPresentationLayer {
+  --win-glow-level: 0;
+  --win-multiple: 0;
   position: fixed;
   inset: 0;
   z-index: calc(var(--z-modal) - 1);
@@ -1477,7 +1516,11 @@ p {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at center, rgba(226, 190, 112, 0.1), transparent 24%),
+    radial-gradient(
+      circle at center,
+      rgba(226, 190, 112, calc(0.06 + (var(--win-glow-level) * 0.24))),
+      transparent calc(24% + (var(--win-glow-level) * 12%))
+    ),
     rgba(5, 5, 7, 0.28);
 }
 
@@ -1493,11 +1536,11 @@ p {
   max-height: calc(100dvh - 48px);
   padding: 26px 28px;
   border-radius: 22px;
-  border: 1px solid rgba(226, 190, 112, 0.18);
+  border: 1px solid rgba(226, 190, 112, calc(0.16 + (var(--win-glow-level) * 0.18)));
   background: linear-gradient(180deg, rgba(12, 12, 16, 0.9), rgba(10, 10, 13, 0.96));
   box-shadow:
     0 22px 48px rgba(0, 0, 0, 0.34),
-    0 0 28px rgba(226, 190, 112, 0.08);
+    0 0 calc(26px + (var(--win-glow-level) * 30px)) rgba(226, 190, 112, calc(0.08 + (var(--win-glow-level) * 0.24)));
   text-align: center;
   overflow: hidden;
 }
@@ -1520,25 +1563,52 @@ p {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  opacity: 0.92;
+  opacity: calc(0.7 + (var(--win-glow-level) * 0.25));
   pointer-events: none;
   z-index: 0;
-  filter: drop-shadow(0 0 26px rgba(226, 190, 112, 0.2));
+  filter:
+    saturate(calc(0.92 + (var(--win-glow-level) * 0.45)))
+    brightness(calc(0.88 + (var(--win-glow-level) * 0.3)))
+    drop-shadow(0 0 calc(22px + (var(--win-glow-level) * 28px)) rgba(226, 190, 112, calc(0.2 + (var(--win-glow-level) * 0.28))));
+  animation: winPlateBreath 1.8s ease-in-out infinite;
 }
 
 .simpleWinGlowPlate {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: min(480px, 88%);
-  height: clamp(126px, 20vw, 188px);
+  width: min(720px, 132%);
+  height: clamp(189px, 30vw, 282px);
   transform: translate(-50%, -50%);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  opacity: 0.56;
+  opacity: calc(0.44 + (var(--win-glow-level) * 0.34));
   pointer-events: none;
   z-index: 0;
-  filter: drop-shadow(0 0 18px rgba(226, 190, 112, 0.16));
+  filter:
+    saturate(calc(0.84 + (var(--win-glow-level) * 0.36)))
+    brightness(calc(0.82 + (var(--win-glow-level) * 0.24)))
+    drop-shadow(0 0 calc(14px + (var(--win-glow-level) * 24px)) rgba(226, 190, 112, calc(0.1 + (var(--win-glow-level) * 0.24))));
+}
+
+.superWinGlowPlate {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(640px, 98%);
+  height: clamp(176px, 28vw, 268px);
+  transform: translate(-50%, -50%);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.98;
+  pointer-events: none;
+  z-index: 0;
+  filter:
+    saturate(1.34)
+    brightness(1.08)
+    drop-shadow(0 0 36px rgba(226, 190, 112, 0.42))
+    drop-shadow(0 0 16px rgba(255, 232, 165, 0.36));
+  animation: superWinPlatePulse 0.92s ease-in-out infinite;
 }
 
 .winPresentationLayer.is-round_win .winPresentationHero > *:not(.simpleWinGlowPlate) {
@@ -1547,7 +1617,8 @@ p {
 }
 
 .winPresentationLayer.is-big_win .winPresentationHero > *:not(.bigWinGlowPlate),
-.winPresentationLayer.is-huge_win .winPresentationHero > *:not(.bigWinGlowPlate) {
+.winPresentationLayer.is-huge_win .winPresentationHero > *:not(.bigWinGlowPlate),
+.winPresentationLayer.is-super_win .winPresentationHero > *:not(.superWinGlowPlate) {
   position: relative;
   z-index: 1;
 }
@@ -1560,16 +1631,62 @@ p {
 
 .winPresentationLayer.is-big_win .winPresentationAmount,
 .winPresentationLayer.is-huge_win .winPresentationAmount,
+.winPresentationLayer.is-super_win .winPresentationAmount,
 .winPresentationLayer.is-bonus_complete .winPresentationAmount {
   font-size: clamp(2.4rem, 4.4vw, 4rem);
 }
 
+.winPresentationLayer.is-super_win .winPresentationAmount {
+  text-shadow:
+    0 0 24px rgba(255, 236, 180, 0.56),
+    0 0 44px rgba(226, 190, 112, 0.44);
+  animation: superWinAmountShimmer 0.9s ease-in-out infinite;
+}
+
 .winPresentationLabel {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(156px, 22vw, 228px);
+  padding: 8px 20px;
+  margin-top: 2px;
+  border: 1px solid rgba(226, 190, 112, 0.44);
+  clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%);
+  background:
+    linear-gradient(180deg, rgba(22, 20, 18, 0.88), rgba(12, 12, 15, 0.9)),
+    linear-gradient(90deg, rgba(226, 190, 112, 0.14), rgba(226, 190, 112, 0.04));
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.38) inset,
+    0 8px 20px rgba(0, 0, 0, 0.24),
+    0 0 14px rgba(226, 190, 112, 0.14);
   color: var(--gold-bright);
   font-family: var(--font-display), Georgia, serif;
   font-size: clamp(0.86rem, 1vw, 1rem);
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.winPresentationLabel::before,
+.winPresentationLabel::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 8px solid rgba(226, 190, 112, 0.52);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.32));
+}
+
+.winPresentationLabel::before {
+  left: 18%;
+}
+
+.winPresentationLabel::after {
+  right: 18%;
 }
 
 .winPresentationAmount {
@@ -1578,7 +1695,50 @@ p {
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1;
   text-align: center;
-  text-shadow: 0 0 16px rgba(226, 190, 112, 0.2);
+  text-shadow:
+    -0.8px 0 0 rgba(8, 8, 10, 0.88),
+    0.8px 0 0 rgba(8, 8, 10, 0.88),
+    0 -0.8px 0 rgba(8, 8, 10, 0.88),
+    0 0.8px 0 rgba(8, 8, 10, 0.88),
+    0 2px 4px rgba(0, 0, 0, 0.42),
+    0 0 calc(14px + (var(--win-glow-level) * 18px)) rgba(226, 190, 112, calc(0.16 + (var(--win-glow-level) * 0.24)));
+}
+
+@keyframes winPlateBreath {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.99);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+}
+
+@keyframes superWinPlatePulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.92;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes superWinAmountShimmer {
+  0%,
+  100% {
+    letter-spacing: 0.01em;
+    filter: brightness(0.98);
+  }
+
+  50% {
+    letter-spacing: 0.04em;
+    filter: brightness(1.12);
+  }
 }
 
 .winPresentationSubtitle {
@@ -3358,6 +3518,32 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   cursor: pointer;
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
   flex-shrink: 0;
+}
+
+.floatingGameDock .spinCta,
+.dockStopButton,
+.dockSmallButton,
+.dockSmallButton * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.floatingGameDock,
+.floatingGameDock button,
+.floatingGameDock .spinText,
+.floatingGameDock .spinCore,
+.floatingGameDock .ouroborosRing,
+.floatingGameDock .dockMetaInfo {
+  user-select: none;
+  -webkit-user-select: none;
+  caret-color: transparent;
+}
+
+.floatingGameDock input,
+.floatingGameDock textarea {
+  user-select: text;
+  -webkit-user-select: text;
+  caret-color: auto;
 }
 
 .dockSmallButton:hover:not(:disabled) {

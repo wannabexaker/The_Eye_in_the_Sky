@@ -4,6 +4,7 @@ Layer: frontend (player-web)
 Uses: use-slot-machine.ts and wallet modal components
 */
 
+import type { RoundAnalyticsEntry, RoundAnalyticsTier } from "@eye/shared-types";
 import type { GameState, SpinResult } from "@eye/game-engine";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -37,7 +38,8 @@ type ModalKey =
   | "depositOpen"
   | "withdrawOpen"
   | "paymentMethodsOpen"
-  | "walletHistoryOpen";
+  | "walletHistoryOpen"
+  | "analyticsOpen";
 
 type DepositDraft = {
   amount: number;
@@ -73,12 +75,14 @@ type PlayerUiState = {
   withdrawOpen: boolean;
   paymentMethodsOpen: boolean;
   walletHistoryOpen: boolean;
+  analyticsOpen: boolean;
   welcomeOpen: boolean;
   welcomeClaimed: boolean;
   wallet: Wallet;
   totalDeposited: number;
   totalWithdrawn: number;
   gameStateSnapshot: GameState | null;
+  roundsLog: RoundAnalyticsEntry[];
   walletTransactions: WalletTransaction[];
   paymentMethods: PaymentMethod[];
   depositDraft: DepositDraft;
@@ -175,6 +179,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       withdrawOpen: false,
       paymentMethodsOpen: false,
       walletHistoryOpen: false,
+      analyticsOpen: false,
       welcomeOpen: true,
       welcomeClaimed: false,
       wallet: {
@@ -184,6 +189,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       totalDeposited: 0,
       totalWithdrawn: 0,
       gameStateSnapshot: null,
+      roundsLog: [],
       walletTransactions: [],
       paymentMethods: basePaymentMethods(),
       depositDraft: baseDepositDraft(),
@@ -441,13 +447,37 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             });
           }
 
+          const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
+          const analyticsTier: RoundAnalyticsTier =
+            result.totalWin <= 0 ? "loss"
+            : winMultiple >= 14.9 ? "super_win"
+            : winMultiple >= 8 ? "huge_win"
+            : winMultiple >= 5 ? "big_win"
+            : "win";
+
+          const analyticsEntry: RoundAnalyticsEntry = {
+            id: createTransactionId(),
+            timestamp: Date.now(),
+            bet: result.bet,
+            win: result.totalWin,
+            net: Number((result.totalWin - result.debugMetadata.chargedBet).toFixed(2)),
+            mode: result.mode,
+            cascades: result.cascades.length,
+            bonusTriggered: result.bonusTriggered,
+            multiplier: result.appliedWinMultiplier,
+            winMultiple: Number(winMultiple.toFixed(4)),
+            tier: analyticsTier,
+            balanceAfter: result.balanceAfter
+          };
+
           return {
             wallet: {
               ...state.wallet,
               balance: result.balanceAfter
             },
             gameStateSnapshot: result.nextState,
-            walletTransactions: nextTransactions.slice(0, 50)
+            walletTransactions: nextTransactions.slice(0, 50),
+            roundsLog: [...state.roundsLog, analyticsEntry].slice(-1000)
           };
         }),
       resetSession: () =>
@@ -459,6 +489,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           totalDeposited: 0,
           totalWithdrawn: 0,
           gameStateSnapshot: null,
+          roundsLog: [],
           walletTransactions: [],
           paymentMethods: basePaymentMethods(),
           depositDraft: baseDepositDraft(),
@@ -469,7 +500,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           depositOpen: false,
           withdrawOpen: false,
           paymentMethodsOpen: false,
-          walletHistoryOpen: false
+          walletHistoryOpen: false,
+          analyticsOpen: false
         })
     }),
     {
@@ -488,6 +520,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           paymentMethods,
+          roundsLog: Array.isArray(persisted.roundsLog) ? persisted.roundsLog : [],
           withdrawalDraft: {
             amount: withdrawalAmount,
             methodId:
@@ -510,7 +543,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         totalWithdrawn: state.totalWithdrawn,
         walletTransactions: state.walletTransactions,
         paymentMethods: state.paymentMethods,
-        gameStateSnapshot: state.gameStateSnapshot
+        gameStateSnapshot: state.gameStateSnapshot,
+        roundsLog: state.roundsLog
       })
     }
   )

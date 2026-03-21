@@ -12,7 +12,8 @@ type SoundEvent =
   | "cascade"
   | "multiplier"
   | "bonus"
-  | "big_win";
+  | "big_win"
+  | "super_win";
 
 type SoundOptions = {
   pan?: number;
@@ -204,6 +205,17 @@ class SoundManager {
         noise: true,
         attack: 0.016,
         release: 1.26
+      },
+      super_win: {
+        baseFrequency: 468,
+        duration: 1.85,
+        volume: 0.082,
+        sweep: 420,
+        type: "triangle",
+        harmonics: [1.25, 1.5, 2, 3, 4, 5],
+        noise: true,
+        attack: 0.01,
+        release: 1.68
       }
     };
 

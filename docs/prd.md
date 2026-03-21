@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-19`
+- Last updated: `2026-03-21`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -142,6 +142,10 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - simulation tooling
 - first-pass original art asset pack for symbols, UI frame, logo, and atmospheric background
 - welcome ritual overlay with first-run bonus credits
+- 4-tier win presentation system: WIN / BIG WIN / HUGE WIN / SUPER WIN with progressive glow, dedicated plates, and staged audio
+- session analytics dashboard: running RTP trend, win tier distribution, cascade histogram, balance history, CSV export
+- keyboard shortcuts for gameplay (Space, +/-, W/S/A/Q)
+- autospin infinite mode (A key to start, Q to stop)
 
 ## Tech Direction
 - Monorepo
@@ -196,6 +200,13 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - admin
   - audit-logs
 
+## Dev Environment Port Assignments
+- `3000` — `player-web` (game client)
+- `3100` — `admin-web` (operator panel)
+- `3200` — `api` (NestJS, default via `process.env.PORT`)
+
+Run `pnpm dev:apps` to start player + admin in parallel. Run `pnpm dev:api` separately.
+
 ## Current Implementation Status
 - `Done`
   - root workspace
@@ -224,8 +235,23 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
   - simulated wallet system with deposits, withdrawals, saved payment methods, and transaction history
   - welcome overlay with first-run bonus credit grant
   - Pixi presentation upgrade with layered atmosphere, hover response, pooled particles, cascade dissolve, and stronger win/bonus feedback
-  - richer synthetic sound manager with layered tones and optional stereo pan
+  - richer synthetic sound manager with layered tones, optional stereo pan, and dedicated super-win preset
   - future-proof player-web folder structure with grouped components, gameplay hooks, state/assets libraries, and local README indexes
+  - 4-tier win presentation system (WIN / BIG WIN / HUGE WIN / SUPER WIN) with per-tier plates, progressive glow intensity, and separate audio routing
+  - Samsara meter visual FX progression: dark → gold → critical red/blink based on meter fill ratio
+  - ritual log expanded to last 100 rounds with chevron toggle and scrollable viewport-anchored area
+  - EUR compact wallet formatting in HUD and modal confirmations
+  - session analytics dashboard in player-web: RoundAnalyticsEntry tracking (up to 1000 rounds persisted to localStorage), SVG charts (RTP trend, win tier distribution, cascade histogram, balance history), CSV export
+  - `RoundAnalyticsEntry` and `RoundAnalyticsTier` types added to `packages/shared-types` for SQL migration readiness
+  - Phase 2 telemetry foundation: API endpoints `POST /analytics/ingest`, `GET /analytics/summary`, `GET /analytics/rounds`, `GET /analytics/dashboard`, `DELETE /analytics/reset`
+  - Phase 2 persistence bridge (pre-SQL): API persists analytics entries into local JSON runtime store so telemetry survives API restarts during dev
+  - Prisma schema now includes `AnalyticsRound` model as SQL migration target for next persistence step
+  - player-web now emits best-effort round analytics to API without blocking gameplay; admin-web now polls live analytics summary every 5 seconds
+  - control UX hardening: spin and autoplay control area is non-selectable/non-editable, and autoplay supports 3-second long press for immediate infinite mode
+  - admin QA win tier preview popup with actual plate assets and game-identical typography
+  - keyboard shortcuts: Space (spin), +/- (bet), W/S (bet up/down), A (infinite autospin), Q (stop)
+  - fixed dev port assignments: player-web=3000, admin-web=3100, api=3200
+  - `dev:apps` pnpm script to start player + admin in parallel
   - CSS cleanup in progress toward single authoritative selector blocks with variable-driven desktop-band overrides
 - `In progress`
   - PRD-driven repo alignment
@@ -278,6 +304,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Verified from the latest screenshot comparison: the `2K` presentation is closer to the intended target than `1920x1080`; the `1920x1080` board still leaves too much empty space around the center playfield.
 - Explicit board-footprint target, recorded from the latest user instruction: on `1920x1080`, the board should sit almost flush with the mini-stat strip above it and nearly touch the left rail, right rail, and footer below while remaining fully visible at browser zoom `100%`.
 - Explicit zoom-behavior target, recorded from the latest user instruction: browser zoom should scale the board more uniformly with the rest of the shell instead of making the surrounding UI feel closer while the board shrinks or drifts differently.
+- Explicit portrait-monitor target, recorded from the latest user instruction: on `1920x1080` screens used in vertical orientation (`9:16`), rails must remain visible through a dedicated portrait layout, and the board must scale up instead of collapsing into a small center footprint.
 - Current visual direction for the board-top stat strip: `Round / Cascades / Free Spins` should stay readable but use a translucent glass-like surface so the enlarged board remains visible behind them.
 - Current visual direction for `100%` browser zoom: after the aggressive enlargement pass, the board now needs slight reduction and a slightly lower placement so it remains fully visible without top or bottom crop.
 - Additional responsive target bands now required for board geometry:

@@ -20,9 +20,11 @@ export type BonusSummaryEntry = {
 };
 
 export type WinPresentationEntry = {
-  kind: "round_win" | "big_win" | "huge_win";
+  kind: "round_win" | "big_win" | "huge_win" | "super_win";
   title: string;
   amount: number;
+  winMultiple: number;
+  glowLevel: number;
   subtitle?: string;
   detailRows?: string[];
   requireAcknowledgement: boolean;

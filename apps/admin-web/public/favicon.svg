@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="The Eye in the Sky admin favicon">
+  <defs>
+    <linearGradient id="ring" x1="10" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f4b24" />
+      <stop offset="0.5" stop-color="#e2be70" />
+      <stop offset="1" stop-color="#8c5f2d" />
+    </linearGradient>
+    <linearGradient id="eye" x1="6" y1="32" x2="58" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9a6f32" />
+      <stop offset="0.5" stop-color="#f0ca72" />
+      <stop offset="1" stop-color="#9a6f32" />
+    </linearGradient>
+    <radialGradient id="iris" cx="32" cy="32" r="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff2cf" />
+      <stop offset="0.62" stop-color="#d7ae5f" />
+      <stop offset="1" stop-color="#7a5020" />
+    </radialGradient>
+  </defs>
+
+  <circle cx="32" cy="32" r="21" fill="none" stroke="url(#ring)" stroke-width="3" />
+  <path d="M6 32c6.5-9 16.5-14 26-14s19.5 5 26 14c-6.5 9-16.5 14-26 14S12.5 41 6 32Z" fill="none" stroke="url(#eye)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="32" cy="32" r="9.3" fill="url(#iris)" />
+  <circle cx="32" cy="32" r="4.2" fill="#0a0a0d" />
+  <circle cx="35" cy="28.7" r="1.2" fill="#fff8e2" />
+</svg>

@@ -53,3 +53,20 @@ export type GameMathProfileDto = {
   volatility: "low" | "medium" | "high";
   clusterThreshold: number;
 };
+
+export type RoundAnalyticsTier = "loss" | "win" | "big_win" | "huge_win" | "super_win";
+
+export type RoundAnalyticsEntry = {
+  id: string;
+  timestamp: number;
+  bet: number;
+  win: number;
+  net: number;
+  mode: "base" | "bonus";
+  cascades: number;
+  bonusTriggered: boolean;
+  multiplier: number;
+  winMultiple: number;
+  tier: RoundAnalyticsTier;
+  balanceAfter: number;
+};

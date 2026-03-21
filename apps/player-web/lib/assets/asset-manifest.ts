@@ -13,6 +13,7 @@ export const shellAssets = {
   winFlowPlate: "/assets/ui/win-glow-plate.png",
   bigWinGlowPlate: "/assets/ui/big-win-glow-plate.png",
   hugeWinGlowPlate: "/assets/ui/huge-win-glow-plate.png",
+  superWinGlowPlate: "/assets/ui/super-win-glow-plate.png",
   logo: "/assets/ui/logo-eye-in-the-sky.png",
   meterEye: "/assets/ui/meter-eye-core.png"
 } as const;

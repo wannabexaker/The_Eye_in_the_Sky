@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: slot wallet/bet/autoplay state and spin-button.tsx
 */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
 import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
 
@@ -33,6 +33,7 @@ type ControlPanelProps = {
   onCommitAutospinInput: () => number | null;
   onSpin: () => void;
   onStartAutospin: () => void;
+  onStartAutospinInfinite: () => void;
   onStopAutoSpin: () => void;
   onToggleAutoContinueNeverStop: () => void;
 };
@@ -62,11 +63,14 @@ export function ControlPanel({
   onCommitAutospinInput,
   onSpin,
   onStartAutospin,
+  onStartAutospinInfinite,
   onStopAutoSpin,
   onToggleAutoContinueNeverStop
 }: ControlPanelProps) {
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
   const autoplayInputRef = useRef<HTMLInputElement>(null);
+  const autoplayHoldTimerRef = useRef<number | null>(null);
+  const autoplayLongPressTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (isAutospinActive) {
@@ -84,6 +88,11 @@ export function ControlPanel({
   }, [autoplayInputOpen, isAutospinActive]);
 
   const handleAutoplayPress = () => {
+    if (autoplayLongPressTriggeredRef.current) {
+      autoplayLongPressTriggeredRef.current = false;
+      return;
+    }
+
     if (isAutospinActive) {
       onStopAutoSpin();
       return;
@@ -101,6 +110,41 @@ export function ControlPanel({
 
     onStartAutospin();
     setAutoplayInputOpen(false);
+  };
+
+  const clearAutoplayHoldTimer = () => {
+    if (autoplayHoldTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(autoplayHoldTimerRef.current);
+    autoplayHoldTimerRef.current = null;
+  };
+
+  const handleAutoplayPointerDown = () => {
+    if (isAutospinActive) {
+      return;
+    }
+
+    clearAutoplayHoldTimer();
+    autoplayLongPressTriggeredRef.current = false;
+
+    autoplayHoldTimerRef.current = window.setTimeout(() => {
+      autoplayLongPressTriggeredRef.current = true;
+      setAutoplayInputOpen(false);
+      onStartAutospinInfinite();
+      autoplayHoldTimerRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearAutoplayHoldTimer();
+    };
+  }, []);
+
+  const suppressSelectionOnPointerDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
   };
 
   return (
@@ -121,6 +165,7 @@ export function ControlPanel({
             aria-label="Stop autoplay now"
             className="dockStopButton"
             disabled={!isAutospinActive && !autospinStopRequested}
+            onMouseDown={suppressSelectionOnPointerDown}
             onClick={onStopAutoSpin}
             title="Stop autoplay"
             type="button"
@@ -137,6 +182,7 @@ export function ControlPanel({
               aria-label="Decrease bet"
               className="dockSmallButton iconOnlyAction betAdjustIconButton"
               disabled={areBetControlsLocked}
+              onMouseDown={suppressSelectionOnPointerDown}
               onClick={onDecreaseBet}
               title="Decrease bet"
               type="button"
@@ -167,6 +213,7 @@ export function ControlPanel({
               aria-label="Increase bet"
               className="dockSmallButton iconOnlyAction betAdjustIconButton"
               disabled={areBetControlsLocked}
+              onMouseDown={suppressSelectionOnPointerDown}
               onClick={onIncreaseBet}
               title="Increase bet"
               type="button"
@@ -214,7 +261,12 @@ export function ControlPanel({
 
               <button
                 className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""}`}
-                disabled={!canStartAutospin && !isAutospinActive}
+                disabled={areBetControlsLocked && !isAutospinActive}
+                onMouseDown={suppressSelectionOnPointerDown}
+                onPointerDown={handleAutoplayPointerDown}
+                onPointerUp={clearAutoplayHoldTimer}
+                onPointerLeave={clearAutoplayHoldTimer}
+                onPointerCancel={clearAutoplayHoldTimer}
                 onClick={handleAutoplayPress}
                 title={isAutospinActive ? "Stop autoplay" : autoplayInputOpen ? "Start autoplay" : "Set autoplay count"}
                 type="button"
@@ -229,6 +281,7 @@ export function ControlPanel({
             <button
               aria-label={autoContinueNeverStop ? "Disable nonstop" : "Enable nonstop"}
               className={`dockSmallButton iconOnlyAction ${autoContinueNeverStop ? "is-active" : ""}`}
+              onMouseDown={suppressSelectionOnPointerDown}
               onClick={onToggleAutoContinueNeverStop}
               title={autoContinueNeverStop ? "Nonstop enabled: skip win overlays" : "Nonstop disabled"}
               type="button"

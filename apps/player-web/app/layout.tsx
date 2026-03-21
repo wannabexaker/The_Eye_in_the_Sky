@@ -17,7 +17,11 @@ const uiFont = Spectral({
 
 export const metadata: Metadata = {
   title: "The Eye in the Sky",
-  description: "Occult slot prototype with fake balance and cascading cluster wins."
+  description: "Occult slot prototype with fake balance and cascading cluster wins.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg"
+  }
 };
 
 export default function RootLayout({

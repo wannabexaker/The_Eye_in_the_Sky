@@ -36,12 +36,71 @@ const CUSTOM_BET_STEP = 1000;
 const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
+const WIN_GLOW_START_MULTIPLE = 2;
+const BIG_WIN_THRESHOLD = 5;
+const HUGE_WIN_THRESHOLD = 8;
+const SUPER_WIN_THRESHOLD = 14.9;
+const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(value);
+
+const deriveAnalyticsTier = (winMultiple: number, totalWin: number) => {
+  if (totalWin <= 0) {
+    return "loss" as const;
+  }
+
+  if (winMultiple >= SUPER_WIN_THRESHOLD) {
+    return "super_win" as const;
+  }
+
+  if (winMultiple >= HUGE_WIN_THRESHOLD) {
+    return "huge_win" as const;
+  }
+
+  if (winMultiple >= BIG_WIN_THRESHOLD) {
+    return "big_win" as const;
+  }
+
+  return "win" as const;
+};
+
+const pushRoundAnalytics = async (result: SpinResult) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
+  const payload = {
+    entries: [
+      {
+        id: result.roundSummary.roundId,
+        timestamp: Date.parse(result.roundSummary.timestamp) || Date.now(),
+        bet: result.bet,
+        win: result.totalWin,
+        net: Number((result.totalWin - result.debugMetadata.chargedBet).toFixed(2)),
+        mode: result.mode,
+        cascades: result.cascades.length,
+        bonusTriggered: result.bonusTriggered,
+        multiplier: result.appliedWinMultiplier,
+        winMultiple: Number(winMultiple.toFixed(4)),
+        tier: deriveAnalyticsTier(winMultiple, result.totalWin),
+        balanceAfter: result.balanceAfter
+      }
+    ]
+  };
+
+  await fetch(`${ANALYTICS_API_BASE}/analytics/ingest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+};
 
 const roundCurrency = (value: number) => Number(value.toFixed(2));
 
@@ -79,6 +138,19 @@ const parsePositiveInteger = (value: string) => {
   }
 
   return parsed;
+};
+
+const isTypingTarget = (eventTarget: EventTarget | null) => {
+  if (!(eventTarget instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (eventTarget.isContentEditable) {
+    return true;
+  }
+
+  const tagName = eventTarget.tagName;
+  return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
 };
 
 const getAutospinRequiredBalance = (
@@ -207,10 +279,16 @@ const buildWinPresentation = (
   }
 
   const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
-  const bigWin = winMultiple >= 5 && winMultiple < 10;
-  const hugeWin = winMultiple >= 10;
+  const glowLevel =
+    winMultiple <= WIN_GLOW_START_MULTIPLE
+      ? 0
+      : Math.min(1, (winMultiple - WIN_GLOW_START_MULTIPLE) / (SUPER_WIN_THRESHOLD - WIN_GLOW_START_MULTIPLE));
+  const bigWin = winMultiple >= BIG_WIN_THRESHOLD && winMultiple < HUGE_WIN_THRESHOLD;
+  const hugeWin = winMultiple >= HUGE_WIN_THRESHOLD && winMultiple < SUPER_WIN_THRESHOLD;
+  const superWin = winMultiple >= SUPER_WIN_THRESHOLD;
   const inBonus = result.mode === "bonus";
   const subtitleParts = [
+    `x${winMultiple.toFixed(2)} total`,
     hasMultiplierEvent(result) ? `x${result.appliedWinMultiplier} multiplier applied` : null,
     inBonus && result.bonusStateAfter
       ? `Bonus total ${formatMoney(result.bonusStateAfter.totalBonusWin)}`
@@ -219,8 +297,10 @@ const buildWinPresentation = (
   ].filter(Boolean);
 
   return {
-    kind: hugeWin ? "huge_win" : bigWin ? "big_win" : "round_win",
-    title: hugeWin
+    kind: superWin ? "super_win" : hugeWin ? "huge_win" : bigWin ? "big_win" : "round_win",
+    title: superWin
+      ? "SUPER WIN"
+      : hugeWin
       ? "HUGE WIN"
       : bigWin
         ? "BIG WIN"
@@ -230,16 +310,18 @@ const buildWinPresentation = (
           ? "CASCADE TOTAL"
           : "WIN",
     amount: result.totalWin,
+    winMultiple,
+    glowLevel,
     subtitle: subtitleParts.join(" • ") || undefined,
     detailRows: getCascadeDetailRows(result),
     requireAcknowledgement:
       !autoContinueNeverStop &&
-      (bigWin || hugeWin || result.cascades.length >= 3 || result.bonusTriggered),
+      (bigWin || hugeWin || superWin || result.cascades.length >= 3 || result.bonusTriggered),
     continueLabel: result.bonusTriggered ? "Enter Bonus" : "Continue",
     autoDismissMs:
-      autoContinueNeverStop && (bigWin || hugeWin)
+      autoContinueNeverStop && (bigWin || hugeWin || superWin)
         ? BIG_WIN_AUTO_DISMISS_MS
-        : bigWin || hugeWin
+        : bigWin || hugeWin || superWin
           ? undefined
           : WIN_PRESENTATION_AUTO_DISMISS_MS
   };
@@ -574,10 +656,14 @@ const validateAutospinCount = useCallback(
           );
 
           if (result.totalWin > 0) {
-            soundManager.play(
-              result.totalWin >= result.bet * 5 ? "big_win" : "win",
-              soundEnabled
-            );
+            const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
+            const soundEvent =
+              winMultiple >= SUPER_WIN_THRESHOLD
+                ? "super_win"
+                : winMultiple >= BIG_WIN_THRESHOLD
+                  ? "big_win"
+                  : "win";
+            soundManager.play(soundEvent, soundEnabled);
           } else {
             soundManager.play("loss", soundEnabled);
           }
@@ -705,6 +791,9 @@ const validateAutospinCount = useCallback(
     setLastResult(result);
     setHistory((current) => [result, ...current].slice(0, 10));
     scheduleRoundFeedback(result);
+    void pushRoundAnalytics(result).catch(() => {
+      // Analytics in Phase 1 are best-effort only and must never block gameplay.
+    });
     return result;
   }, [applyRoundResult, availableBalance, scheduleRoundFeedback]);
 
@@ -754,6 +843,28 @@ const validateAutospinCount = useCallback(
     spinPhase,
     winPresentation
   ]);
+
+  const startAutoSpinInfinite = useCallback(() => {
+    if (!applyManualBet()) {
+      return;
+    }
+
+    if (spinPhase !== "IDLE" || bonusAnnouncement || bonusSummary || winPresentation) {
+      if (bonusSummary) {
+        setAutospinValidationMessage("Close the bonus summary before starting autospin.");
+        return;
+      }
+
+      setAutospinValidationMessage("Wait for the current presentation to finish.");
+      return;
+    }
+
+    soundManager.prime();
+    setIsAutoSpinning(true);
+    setAutospinStopRequested(false);
+    setAutoSpinRemaining(Number.POSITIVE_INFINITY);
+    setAutospinValidationMessage("Autospin running until stop or insufficient balance.");
+  }, [applyManualBet, bonusAnnouncement, bonusSummary, spinPhase, winPresentation]);
 
   const stopAutoSpin = useCallback(() => {
     if (!isAutoSpinning) {
@@ -855,6 +966,44 @@ const validateAutospinCount = useCallback(
       return () => window.clearTimeout(timer);
     }
   }, [autoContinueNeverStop, winPresentation]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === "s") {
+        event.preventDefault();
+        decrementBetByStep();
+        return;
+      }
+
+      if (key === "w") {
+        event.preventDefault();
+        incrementBetByStep();
+        return;
+      }
+
+      if (key === "a") {
+        event.preventDefault();
+        if (!isAutoSpinning) {
+          startAutoSpinInfinite();
+        }
+        return;
+      }
+
+      if (key === "q") {
+        event.preventDefault();
+        stopAutoSpin();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
 
   const dismissBonusAnnouncement = useCallback(() => {
     setBonusAnnouncement(null);
@@ -959,6 +1108,7 @@ const validateAutospinCount = useCallback(
     winMultiplierOptions: activeGameConfig.winMultiplierOptions,
     spin,
     startAutoSpin,
+    startAutoSpinInfinite,
     stopAutoSpin,
     reset,
     setBet: applyBetValue,

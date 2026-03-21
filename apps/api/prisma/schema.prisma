@@ -124,3 +124,23 @@ model AuditLog {
   payload    Json
   createdAt  DateTime @default(now())
 }
+
+model AnalyticsRound {
+  id             String   @id
+  timestampMs    BigInt
+  bet            Decimal  @db.Decimal(18, 2)
+  win            Decimal  @db.Decimal(18, 2)
+  net            Decimal  @db.Decimal(18, 2)
+  mode           String
+  cascades       Int
+  bonusTriggered Boolean
+  multiplier     Float
+  winMultiple    Float
+  tier           String
+  balanceAfter   Decimal  @db.Decimal(18, 2)
+  createdAt      DateTime @default(now())
+
+  @@index([timestampMs])
+  @@index([tier])
+  @@index([createdAt])
+}

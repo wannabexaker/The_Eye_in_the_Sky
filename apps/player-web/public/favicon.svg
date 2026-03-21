@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="The Eye in the Sky favicon">
+  <defs>
+    <linearGradient id="eyeStroke" x1="10" y1="32" x2="54" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9A6F32" />
+      <stop offset="0.5" stop-color="#E2BE70" />
+      <stop offset="1" stop-color="#9A6F32" />
+    </linearGradient>
+    <linearGradient id="ouroborosStroke" x1="14" y1="14" x2="50" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5B3B17" />
+      <stop offset="0.52" stop-color="#E2BE70" />
+      <stop offset="1" stop-color="#7A5020" />
+    </linearGradient>
+    <radialGradient id="irisFill" cx="32" cy="32" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF2CF" />
+      <stop offset="0.55" stop-color="#E2BE70" />
+      <stop offset="1" stop-color="#8A5A24" />
+    </radialGradient>
+    <path id="ouroborosPath" d="M32 11.5a20.5 20.5 0 1 1 0 41a20.5 20.5 0 1 1 0-41" />
+  </defs>
+
+  <g opacity="0.92">
+    <circle cx="32" cy="32" r="20.5" fill="none" stroke="rgba(226,190,112,0.22)" stroke-width="2.2" />
+    <circle
+      cx="32"
+      cy="32"
+      r="20.5"
+      fill="none"
+      stroke="url(#ouroborosStroke)"
+      stroke-width="2.8"
+      stroke-linecap="round"
+      stroke-dasharray="44 84"
+    >
+      <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="1.15s" repeatCount="indefinite" />
+    </circle>
+    <circle r="2.6" fill="#E7C57B" stroke="#5A3A18" stroke-width="0.9">
+      <animateMotion dur="1.15s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#ouroborosPath" />
+      </animateMotion>
+    </circle>
+    <circle r="0.42" fill="#1A140D">
+      <animateMotion dur="1.15s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#ouroborosPath" />
+      </animateMotion>
+    </circle>
+  </g>
+
+  <path d="M4 32c6-9 16-14 28-14s22 5 28 14c-6 9-16 14-28 14S10 41 4 32Z" fill="none" stroke="url(#eyeStroke)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="32" cy="32" r="10" fill="url(#irisFill)" />
+  <circle cx="32" cy="32" r="4.2" fill="#0A0A0D" />
+  <circle cx="35.2" cy="28.6" r="1.35" fill="#FFF7DF" opacity="0.95" />
+</svg>

@@ -27,7 +27,8 @@
 - `in_progress` Keep deposit flow flexible by supporting typed custom deposit amounts alongside preset chips
 - `in_progress` Increase board-through transparency by reducing both CSS shell opacity and Pixi board-gap background opacity so more of the scenic background remains visible
 - `in_progress` Collapse the board shell into one holistic frame treatment by disabling redundant CSS/Pixi frame and glow layers before rebuilding a cleaner final board skin
-- `todo` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
+- `in_progress` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
+- `todo` Build dedicated `1920x1080` vertical (`9:16`) layout: keep rails visible via portrait composition, enlarge board footprint, and prevent rail collapse/disappearance
 - `todo` Split the active shell CSS into focused files for board, footer controls, rails, and overlays so future responsive tuning stays isolated and predictable
 - `done` Wire public art assets into the player runtime with PNG-first and SVG fallback preview support
 - `todo` Add Tailwind integration
@@ -69,15 +70,49 @@
 - `done` Upgrade synthetic sound manager for richer game feedback
 - `done` Reorganize the `player-web` app into grouped component, hook, and library folders with local README indexes for future-proof navigation
 - `done` Remove the upfront autoplay-funds cap so autoplay accepts any positive requested count and stops only when the next spin can no longer be funded
+- `done` Add 4-tier win presentation system (WIN / BIG WIN / HUGE WIN / SUPER WIN) with progressive glow and dedicated audio routing
+- `done` Add session analytics dashboard with SVG charts (RTP trend, win tier distribution, cascade histogram, balance history) and CSV export
+- `done` Add `RoundAnalyticsEntry` tracking in player-store (Zustand + localStorage, up to 1000 rounds)
+- `done` Add `RoundAnalyticsEntry` / `RoundAnalyticsTier` types to `packages/shared-types` for SQL migration readiness
+- `done` Expand Samsara meter with progressive FX phases (dark → gold → critical red/blink)
+- `done` Expand ritual log to 100 entries with chevron toggle and scrollable viewport expansion
+- `done` Add EUR compact formatting in HUD and modal confirmations
+- `done` Add keyboard shortcuts: W/S (bet step), A (infinite autospin), Q (stop autospin)
+- `done` Add admin QA win tier preview popup with game-identical plate assets and typography
+- `done` Fix dev port assignments: player-web=3000, admin-web=3100, api=3200 (permanent)
+- `done` Add `pnpm dev:apps` parallel script for starting player + admin together
 
 ## Risks
 - Current prototype math is in a professional target band, but still needs longer `500k` to `1M` signoff runs before being treated as final.
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
-- `2026-03-15`
-  - Created initial task register
-- `2026-03-16`
+- `2026-03-21`
+  - Fixed spin/autoplay control UX: removed text selection/caret artifacts from spin control area; only bet and autoplay count inputs remain writable/selectable
+  - Added autoplay long-press shortcut: holding autoplay button for 3 seconds now starts infinite autospin directly
+  - Added Phase 2 telemetry API foundation in `apps/api`: `POST /analytics/ingest`, `GET /analytics/summary`, `GET /analytics/rounds`, `DELETE /analytics/reset` (in-memory aggregation for dev)
+  - Wired player-web to push round analytics in best-effort mode to API (`NEXT_PUBLIC_API_URL`, default `http://localhost:3200`)
+  - Upgraded admin-web `GameStatsViewer` to full live dashboard mode via `GET /analytics/dashboard` (RTP line, balance line, cascade histogram, tier distribution)
+  - Added Prisma `AnalyticsRound` model in schema for SQL phase preparation
+  - Implemented current-phase persistence to API local JSON store (`apps/api/.runtime/analytics-rounds.json`) so analytics survive API restarts before SQL migration is wired
+  - Fixed API startup blocker by removing runtime dependency on `@eye/game-engine` inside api config service for current dev phase
+  - Added 4-tier win presentation system: WIN / BIG WIN / HUGE WIN / SUPER WIN with per-tier glow plates, progressive `--win-glow-level` CSS variable, and dedicated `super_win` audio preset
+  - Added session analytics dashboard to player-web: `RoundAnalyticsEntry` tracking (up to 1000 rounds in Zustand+localStorage), SVG charts (RTP trend line, win tier horizontal bars, cascade histogram, balance history), CSV export button accessible from Settings → Open Session Analytics
+  - Added `RoundAnalyticsEntry` and `RoundAnalyticsTier` types to `packages/shared-types` for future SQL migration readiness
+  - Updated admin-web `GameStatsViewer` to describe in-game analytics access with metrics list and Phase 2 upgrade path
+  - Extended Samsara meter with progressive FX: dark phase → gold phase → critical red blink based on fill ratio
+  - Expanded ritual log to 100 entries with chevron toggle and scrollable expansion to viewport bottom
+  - Applied EUR compact formatting in HUD wallet rows and modal amount confirmations
+  - Added keyboard shortcuts: W/S for bet up/down, A for infinite autospin, Q to stop; Space still spins
+  - Added admin QA win tier preview popup with actual plate PNG assets and game-identical Cinzel/Spectral typography
+  - Fixed dev port assignments permanently: `player-web=3000`, `admin-web=3100`, `api=3200`
+  - Added `pnpm dev:apps` root script to start player + admin in parallel
+  - Released as tag `v0.0.10`
+
+- `2026-03-19`
+  - Recorded the approximate payout structure from a user-provided screenshot of a strong well-known slot into `docs/game-math.md` so the project keeps a permanent benchmark for three-band pay-anywhere ladder design, high/mid/low symbol separation, and separate scatter presentation
+  - Added `docs/variant-simple.md` to define the first simpler Eye sub-variant around a benchmark-informed `count-anywhere` model, shared shell/art reuse, reduced special-symbol complexity, and the recommended working name `Constellation`
+  - Recalibrated the active Full HD shell so the center board sits slightly smaller inside clearer left/right ownership lanes, the board stack renders in front of neighboring shell layers more decisively, and the bottom footer bar uses a lighter transparent glass treatment instead of the previous heavier opaque block
   - Completed engine round contract expansion, config version propagation, simulation reporting, and seeded regression coverage
   - Refactored player-web UI into a compact no-scroll gameplay shell with compressed HUD, tighter controls, and secondary panels moved to overlays
   - Added art production manifest and delivered first-pass SVG symbol/UI/background/logo asset set
