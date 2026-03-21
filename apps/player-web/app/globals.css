@@ -1321,7 +1321,7 @@ p {
 .overlayBackdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--z-modal);
+  z-index: calc(var(--z-button) + 20);
   display: grid;
   place-items: center;
   padding: 18px;
@@ -1504,7 +1504,7 @@ p {
   --win-multiple: 0;
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-modal) - 1);
+  z-index: calc(var(--z-button) + 18);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -2657,22 +2657,40 @@ Current shell calibration:
 
 .supportStatusStrip {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .supportStatusBottomRow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 
 .supportMiniStat {
-  padding: 8px 10px;
-  gap: 3px;
+  padding: 6px 8px;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+  min-height: 0;
 }
 
 .supportMiniStatRound {
   width: 100%;
+}
+
+.supportMiniStat span,
+.supportMiniStat strong {
+  justify-self: center;
+  text-align: center;
+}
+
+.supportMiniStat span {
+  line-height: 1.1;
+}
+
+.supportMiniStat strong {
+  line-height: 1;
 }
 
 .supportHistory {
@@ -3916,6 +3934,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     backdrop-filter: none;
     justify-items: center;
     text-align: center;
+    transform: translateY(-2px);
   }
 
   .brandingRail .brandTagline,
@@ -3964,6 +3983,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   .supportRail .treasuryBlock {
     grid-area: treasury;
     align-self: end;
+    transform: translateY(125px);
   }
 
   .supportRail .supportBalanceBlock {
@@ -3980,23 +4000,33 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .supportRail .supportHistoryBlock {
     grid-area: history;
-    min-height: clamp(132px, 18vh, 184px);
-    max-height: clamp(132px, 18vh, 184px);
+    min-height: clamp(148px, 20vh, 204px);
+    max-height: clamp(148px, 20vh, 204px);
     width: 100%;
     justify-self: start;
     align-self: end;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .supportRail .supportHistoryBlock .supportNote {
-    font-size: 0.7rem;
+    font-size: 0.74rem;
     line-height: 1.2;
+    min-height: 18px;
+    max-height: 18px;
     margin-bottom: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .supportRail .supportHistory {
     gap: 4px;
     margin-top: 4px;
-    max-height: clamp(76px, 11vh, 112px);
+    flex: 1;
+    min-height: 0;
+    max-height: none;
     overflow-y: auto;
   }
 
@@ -4004,6 +4034,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     padding: 4px 6px;
     border-radius: 10px;
     gap: 6px;
+    min-height: 24px;
   }
 
   .supportRail .supportHistoryRow strong {
@@ -4021,6 +4052,159 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     margin-top: 0;
     padding-top: 2px;
     justify-content: flex-start;
+  }
+
+  .supportRail.is-handheld-portrait {
+    grid-template-areas:
+      "history balance"
+      "history meter"
+      "utility meter";
+  }
+
+  .supportRail.is-handheld-portrait .treasuryBlock {
+    grid-area: meter;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 144px;
+    justify-self: end;
+    transform: none;
+    margin: 0;
+    box-sizing: border-box;
+    padding: 7px;
+    overflow: hidden;
+  }
+
+  .supportRail.is-handheld-portrait .supportBalanceBlock {
+    width: 100%;
+    max-width: 168px;
+    justify-self: end;
+    transform: translateY(20px);
+  }
+
+  .supportRail.is-handheld-portrait .supportBalanceZone {
+    min-height: 0;
+  }
+
+  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat {
+    min-height: 34px;
+    padding: 4px 6px;
+  }
+
+  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat span {
+    line-height: 1;
+  }
+
+  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat strong {
+    font-size: 0.84rem;
+    line-height: 1;
+  }
+
+  .supportRail.is-handheld-portrait .supportMeterBlock {
+    position: fixed;
+    right: clamp(10px, 3vw, 18px);
+    bottom: var(--portrait-bottom-safe);
+    width: 144px;
+    min-width: 144px;
+    max-width: 144px;
+    z-index: calc(var(--z-surface) + 10);
+    justify-self: auto;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .supportRail.is-handheld-portrait .treasuryBlock .supportActions {
+    width: 100%;
+  }
+
+  .supportRail.is-handheld-portrait .treasuryBlock .walletAction {
+    width: 100%;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .supportRail.is-handheld-portrait .supportStatusBlock.is-handheld-hidden {
+    display: none;
+  }
+
+  .supportRail.is-handheld-portrait .supportStatusStrip {
+    gap: 3px;
+  }
+
+  .supportRail.is-handheld-portrait .supportStatusBottomRow {
+    gap: 3px;
+  }
+
+  .supportRail.is-handheld-portrait .supportMiniStat {
+    min-height: 54px;
+    padding: 5px 6px;
+    gap: 1px;
+  }
+
+  .supportRail.is-handheld-portrait .supportMiniStatRound {
+    min-height: 62px;
+  }
+
+  .supportRail.is-handheld-portrait .supportMiniStat span {
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
+  }
+
+  .supportRail.is-handheld-portrait .supportMiniStat strong {
+    font-size: 0.92rem;
+  }
+
+  .supportRail.is-handheld-portrait .supportMeterBlock {
+    align-self: start;
+    height: fit-content;
+    min-height: 0;
+  }
+
+  .supportRail.is-handheld-portrait .samsaraMeter {
+    gap: 4px;
+  }
+
+  .supportRail.is-handheld-portrait .samsaraMeterBody {
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .supportRail.is-handheld-portrait .samsaraMeter small {
+    font-size: 0.64rem;
+    line-height: 1;
+  }
+
+  .supportRail.is-handheld-portrait .samsaraTrack {
+    height: 7px;
+  }
+
+  .supportRail.is-handheld-portrait .supportRailUtilityBar {
+    position: relative;
+    grid-area: utility;
+    justify-content: flex-start;
+    gap: 3px;
+    padding-top: 0;
+  }
+
+  .supportRail.is-handheld-portrait .supportStatusContextWindow {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 6px);
+    z-index: calc(var(--z-surface) + 12);
+    width: min(100vw - 32px, 190px);
+    padding: 8px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+  }
+
+  .supportRail.is-handheld-portrait .supportRailUtilityBar .supportRailUtilityButton {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
   }
 
   .treasuryBlock .supportActions {
@@ -4102,6 +4286,24 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     letter-spacing: 0.13em;
   }
 
+  @media (max-width: 11in) {
+    .floatingGameDock {
+      bottom: calc(var(--portrait-bottom-safe) + 84px);
+    }
+
+    .floatingGameDock .spinCta {
+      transform: translate(-50%, calc(-50% - 38px));
+    }
+
+    .floatingGameDock .spinCta:hover {
+      transform: translate(-50%, calc(-50% - 38px)) scale(1.05);
+    }
+
+    .floatingGameDock .spinCta:active:not(:disabled) {
+      transform: translate(-50%, calc(-50% - 38px)) scale(0.97);
+    }
+  }
+
   .utilityZone,
   .betAdjustZone,
   .autoplayZone {
@@ -4140,15 +4342,27 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     border-radius: 12px;
   }
 
+  .supportRail .treasuryBlock {
+    transform: translateY(129px);
+  }
+
   .supportRail .supportHistoryBlock {
     min-height: clamp(148px, 17vh, 204px);
     max-height: clamp(148px, 17vh, 204px);
+  }
+
+  .supportRail.is-handheld-portrait {
+    grid-template-areas:
+      "treasury balance"
+      "history meter"
+      "utility meter";
   }
 
   .brandingRail .brandPanel {
     width: min(100%, 420px);
     padding: 4px 8px 0;
     border-radius: 0;
+    transform: translateY(-4px);
   }
 
   .brandLogo {

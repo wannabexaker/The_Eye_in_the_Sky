@@ -45,6 +45,7 @@ const MAX_RITUAL_LOG_ENTRIES = 100;
 const DESKTOP_VISIBLE_ENTRIES = 5;
 const COMPACT_VISIBLE_ENTRIES = 3;
 const PORTRAIT_VISIBLE_ENTRIES = 10;
+const HANDHELD_PORTRAIT_VISIBLE_ENTRIES = 11;
 
 export function LeftSupportRail({
   balance,
@@ -71,7 +72,9 @@ export function LeftSupportRail({
 }: LeftSupportRailProps) {
   const [compactView, setCompactView] = useState(false);
   const [portraitView, setPortraitView] = useState(false);
+  const [handheldPortraitView, setHandheldPortraitView] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,14 +96,36 @@ export function LeftSupportRail({
     return () => portraitQuery.removeEventListener("change", syncPortraitView);
   }, []);
 
+  useEffect(() => {
+    const handheldPortraitQuery = window.matchMedia(
+      "(orientation: portrait) and (max-aspect-ratio: 10/16) and (max-width: 11in)"
+    );
+    const syncHandheldPortraitView = () => setHandheldPortraitView(handheldPortraitQuery.matches);
+
+    syncHandheldPortraitView();
+    handheldPortraitQuery.addEventListener("change", syncHandheldPortraitView);
+    return () => handheldPortraitQuery.removeEventListener("change", syncHandheldPortraitView);
+  }, []);
+
+  useEffect(() => {
+    if (!handheldPortraitView) {
+      setMobileRoundStatusOpen(false);
+    }
+  }, [handheldPortraitView]);
+
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = portraitView
-    ? PORTRAIT_VISIBLE_ENTRIES
-    : compactView
-      ? COMPACT_VISIBLE_ENTRIES
-      : DESKTOP_VISIBLE_ENTRIES;
+  const defaultVisibleEntries = handheldPortraitView
+    ? HANDHELD_PORTRAIT_VISIBLE_ENTRIES
+    : portraitView
+      ? PORTRAIT_VISIBLE_ENTRIES
+      : compactView
+        ? COMPACT_VISIBLE_ENTRIES
+        : DESKTOP_VISIBLE_ENTRIES;
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
+  const historyToggleTitle = showMore
+    ? `Collapse ritual log. ${phaseMessage}`
+    : `Expand ritual log. ${phaseMessage}`;
 
   useEffect(() => {
     if (ritualEntries.length <= defaultVisibleEntries && showMore) {
@@ -137,7 +162,9 @@ export function LeftSupportRail({
   }, [showMore, ritualEntries.length]);
 
   return (
-    <aside className="leftRail supportRail">
+    <aside
+      className={`leftRail supportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
+    >
       <section className="compactPanel supportBlock treasuryBlock">
         <div className="panelHeader">
           <p className="eyebrow">Treasury</p>
@@ -166,7 +193,7 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock supportStatusBlock"
+        className={`compactPanel supportBlock supportStatusBlock ${handheldPortraitView ? "is-handheld-hidden" : ""}`}
         title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
       >
         <div className="panelHeader">
@@ -225,7 +252,7 @@ export function LeftSupportRail({
               onClick={() => setShowMore((current) => !current)}
               aria-expanded={showMore}
               aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
-              title={showMore ? "Collapse ritual log" : "Expand ritual log"}
+              title={historyToggleTitle}
               type="button"
             >
               <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
@@ -234,7 +261,7 @@ export function LeftSupportRail({
             </button>
           ) : null}
         </div>
-        <p className="supportNote">{phaseMessage}</p>
+        <p className="supportNote" title={phaseMessage}>{phaseMessage}</p>
         <div
           className={`supportHistory ${showMore ? "is-scrollable" : ""}`}
           ref={supportHistoryRef}
@@ -258,6 +285,42 @@ export function LeftSupportRail({
       </section>
 
       <div className="supportRailUtilityBar">
+        {handheldPortraitView && mobileRoundStatusOpen ? (
+          <section
+            className="compactPanel supportBlock supportStatusContextWindow"
+            title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
+          >
+            <div className="panelHeader">
+              <p className="eyebrow">Round Status</p>
+            </div>
+            <div className="supportStatusStrip">
+              <div
+                className="miniStat supportMiniStat supportMiniStatRound"
+                title="Round total win from the latest resolved spin."
+              >
+                <span>Round</span>
+                <strong>{roundWin.toFixed(2)}</strong>
+              </div>
+              <div className="supportStatusBottomRow">
+                <div
+                  className="miniStat supportMiniStat"
+                  title="Cascade count from the latest resolved spin."
+                >
+                  <span>Cascade</span>
+                  <strong>{cascades}</strong>
+                </div>
+                <div
+                  className="miniStat supportMiniStat"
+                  title="Bonus spins currently active or gained after bonus triggers."
+                >
+                  <span>Spins</span>
+                  <strong>{freeSpins}</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <button
           aria-label="Menu"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
@@ -297,7 +360,14 @@ export function LeftSupportRail({
         <button
           aria-label="Info"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
-          onClick={onToggleHistory}
+          onClick={() => {
+            if (handheldPortraitView) {
+              setMobileRoundStatusOpen((current) => !current);
+              return;
+            }
+
+            onToggleHistory();
+          }}
           title="Info"
           type="button"
         >

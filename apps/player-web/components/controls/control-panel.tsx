@@ -6,6 +6,7 @@ Uses: slot wallet/bet/autoplay state and spin-button.tsx
 
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
+import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
 import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
 
 type ControlPanelProps = {
@@ -292,6 +293,8 @@ export function ControlPanel({
                 <path d="M17 6v12" />
               </svg>
             </button>
+
+            <WakeLockToggle />
           </div>
         </div>
 

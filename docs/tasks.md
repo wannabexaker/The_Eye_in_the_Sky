@@ -29,6 +29,16 @@
 - `in_progress` Collapse the board shell into one holistic frame treatment by disabling redundant CSS/Pixi frame and glow layers before rebuilding a cleaner final board skin
 - `in_progress` Add dedicated board-layout calibration bands for `2560x1440`, `2868x1320`, portrait `9:16`, and very-wide desktop usage
 - `todo` Build dedicated `1920x1080` vertical (`9:16`) layout: keep rails visible via portrait composition, enlarge board footprint, and prevent rail collapse/disappearance
+- `todo` Define one shared portrait shell contract for `phone portrait` and `1920x1080 vertical monitor`: same logo -> board -> lower left/center/right module order, with only scale/compression differences allowed
+- `todo` Isolate portrait responsive ownership so `phone portrait` tuning cannot silently break `vertical monitor portrait`, and vice versa
+- `todo` Recalibrate portrait lower-zone ownership from the latest screenshots:
+  - left-lower column: `Treasury` above `Ritual Log`
+  - center-lower column: compact `Balance / Bet`, `Round Status`, `Samsara`, utility icons
+  - right-lower column: spin CTA plus its bet/autoplay controls as one cluster
+- `todo` Preserve board and logo relationship across both portrait targets so the board stays directly under the centered logo and the shell still reads as the same design on both devices
+- `todo` Add screenshot-based verification for two portrait references before more CSS iteration:
+  - mobile-like portrait viewport
+  - `1920x1080` monitor used in vertical (`9:16`) orientation
 - `todo` Split the active shell CSS into focused files for board, footer controls, rails, and overlays so future responsive tuning stays isolated and predictable
 - `done` Wire public art assets into the player runtime with PNG-first and SVG fallback preview support
 - `todo` Add Tailwind integration

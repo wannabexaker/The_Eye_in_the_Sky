@@ -305,6 +305,22 @@ Run `pnpm dev:apps` to start player + admin in parallel. Run `pnpm dev:api` sepa
 - Explicit board-footprint target, recorded from the latest user instruction: on `1920x1080`, the board should sit almost flush with the mini-stat strip above it and nearly touch the left rail, right rail, and footer below while remaining fully visible at browser zoom `100%`.
 - Explicit zoom-behavior target, recorded from the latest user instruction: browser zoom should scale the board more uniformly with the rest of the shell instead of making the surrounding UI feel closer while the board shrinks or drifts differently.
 - Explicit portrait-monitor target, recorded from the latest user instruction: on `1920x1080` screens used in vertical orientation (`9:16`), rails must remain visible through a dedicated portrait layout, and the board must scale up instead of collapsing into a small center footprint.
+- Latest dual-screenshot portrait finding, recorded from direct comparison between a phone viewport and a vertically oriented desktop monitor:
+  - both portrait surfaces must read as the same shell design, not as two different responsive inventions
+  - target shared composition is:
+    - top-center brand logo
+    - board directly below the logo as the dominant center element
+    - lower-left support stack led by `Treasury` and `Ritual Log`
+    - lower-center compact status stack (`Balance / Bet`, `Round Status`, `Samsara`, utility icons) without overlapping the board
+    - lower-right spin dock with spin CTA visually tied to the bet/autoplay controls
+  - allowed variance between phone portrait and vertical monitor portrait should be only scale/compression, not ownership or ordering changes
+  - if space becomes tight, the shell may compress modules, but it must preserve the same reading order and left/center/right ownership
+  - mobile portrait should not become a special alternate design that diverges from the `9:16` vertical monitor shell
+- Latest screenshot-based issue summary:
+  - the phone layout is currently much closer to the intended shared portrait shell
+  - the vertical-monitor portrait view currently drifts too far toward a desktop board-only composition, leaving the board dominant but not preserving the same lower-zone module arrangement
+  - the active CSS responsive logic is still too coupled, so edits for phone portrait can unintentionally perturb vertical-monitor portrait and vice versa
+  - the next responsive pass must treat `phone portrait` and `vertical monitor portrait` as siblings under one portrait design language, with isolated calibration knobs rather than cross-impacting overrides
 - Current visual direction for the board-top stat strip: `Round / Cascades / Free Spins` should stay readable but use a translucent glass-like surface so the enlarged board remains visible behind them.
 - Current visual direction for `100%` browser zoom: after the aggressive enlargement pass, the board now needs slight reduction and a slightly lower placement so it remains fully visible without top or bottom crop.
 - Additional responsive target bands now required for board geometry:
@@ -330,6 +346,15 @@ Run `pnpm dev:apps` to start player + admin in parallel. Run `pnpm dev:api` sepa
   - the board shell should avoid stacked decorative frame layers; current direction is to collapse the board into one holistic frame treatment instead of multiple CSS and Pixi frame/glow layers
   - keyboard ergonomics should support `Space = spin`, `+ = increase bet`, and `- = decrease bet` whenever no blocking modal or text input is active
   - the deposit modal must support typed custom amounts in addition to quick preset chips
+- Current portrait hierarchy direction from the latest screenshot comparison:
+  - portrait layouts should preserve one consistent semantic shell across both `phone portrait` and `1920x1080 vertical monitor`
+  - the logo should remain centered above the board in both portrait targets
+  - the board should stay directly under the logo and should not drift so far down or up that the portrait shell reads differently between devices
+  - `Treasury` must sit above `Ritual Log` in the left-lower support column
+  - the middle-lower stack should hold compact `Balance / Bet`, `Round Status`, `Samsara`, and utility icons in a centered column
+  - the right-lower lane should hold the spin dock and its controls as one cluster
+  - these portrait modules must avoid overlap with the board; compression is allowed, ownership changes are not
+  - portrait tuning must be isolated by viewport band so a change for one portrait target does not accidentally deform the other
 
 ## Assumptions
 - Fake-money prototype remains the only supported scope in Phase 1.

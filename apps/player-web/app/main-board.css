@@ -523,7 +523,7 @@ Board responsive variables and local overrides
     --board-frame-fit-height: clamp(560px, calc(100dvh - 360px), 980px);
     --board-inline-breathe: 18px;
     --board-frame-margin-bottom: -10px;
-    --board-frame-translate-y: 0;
+    --board-frame-translate-y: -32px;
     --board-frame-radius: clamp(14px, 2.6vw, 20px);
     --board-frame-border-width: 1px;
     --board-stage-halo-radius: clamp(18px, 3vw, 24px);
@@ -565,7 +565,7 @@ Board responsive variables and local overrides
     --board-frame-fit-height: clamp(780px, calc(100dvh - 420px), 1140px);
     --board-inline-breathe: 12px;
     --board-frame-margin-bottom: -10px;
-    --board-frame-translate-y: -2px;
+    --board-frame-translate-y: -36px;
     --board-frame-radius: clamp(14px, 1.9vw, 22px);
     --board-stage-halo-radius: clamp(20px, 2.4vw, 30px);
     --board-stage-halo-blur: clamp(12px, 1.8vw, 18px);
@@ -616,7 +616,7 @@ Board responsive variables and local overrides
     --board-frame-fit-height: clamp(268px, calc(100dvh - 262px), 430px);
     --board-inline-breathe: 8px;
     --board-frame-margin-bottom: 0;
-    --board-frame-translate-y: 0;
+    --board-frame-translate-y: -20px;
     --board-frame-radius: clamp(8px, 2.4vw, 12px);
     --board-frame-border-width: 1px;
     --board-stage-halo-radius: clamp(9px, 2.2vw, 13px);
