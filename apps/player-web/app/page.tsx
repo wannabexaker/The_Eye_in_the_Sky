@@ -9,6 +9,7 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 import { useEffect, useRef, useState } from "react";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
+import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
 import { DebugPanel } from "@/components/debug/debug-panel";
 import { LeftSupportRail } from "@/components/layout/left-support-rail";
 import { RightOperatorRail } from "@/components/layout/right-operator-rail";
@@ -417,6 +418,16 @@ export default function HomePage() {
           >
             Open Session Analytics
           </button>
+        </section>
+
+        <section className="modalSection">
+          <p className="eyebrow">Screen Wake Lock</p>
+          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+            Keep the screen awake during gameplay on supported devices.
+          </p>
+          <div className="chipRow">
+            <WakeLockToggle />
+          </div>
         </section>
 
         <section className="modalSection">

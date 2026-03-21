@@ -353,6 +353,8 @@ Run `pnpm dev:apps` to start player + admin in parallel. Run `pnpm dev:api` sepa
   - `Treasury` must sit above `Ritual Log` in the left-lower support column
   - the middle-lower stack should hold compact `Balance / Bet`, `Round Status`, `Samsara`, and utility icons in a centered column
   - the right-lower lane should hold the spin dock and its controls as one cluster
+  - the handheld portrait `Spin` CTA should use a smaller physical size than the vertical-desktop portrait CTA
+  - the handheld portrait spin-size change must be applied from the active portrait responsive ownership file that controls the dock sizing (`responsive-portrait.css`), not from lower-priority or dead-end overrides in unrelated stylesheets
   - these portrait modules must avoid overlap with the board; compression is allowed, ownership changes are not
   - portrait tuning must be isolated by viewport band so a change for one portrait target does not accidentally deform the other
 

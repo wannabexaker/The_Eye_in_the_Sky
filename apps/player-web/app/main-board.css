@@ -24,13 +24,13 @@ These are the board-related custom properties currently owned by `.slotViewport`
   --board-shell-top-pad: 0;
 
   /* Main sizing control: the board now scales from viewport height, not parent percentages. */
-  --board-frame-fit-height: calc(100dvh + 40px);
+  --board-frame-fit-height: 100%;
 
   /* Hard inline breathing room so the board can be made smaller even when width, not height, is the limiting factor. */
-  --board-inline-breathe: 44px;
+  --board-inline-breathe: 10px;
 
   /* Reserve overlap so the board can sit visually in front of the footer. */
-  --board-frame-margin-bottom: -38px;
+  --board-frame-margin-bottom: 0;
 
   /* Fine vertical placement control so viewport-specific tuning does not require resizing the board again. */
   --board-frame-translate-y: 0px;
@@ -239,7 +239,7 @@ Board stage and Pixi shell
   padding-top: 0;
   z-index: calc(var(--z-surface) + 4);
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .boardMetaRow {
@@ -272,7 +272,7 @@ Board stage and Pixi shell
 .boardShell {
   /* Absolute board placement zone filling the center playfield from below the stat strip to the footer overlap. */
   position: absolute;
-  inset: 0 0 -24px 0;
+  inset: 0;
   width: 100%;
   overflow: visible;
   display: grid;
@@ -288,12 +288,10 @@ Board stage and Pixi shell
   /* Main board footprint: width is derived from the available viewport height. */
   position: relative;
   z-index: calc(var(--z-surface) + 10);
-  width: min(
-    calc(100% - var(--board-inline-breathe)),
-    calc(var(--board-frame-fit-height) * 766 / 646)
-  );
-  max-height: var(--board-frame-fit-height);
-  height: auto;
+  width: auto;
+  max-width: calc(100% - var(--board-inline-breathe));
+  height: min(100%, var(--board-frame-fit-height));
+  max-height: min(100%, var(--board-frame-fit-height));
   aspect-ratio: 766 / 646;
   justify-self: center;
   align-self: start;
@@ -352,15 +350,15 @@ Board responsive variables and local overrides
 @media (max-width: 1920px), (max-height: 1100px) {
   .slotViewport {
     /* Full HD target: smaller board, clearer left lane, clearer right lane. */
-    --machine-stage-columns: 264px minmax(0, 1fr) 304px;
-    --left-rail-max-width: 264px;
+    --machine-stage-columns: 306px minmax(0, 1fr) 304px;
+    --left-rail-max-width: 306px;
     --right-rail-max-width: 304px;
     --machine-stage-gap: 12px;
     --stage-status-width: min(100%, 348px);
-    --board-frame-fit-height: calc(100dvh + 18px);
-    --board-inline-breathe: 78px;
-    --board-frame-margin-bottom: -26px;
-    --board-frame-translate-y: -14px;
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 8px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(17px, 1.25vw, 30px);
     --board-frame-border-width: clamp(1px, 0.085vw, 1.8px);
     --board-stage-halo-radius: clamp(28px, 2vw, 42px);
@@ -371,15 +369,15 @@ Board responsive variables and local overrides
 @media (max-width: 1600px), (max-height: 900px) {
   .slotViewport {
     /* Large desktop but below Full HD: keep the same ownership pattern with a slightly tighter center. */
-    --machine-stage-columns: 228px minmax(0, 1fr) 270px;
-    --left-rail-max-width: 228px;
+    --machine-stage-columns: 248px minmax(0, 1fr) 270px;
+    --left-rail-max-width: 248px;
     --right-rail-max-width: 270px;
     --machine-stage-gap: 10px;
     --stage-status-width: min(100%, 336px);
-    --board-frame-fit-height: calc(100dvh + 8px);
-    --board-inline-breathe: 64px;
-    --board-frame-margin-bottom: -20px;
-    --board-frame-translate-y: -10px;
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 8px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(16px, 1.15vw, 26px);
     --board-frame-border-width: clamp(1px, 0.08vw, 1.6px);
     --board-stage-halo-radius: clamp(24px, 1.7vw, 34px);
@@ -394,15 +392,15 @@ Board responsive variables and local overrides
 @media (min-width: 1280px) and (max-width: 1920px) and (max-aspect-ratio: 16/10) {
   .slotViewport {
     /* 16:10 laptop band: keep board dominant while preventing footer/rail crowding in shorter-width viewports. */
-    --machine-stage-columns: 212px minmax(0, 1fr) 246px;
-    --left-rail-max-width: 212px;
+    --machine-stage-columns: 228px minmax(0, 1fr) 246px;
+    --left-rail-max-width: 228px;
     --right-rail-max-width: 246px;
     --machine-stage-gap: 10px;
     --stage-status-width: min(100%, 332px);
-    --board-frame-fit-height: calc(100dvh - 8px);
-    --board-inline-breathe: 56px;
-    --board-frame-margin-bottom: -18px;
-    --board-frame-translate-y: -8px;
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 8px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(15px, 1.05vw, 24px);
     --board-frame-border-width: clamp(1px, 0.075vw, 1.5px);
     --board-stage-halo-radius: clamp(22px, 1.5vw, 30px);
@@ -424,9 +422,9 @@ Board responsive variables and local overrides
     --machine-stage-columns: 182px minmax(0, 1fr) 220px;
     --machine-stage-gap: 8px;
     --stage-status-width: min(100%, 320px);
-    --board-frame-fit-height: calc(100dvh - 12px);
-    --board-inline-breathe: 40px;
-    --board-frame-margin-bottom: -10px;
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 6px;
+    --board-frame-margin-bottom: 0;
     --board-frame-radius: clamp(14px, 1vw, 22px);
     --board-frame-border-width: 1px;
     --board-stage-halo-radius: clamp(20px, 1.3vw, 28px);
@@ -520,10 +518,10 @@ Board responsive variables and local overrides
     --machine-stage-columns: 1fr;
     --machine-stage-gap: 0;
     --stage-status-width: min(100%, 420px);
-    --board-frame-fit-height: clamp(560px, calc(100dvh - 360px), 980px);
-    --board-inline-breathe: 18px;
-    --board-frame-margin-bottom: -10px;
-    --board-frame-translate-y: -32px;
+    --board-frame-fit-height: 9999px;
+    --board-inline-breathe: 0px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(14px, 2.6vw, 20px);
     --board-frame-border-width: 1px;
     --board-stage-halo-radius: clamp(18px, 3vw, 24px);
@@ -548,7 +546,14 @@ Board responsive variables and local overrides
   }
 
   .boardShell {
-    inset: 0 0 -8px 0;
+    inset: 0;
+  }
+
+  .boardFrameMain {
+    width: calc(100% - var(--board-inline-breathe));
+    max-width: calc(100% - var(--board-inline-breathe));
+    height: auto;
+    max-height: none;
   }
 
   .boardMetaRow {
@@ -562,10 +567,10 @@ Board responsive variables and local overrides
     --machine-stage-columns: 1fr;
     --machine-stage-gap: 6px;
     --stage-status-width: min(100%, 520px);
-    --board-frame-fit-height: clamp(780px, calc(100dvh - 420px), 1140px);
-    --board-inline-breathe: 12px;
-    --board-frame-margin-bottom: -10px;
-    --board-frame-translate-y: -36px;
+    --board-frame-fit-height: 9999px;
+    --board-inline-breathe: 0px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(14px, 1.9vw, 22px);
     --board-stage-halo-radius: clamp(20px, 2.4vw, 30px);
     --board-stage-halo-blur: clamp(12px, 1.8vw, 18px);
@@ -579,7 +584,14 @@ Board responsive variables and local overrides
   }
 
   .boardShell {
-    inset: 0 0 -10px 0;
+    inset: 0;
+  }
+
+  .boardFrameMain {
+    width: calc(100% - var(--board-inline-breathe));
+    max-width: calc(100% - var(--board-inline-breathe));
+    height: auto;
+    max-height: none;
   }
 
   .boardMetaRow {
@@ -644,15 +656,15 @@ Board responsive variables and local overrides
 @media (min-width: 1880px) and (max-width: 1960px) and (min-height: 1020px) and (max-height: 1120px) {
   .slotViewport {
     /* Full HD lock: tighter visual balance between rails and center board frame. */
-    --machine-stage-columns: 258px minmax(0, 1fr) 300px;
-    --left-rail-max-width: 258px;
+    --machine-stage-columns: 306px minmax(0, 1fr) 300px;
+    --left-rail-max-width: 306px;
     --right-rail-max-width: 300px;
     --machine-stage-gap: 12px;
     --stage-status-width: min(100%, 356px);
-    --board-frame-fit-height: calc(100dvh + 22px);
-    --board-inline-breathe: 70px;
-    --board-frame-margin-bottom: -28px;
-    --board-frame-translate-y: -12px;
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 6px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(18px, 1.28vw, 30px);
     --board-frame-border-width: clamp(1.1px, 0.088vw, 1.9px);
     --board-stage-halo-radius: clamp(30px, 2.05vw, 44px);
@@ -758,6 +770,50 @@ Plan 3 controls: keep spin anchored and tighten spin/bet/autoplay/stop into one 
 
 .plan3StopHex:disabled {
   opacity: 0.45;
+}
+
+/*
+Hard geometry locks to avoid regressions from cross-file responsive overrides.
+Landscape: board fits full center-stage height without crop.
+Portrait: board fits full center-stage width without crop.
+*/
+
+@media (orientation: landscape) {
+  .centerStage {
+    overflow: visible !important;
+  }
+
+  .boardShell {
+    inset: 0 !important;
+  }
+
+  .boardFrameMain {
+    height: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    max-width: none !important;
+    margin-bottom: 0 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+@media (orientation: portrait) {
+  .centerStage {
+    overflow: visible !important;
+  }
+
+  .boardShell {
+    inset: 0 !important;
+  }
+
+  .boardFrameMain {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin-bottom: 0 !important;
+    transform: translateY(0) !important;
+  }
 }
 
 .autoplayActionIcon,

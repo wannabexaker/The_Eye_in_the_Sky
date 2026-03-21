@@ -1,0 +1,323 @@
+/* Desktop + general responsive bands (non-portrait specific). */
+
+@media (max-width: 1600px), (max-height: 900px) {
+  .slotViewport {
+    --machine-stage-columns:
+      clamp(162px, 12vw, 194px)
+      minmax(0, 1fr)
+      clamp(170px, 12.6vw, 204px);
+    --stage-status-width: min(100%, 720px);
+    --board-frame-fit-height: calc(100dvh - 122px);
+    --board-frame-margin-bottom: -64px;
+    --machine-footer-gap: 6px;
+  }
+
+  .topHud {
+    grid-template-columns:
+      minmax(300px, 2fr)
+      minmax(240px, 1.34fr)
+      minmax(208px, 1.08fr)
+      minmax(196px, 1fr)
+      minmax(170px, 0.88fr)
+      minmax(136px, 0.7fr);
+  }
+
+  .controlsDock {
+    width: min(100%, 820px);
+  }
+}
+
+@media (max-width: 1366px), (max-height: 768px) {
+  .slotViewport {
+    --machine-stage-columns: 156px minmax(0, 1fr) 182px;
+    --machine-stage-gap: 8px;
+    --machine-panel-padding: 10px;
+    --support-block-padding: 10px;
+    --brand-scene-min-height: 280px;
+    --brand-scene-image-position: center 24%;
+    --stage-status-width: min(100%, 680px);
+    --board-frame-fit-height: calc(100dvh - 116px);
+    --board-frame-margin-bottom: -48px;
+    --machine-footer-gap: 6px;
+    --balance-zone-gap: 6px;
+    --compact-control-height: 32px;
+    --compact-control-min-width: 50px;
+    --compact-control-padding: 5px 9px;
+    grid-template-rows: clamp(62px, 7.4dvh, 82px) minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .slotBackdrop {
+    background-position: 54% 24%;
+  }
+
+  .topHud {
+    grid-template-columns:
+      minmax(280px, 2.08fr)
+      minmax(234px, 1.34fr)
+      minmax(214px, 1.16fr)
+      minmax(206px, 1.12fr)
+      minmax(140px, 0.84fr)
+      minmax(134px, 0.76fr);
+    gap: 6px;
+  }
+
+  .logoChip,
+  .statChip,
+  .meterChip,
+  .iconChip {
+    padding: 7px 9px;
+  }
+
+  .logoChip {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .logoMark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .logoChipHero {
+    grid-template-columns: 1fr;
+    padding: 8px 14px 6px;
+  }
+
+  .logoMarkHero {
+    height: clamp(52px, 6.8dvh, 74px);
+  }
+
+  .compactControlStrip {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .summaryZone {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, auto));
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 720px) {
+  .slotViewport {
+    --machine-stage-columns: 124px minmax(0, 1fr) 196px;
+    --stage-status-width: min(100%, 640px);
+    --board-frame-fit-height: calc(100dvh - 112px);
+  }
+
+  .topHud {
+    grid-template-columns:
+      minmax(240px, 1.8fr)
+      minmax(212px, 1.25fr)
+      minmax(198px, 1.1fr)
+      minmax(194px, 1.06fr)
+      minmax(132px, 0.8fr)
+      minmax(124px, 0.72fr);
+  }
+
+  .betInlineControls {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .betManualGroup {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .phaseBadge {
+    max-width: 58%;
+  }
+
+  .phaseBadge span {
+    font-size: 0.7rem;
+  }
+
+  .slotBackdrop {
+    opacity: 0.48;
+  }
+}
+
+@media (max-width: 1100px) {
+  .slotViewport {
+    --machine-stage-columns: minmax(0, 1fr) 210px;
+  }
+
+  .topHud {
+    grid-template-columns:
+      minmax(220px, 1.8fr)
+      minmax(198px, 1.2fr)
+      minmax(188px, 1.08fr)
+      minmax(180px, 1fr)
+      minmax(124px, 0.72fr)
+      minmax(118px, 0.68fr);
+  }
+
+  .leftRail {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .slotViewport {
+    --machine-stage-columns: 1fr;
+    --board-frame-fit-height: calc(100dvh - 210px);
+  }
+
+  .topHud {
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+
+  .walletGroup,
+  .statPairGroup,
+  .meterGroup,
+  .systemGroup {
+    grid-column: span 1;
+  }
+
+  .roundChips,
+  .leftRail,
+  .rightRail {
+    display: none;
+  }
+
+  .controlStripMain {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .compactControlStrip {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .summaryZone {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .betZoneHeader,
+  .summaryStat {
+    text-align: left;
+  }
+
+  .compactControlMeta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 900px), (max-height: 720px) {
+  .floatingGameDock .autoplayPopoverSheet {
+    width: min(154px, calc(100vw - 14px));
+    right: -2px;
+  }
+}
+
+@media (max-height: 720px) {
+  .floatingGameDock {
+    right: clamp(16px, 3vw, 52px);
+    bottom: clamp(14px, 2.8vh, 44px);
+  }
+
+  .floatingGameDockInner {
+    gap: 4px;
+    padding: 6px 8px 20px;
+  }
+
+  .floatingGameDock .spinCta {
+    width: clamp(60px, 4.8vw, 72px);
+    height: clamp(60px, 4.8vw, 72px);
+  }
+
+  .floatingGameDock .ouroborosRing {
+    width: clamp(49px, 3.9vw, 60px);
+    height: clamp(49px, 3.9vw, 60px);
+  }
+
+  .dockStopButton {
+    height: var(--dock-stop-footprint);
+    min-width: var(--dock-stop-footprint);
+  }
+
+  .dockSmallButton,
+  .dockBetInput {
+    height: clamp(22px, 1.8vw, 26px);
+  }
+
+  .dockSmallButton {
+    min-width: clamp(22px, 1.8vw, 26px);
+    padding: 2px 3px;
+  }
+
+  .dockBetInput {
+    width: clamp(24px, 3vw, 32px);
+    font-size: 0.62rem;
+  }
+
+  .dockMetaInfo {
+    font-size: 0.56rem;
+  }
+}
+
+@media (max-width: 1280px) {
+  .floatingGameDock {
+    right: clamp(16px, 2.8vw, 52px);
+    bottom: clamp(18px, 4vh, 56px);
+  }
+}
+
+@media (max-width: 900px) {
+  .floatingGameDock {
+    right: clamp(12px, 2.4vw, 44px);
+    bottom: clamp(14px, 3.6vh, 48px);
+  }
+
+  .floatingGameDockInner {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+
+  .dockBottomRow {
+    gap: 6px;
+  }
+
+  .dockBetCluster,
+  .dockAutoCluster {
+    gap: 1px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .slotViewport {
+    --machine-stage-columns: 160px minmax(0, 1fr);
+    --machine-footer-columns: 1fr;
+  }
+
+  .brandingRail {
+    display: none;
+  }
+
+  .machineBottomBar {
+    justify-items: stretch;
+  }
+
+  .betAdjustZone,
+  .autoplayZone {
+    justify-items: start;
+  }
+
+  .betAdjustZone {
+    margin-left: 0;
+  }
+
+  .betMetaRow {
+    justify-content: flex-start;
+  }
+}
+

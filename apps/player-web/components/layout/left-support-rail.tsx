@@ -165,27 +165,43 @@ export function LeftSupportRail({
     <aside
       className={`leftRail supportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
     >
-      <section className="compactPanel supportBlock treasuryBlock">
+      <section
+        className="compactPanel supportBlock treasuryBlock"
+        title="Treasury actions for your fake wallet balance."
+      >
         <div className="panelHeader">
           <p className="eyebrow">Treasury</p>
         </div>
         <div className="supportActions">
-          <button className="walletAction walletActionPrimary" onClick={onDeposit} type="button">
+          <button
+            className="walletAction walletActionPrimary"
+            onClick={onDeposit}
+            title="Deposit credits into wallet"
+            type="button"
+          >
             Deposit
           </button>
-          <button className="walletAction" onClick={onWithdraw} type="button">
+          <button
+            className="walletAction"
+            onClick={onWithdraw}
+            title="Withdraw credits from wallet"
+            type="button"
+          >
             Withdraw
           </button>
         </div>
       </section>
 
-      <section className="compactPanel supportBlock supportBalanceBlock">
+      <section
+        className="compactPanel supportBlock supportBalanceBlock"
+        title={`Current wallet and bet values. Balance: ${balance}. Bet: ${currentBet}.`}
+      >
         <div className="bottomBarZone balanceZone supportBalanceZone">
-          <div className="bottomBarStat">
+          <div className="bottomBarStat" title={`Wallet balance: ${balance}`}>
             <span>Balance</span>
             <strong>{balance}</strong>
           </div>
-          <div className="bottomBarStat">
+          <div className="bottomBarStat" title={`Current bet: ${currentBet}`}>
             <span>Bet</span>
             <strong>{currentBet}</strong>
           </div>
@@ -272,10 +288,14 @@ export function LeftSupportRail({
           }
         >
           {history.length === 0 ? (
-            <span className="supportMuted">No rounds yet.</span>
+            <span className="supportMuted" title="No resolved rounds in this session yet.">No rounds yet.</span>
           ) : (
             visibleEntries.map((result, index) => (
-              <div className="supportHistoryRow" key={`${result.roundSummary.roundId}-${index}`}>
+              <div
+                className="supportHistoryRow"
+                key={`${result.roundSummary.roundId}-${index}`}
+                title={`Round ${result.roundSummary.roundId} - ${result.mode === "bonus" ? "Bonus" : "Base"} - ${formatWin(result)}`}
+              >
                 <strong>{formatWin(result)}</strong>
                 <span>{result.mode === "bonus" ? "bonus" : "base"}</span>
               </div>
@@ -325,7 +345,7 @@ export function LeftSupportRail({
           aria-label="Menu"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
           onClick={onToggleSettings}
-          title="Menu"
+          title="Open settings and game menu"
           type="button"
         >
           <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
@@ -339,7 +359,7 @@ export function LeftSupportRail({
           aria-label={soundEnabled ? "Mute sound" : "Unmute sound"}
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
           onClick={onToggleSound}
-          title={soundEnabled ? "Mute" : "Unmute"}
+          title={soundEnabled ? "Mute game sound" : "Unmute game sound"}
           type="button"
         >
           {soundEnabled ? (
@@ -368,7 +388,13 @@ export function LeftSupportRail({
 
             onToggleHistory();
           }}
-          title="Info"
+          title={
+            handheldPortraitView
+              ? mobileRoundStatusOpen
+                ? "Hide round status panel"
+                : "Show round status panel"
+              : "Open round info and recent history"
+          }
           type="button"
         >
           <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
@@ -383,7 +409,7 @@ export function LeftSupportRail({
           aria-label={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
           onClick={onToggleFullscreen}
-          title={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}
+          title={fullscreenEnabled ? "Exit fullscreen mode" : "Enter fullscreen mode"}
           type="button"
         >
           {fullscreenEnabled ? (

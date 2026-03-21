@@ -1,0 +1,30 @@
+/* Mobile fallback ownership applied after portrait overrides. */
+
+@media (max-width: 900px) {
+  .slotViewport {
+    --machine-stage-columns: 1fr;
+    --machine-footer-columns: 1fr;
+    --machine-footer-gap: 10px;
+    --balance-zone-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .supportRail,
+  .brandingRail {
+    display: none;
+  }
+
+  .utilityZone,
+  .betAdjustZone,
+  .autoplayZone {
+    justify-content: center;
+  }
+
+  .betAdjustZone,
+  .autoplayZone {
+    justify-items: center;
+  }
+
+  .betMetaRow {
+    justify-content: center;
+  }
+}

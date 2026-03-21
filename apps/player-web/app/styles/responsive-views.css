@@ -1,0 +1,9 @@
+/*
+Purpose: centralized responsive ownership for player-web shell.
+Scope: split by responsibility for maintainability.
+Order: desktop -> portrait -> mobile fallback.
+*/
+
+@import "./responsive-desktop.css";
+@import "./responsive-portrait.css";
+@import "./responsive-mobile.css";

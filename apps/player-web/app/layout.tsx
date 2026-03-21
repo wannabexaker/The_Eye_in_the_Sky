@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cinzel, Spectral } from "next/font/google";
 import "./globals.css";
 import "./main-board.css";
+import "./styles/responsive-views.css";
 
 const displayFont = Cinzel({
   subsets: ["latin"],
