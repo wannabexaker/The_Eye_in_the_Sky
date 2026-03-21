@@ -4,3 +4,15 @@ dist
 .turbo
 coverage
 assets/
+
+# TypeScript incremental/build artifacts
+*.tsbuildinfo
+
+# Local environment files (never commit secrets or local endpoints)
+.env
+.env.*
+!.env.example
+!.env*.example
+
+# Local editor-only settings
+.vscode/settings.json
