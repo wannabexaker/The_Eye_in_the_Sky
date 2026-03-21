@@ -1633,7 +1633,7 @@ p {
 .winPresentationLayer.is-huge_win .winPresentationAmount,
 .winPresentationLayer.is-super_win .winPresentationAmount,
 .winPresentationLayer.is-bonus_complete .winPresentationAmount {
-  font-size: clamp(2.4rem, 4.4vw, 4rem);
+  font-size: clamp(4.35rem, 7.5vw, 7.2rem);
 }
 
 .winPresentationLayer.is-super_win .winPresentationAmount {
@@ -1692,7 +1692,7 @@ p {
 .winPresentationAmount {
   color: #fff4d0;
   font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-size: clamp(3.375rem, 5.7vw, 5.25rem);
   line-height: 1;
   text-align: center;
   text-shadow:
@@ -3412,10 +3412,10 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   left: 50%;
   top: 50%;
   transform: translate(calc(-50% - 20px), calc(-50% - 40px));
-  width: clamp(67px, 5.5vw, 82px);
-  height: clamp(67px, 5.5vw, 82px);
-  min-width: clamp(67px, 5.5vw, 82px);
-  min-height: clamp(67px, 5.5vw, 82px);
+  width: clamp(80px, 7.5vw, 115px);
+  height: clamp(80px, 7.5vw, 115px);
+  min-width: clamp(80px, 7.5vw, 115px);
+  min-height: clamp(80px, 7.5vw, 115px);
   flex-shrink: 0;
 }
 
@@ -3434,12 +3434,12 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .floatingGameDock .ouroborosRing {
-  width: clamp(55px, 4.6vw, 67px);
-  height: clamp(55px, 4.6vw, 67px);
+  width: clamp(70px, 6vw, 95px);
+  height: clamp(70px, 6vw, 95px);
 }
 
 .floatingGameDock .spinCore {
-  inset: clamp(16px, 2.2vw, 19px);
+  inset: clamp(19px, 2.7vw, 26px);
 }
 
 .dockStopButton {
@@ -3876,13 +3876,216 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   .slotViewport {
     --machine-stage-columns: 1fr;
     --machine-footer-columns: 1fr;
-    --machine-footer-gap: 10px;
+    --machine-footer-gap: 8px;
     --balance-zone-columns: repeat(2, minmax(0, 1fr));
+    --portrait-spin-size: 136px; /* test A: -15% */
   }
 
-  .supportRail,
+  .gameArea.machineStage {
+    grid-template-columns: 1fr;
+    grid-template-rows: min-content minmax(0, 1fr) min-content;
+    gap: 8px;
+    align-content: start;
+  }
+
   .brandingRail {
+    grid-row: 1;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    padding-top: 0;
+    justify-self: center;
+    justify-items: center;
+    align-items: start;
+  }
+
+  .brandingRail .brandPanel {
+    width: min(100%, 380px);
+    min-height: 0;
+    padding: 6px 10px 2px;
+    border-radius: 14px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .brandingRail .brandTagline,
+  .brandingRail .brandScenePanel {
     display: none;
+  }
+
+  .centerStage {
+    grid-row: 2;
+    min-height: 0;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .supportRail {
+    grid-row: 3;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    grid-template-areas:
+      "history treasury"
+      "history balance"
+      "history status"
+      "history meter"
+      "history utility";
+    gap: 6px;
+    width: min(60vw, 760px);
+    max-width: min(60vw, 760px);
+    height: auto;
+    max-height: none;
+    padding-top: 0;
+    justify-self: start;
+    align-content: start;
+  }
+
+  .supportRail .supportBlock {
+    min-width: 0;
+    padding: 8px;
+    border-radius: 12px;
+    margin: 0;
+  }
+
+  .supportRail .treasuryBlock {
+    grid-area: treasury;
+  }
+
+  .supportRail .supportBalanceBlock {
+    grid-area: balance;
+  }
+
+  .supportRail .supportStatusBlock {
+    grid-area: status;
+  }
+
+  .supportRail .supportMeterBlock {
+    grid-area: meter;
+  }
+
+  .supportRail .supportHistoryBlock {
+    grid-area: history;
+    min-height: clamp(300px, 35vh, 520px);
+    width: 100%;
+    justify-self: start;
+    align-self: stretch;
+  }
+
+  .supportRail .supportHistoryBlock .supportNote {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .supportRail .supportHistory {
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .supportRail .supportHistoryRow {
+    padding: 4px 6px;
+    border-radius: 10px;
+    gap: 6px;
+  }
+
+  .supportRail .supportHistoryRow strong {
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .supportRail .supportHistoryRow span {
+    font-size: 0.56rem;
+    letter-spacing: 0.1em;
+  }
+
+  .supportRail .supportRailUtilityBar {
+    grid-area: utility;
+    margin-top: 0;
+    padding-top: 2px;
+    justify-content: center;
+  }
+
+  .treasuryBlock .supportActions {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .supportBalanceZone {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .supportBalanceZone::after {
+    display: none;
+  }
+
+  .supportBalanceZone .bottomBarStat {
+    min-height: 42px;
+    padding: 6px 8px;
+  }
+
+  .supportBalanceZone .bottomBarStat:first-child {
+    order: 2;
+  }
+
+  .supportBalanceZone .bottomBarStat:last-child {
+    order: 1;
+  }
+
+  .floatingGameDock {
+    left: auto;
+    right: clamp(50px, 5vw, 80px);
+    bottom: clamp(350px, 21vh, 540px);
+    transform: none;
+  }
+
+  .floatingGameDock .spinCta {
+    transform: translate(calc(-50% - 20px), calc(-50% - 63px));
+  }
+
+  .floatingGameDock .spinCta:hover {
+    transform: translate(calc(-50% - 20px), calc(-50% - 63px)) scale(1.05);
+  }
+
+  .floatingGameDock .spinCta:active:not(:disabled) {
+    transform: translate(calc(-50% - 20px), calc(-50% - 63px)) scale(0.97);
+  }
+
+  .floatingGameDock .primarySpinCluster {
+    min-width: var(--portrait-spin-size);
+  }
+
+  .floatingGameDock .spinCta {
+    width: var(--portrait-spin-size);
+    height: var(--portrait-spin-size);
+    min-width: var(--portrait-spin-size);
+    min-height: var(--portrait-spin-size);
+  }
+
+  .floatingGameDock .spinRipple {
+    inset: calc(var(--portrait-spin-size) * 0.186);
+  }
+
+  .floatingGameDock .ouroborosRing {
+    width: calc(var(--portrait-spin-size) * 0.86);
+    height: calc(var(--portrait-spin-size) * 0.86);
+  }
+
+  .floatingGameDock .spinCore {
+    inset: calc(var(--portrait-spin-size) * 0.232);
+  }
+
+  .floatingGameDock .spinText {
+    font-size: 0.74rem;
+    letter-spacing: 0.13em;
   }
 
   .utilityZone,
@@ -3898,6 +4101,118 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 
   .betMetaRow {
     justify-content: center;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 1020px) and (max-width: 1120px) and (min-height: 1820px) and (max-height: 1980px) {
+  .slotViewport {
+    --portrait-spin-size: 147px; /* test B: -15% */
+  }
+
+  .supportRail {
+    gap: 8px;
+    align-content: start;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    width: min(60vw, 820px);
+    max-width: min(60vw, 820px);
+  }
+
+  .supportRail .supportBlock {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .supportRail .supportHistoryBlock {
+    min-height: clamp(280px, 35vh, 520px);
+  }
+
+  .brandingRail .brandPanel {
+    width: min(100%, 420px);
+    padding: 4px 8px 0;
+    border-radius: 0;
+  }
+
+  .brandLogo {
+    width: min(100%, 360px);
+    height: clamp(66px, 7.2vw, 88px);
+    margin-inline: auto;
+  }
+
+  .floatingGameDock {
+    left: auto;
+    right: clamp(60px, 6vw, 100px);
+    bottom: clamp(358px, calc(23vh - 32px), 588px);
+  }
+
+  .floatingGameDock .spinCta {
+    transform: translate(calc(-50% - 20px), calc(-50% - 75px));
+  }
+
+  .floatingGameDock .spinCta:hover {
+    transform: translate(calc(-50% - 20px), calc(-50% - 75px)) scale(1.05);
+  }
+
+  .floatingGameDock .spinCta:active:not(:disabled) {
+    transform: translate(calc(-50% - 20px), calc(-50% - 75px)) scale(0.97);
+  }
+
+  .floatingGameDock .primarySpinCluster {
+    min-width: var(--portrait-spin-size);
+  }
+
+  .floatingGameDock .spinCta {
+    width: var(--portrait-spin-size);
+    height: var(--portrait-spin-size);
+    min-width: var(--portrait-spin-size);
+    min-height: var(--portrait-spin-size);
+  }
+
+  .floatingGameDock .spinRipple {
+    inset: calc(var(--portrait-spin-size) * 0.186);
+  }
+
+  .floatingGameDock .ouroborosRing {
+    width: calc(var(--portrait-spin-size) * 0.86);
+    height: calc(var(--portrait-spin-size) * 0.86);
+  }
+
+  .floatingGameDock .spinCore {
+    inset: calc(var(--portrait-spin-size) * 0.232);
+  }
+
+  .floatingGameDock .spinText {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+  }
+
+  .floatingGameDock .ouroborosHead {
+    top: calc(var(--portrait-spin-size) * 0.178);
+    right: calc(var(--portrait-spin-size) * -0.012);
+    width: calc(var(--portrait-spin-size) * 0.165);
+    height: calc(var(--portrait-spin-size) * 0.165);
+    border-radius: 999px;
+    transform: rotate(72deg);
+  }
+
+  .floatingGameDock .ouroborosHead::before {
+    right: calc(var(--portrait-spin-size) * -0.022);
+    top: calc(var(--portrait-spin-size) * 0.048);
+    width: calc(var(--portrait-spin-size) * 0.055);
+    height: calc(var(--portrait-spin-size) * 0.055);
+  }
+
+  .floatingGameDock .ouroborosHead::after {
+    top: calc(var(--portrait-spin-size) * 0.073);
+    right: calc(var(--portrait-spin-size) * -0.062);
+    width: calc(var(--portrait-spin-size) * 0.068);
+    height: calc(var(--portrait-spin-size) * 0.02);
+  }
+
+  .floatingGameDock .ouroborosEye {
+    top: calc(var(--portrait-spin-size) * 0.248);
+    right: calc(var(--portrait-spin-size) * 0.068);
+    width: calc(var(--portrait-spin-size) * 0.032);
+    height: calc(var(--portrait-spin-size) * 0.032);
   }
 }
 

@@ -44,6 +44,7 @@ const formatWin = (result: SpinResult) =>
 const MAX_RITUAL_LOG_ENTRIES = 100;
 const DESKTOP_VISIBLE_ENTRIES = 5;
 const COMPACT_VISIBLE_ENTRIES = 3;
+const PORTRAIT_VISIBLE_ENTRIES = 10;
 
 export function LeftSupportRail({
   balance,
@@ -69,6 +70,7 @@ export function LeftSupportRail({
   onToggleFullscreen
 }: LeftSupportRailProps) {
   const [compactView, setCompactView] = useState(false);
+  const [portraitView, setPortraitView] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -82,8 +84,21 @@ export function LeftSupportRail({
     return () => mediaQuery.removeEventListener("change", syncCompactView);
   }, []);
 
+  useEffect(() => {
+    const portraitQuery = window.matchMedia("(orientation: portrait) and (max-aspect-ratio: 10/16)");
+    const syncPortraitView = () => setPortraitView(portraitQuery.matches);
+
+    syncPortraitView();
+    portraitQuery.addEventListener("change", syncPortraitView);
+    return () => portraitQuery.removeEventListener("change", syncPortraitView);
+  }, []);
+
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = compactView ? COMPACT_VISIBLE_ENTRIES : DESKTOP_VISIBLE_ENTRIES;
+  const defaultVisibleEntries = portraitView
+    ? PORTRAIT_VISIBLE_ENTRIES
+    : compactView
+      ? COMPACT_VISIBLE_ENTRIES
+      : DESKTOP_VISIBLE_ENTRIES;
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
 
@@ -151,7 +166,7 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock"
+        className="compactPanel supportBlock supportStatusBlock"
         title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
       >
         <div className="panelHeader">
@@ -185,7 +200,7 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock"
+        className="compactPanel supportBlock supportMeterBlock"
         title={
           bonusActive
             ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
@@ -199,7 +214,7 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock"
+        className="compactPanel supportBlock supportHistoryBlock"
         title="Recent ritual outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
       >
         <div className="panelHeader">

@@ -22,7 +22,7 @@ import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytic
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { shellAssets } from "@/lib/assets/asset-manifest";
 import { activeGameConfig } from "@/lib/game-config";
-import { usePlayerUiStore } from "@/lib/state/player-store";
+import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
   amount: number,
@@ -95,6 +95,11 @@ export default function HomePage() {
   const latestRound = slot.lastResult;
   const bonusFrameActive = Boolean(slot.gameState.bonusState || slot.lastResult?.bonusTriggered);
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
+
+  useEffect(() => {
+    const disposeSync = initPlayerStoreCrossTabSync();
+    return () => disposeSync();
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {

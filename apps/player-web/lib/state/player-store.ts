@@ -9,6 +9,9 @@ import type { GameState, SpinResult } from "@eye/game-engine";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
+const SAMSARA_PROGRESS_TTL_MS = 60 * 60 * 1000;
+
 export type Wallet = {
   balance: number;
   currency: "EUR";
@@ -81,6 +84,7 @@ type PlayerUiState = {
   wallet: Wallet;
   totalDeposited: number;
   totalWithdrawn: number;
+  samsaraExpiryAt: number | null;
   gameStateSnapshot: GameState | null;
   roundsLog: RoundAnalyticsEntry[];
   walletTransactions: WalletTransaction[];
@@ -166,6 +170,28 @@ const appendTransaction = (
   entry: WalletTransaction
 ) => [entry, ...transactions].slice(0, 50);
 
+const sanitizeSamsaraSnapshot = (
+  snapshot: GameState | null | undefined,
+  samsaraExpiryAt: number | null | undefined
+): GameState | null => {
+  if (!snapshot) {
+    return null;
+  }
+
+  const parsedExpiry = typeof samsaraExpiryAt === "number" && Number.isFinite(samsaraExpiryAt)
+    ? samsaraExpiryAt
+    : null;
+
+  if (parsedExpiry === null || Date.now() <= parsedExpiry) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    bonusMeter: 0
+  };
+};
+
 export const usePlayerUiStore = create<PlayerUiState>()(
   persist(
     (set, get) => ({
@@ -188,6 +214,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       },
       totalDeposited: 0,
       totalWithdrawn: 0,
+      samsaraExpiryAt: null,
       gameStateSnapshot: null,
       roundsLog: [],
       walletTransactions: [],
@@ -475,6 +502,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
               ...state.wallet,
               balance: result.balanceAfter
             },
+            samsaraExpiryAt:
+              result.nextState.bonusMeter > 0 ? Date.now() + SAMSARA_PROGRESS_TTL_MS : null,
             gameStateSnapshot: result.nextState,
             walletTransactions: nextTransactions.slice(0, 50),
             roundsLog: [...state.roundsLog, analyticsEntry].slice(-1000)
@@ -488,6 +517,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           },
           totalDeposited: 0,
           totalWithdrawn: 0,
+          samsaraExpiryAt: null,
           gameStateSnapshot: null,
           roundsLog: [],
           walletTransactions: [],
@@ -505,7 +535,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         })
     }),
     {
-      name: "eye-in-the-sky-player-store",
+      name: PLAYER_STORE_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => () => {
         usePlayerUiStore.setState({ hasHydrated: true });
@@ -515,11 +545,25 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         const paymentMethods = ensureDefaultPaymentMethod(persisted.paymentMethods);
         const fallbackMethodId = paymentMethods[0]?.id ?? defaultPaymentMethod.id;
         const withdrawalAmount = persisted.withdrawalDraft?.amount ?? baseWithdrawalDraft().amount;
+        const persistedSamsaraExpiryAt =
+          typeof persisted.samsaraExpiryAt === "number" && Number.isFinite(persisted.samsaraExpiryAt)
+            ? persisted.samsaraExpiryAt
+            : null;
+        const mergedGameStateSnapshot = sanitizeSamsaraSnapshot(
+          persisted.gameStateSnapshot,
+          persistedSamsaraExpiryAt
+        );
+        const mergedSamsaraExpiryAt =
+          mergedGameStateSnapshot?.bonusMeter && mergedGameStateSnapshot.bonusMeter > 0
+            ? persistedSamsaraExpiryAt
+            : null;
 
         return {
           ...currentState,
           ...persisted,
           paymentMethods,
+          samsaraExpiryAt: mergedSamsaraExpiryAt,
+          gameStateSnapshot: mergedGameStateSnapshot,
           roundsLog: Array.isArray(persisted.roundsLog) ? persisted.roundsLog : [],
           withdrawalDraft: {
             amount: withdrawalAmount,
@@ -541,6 +585,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         wallet: state.wallet,
         totalDeposited: state.totalDeposited,
         totalWithdrawn: state.totalWithdrawn,
+        samsaraExpiryAt: state.samsaraExpiryAt,
         walletTransactions: state.walletTransactions,
         paymentMethods: state.paymentMethods,
         gameStateSnapshot: state.gameStateSnapshot,
@@ -549,3 +594,36 @@ export const usePlayerUiStore = create<PlayerUiState>()(
     }
   )
 );
+
+let disposeCrossTabSync: (() => void) | null = null;
+
+export const initPlayerStoreCrossTabSync = () => {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  if (disposeCrossTabSync) {
+    return disposeCrossTabSync;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.storageArea !== window.localStorage) {
+      return;
+    }
+
+    if (event.key !== PLAYER_STORE_PERSIST_KEY || event.newValue === event.oldValue) {
+      return;
+    }
+
+    void usePlayerUiStore.persist.rehydrate();
+  };
+
+  window.addEventListener("storage", handleStorage);
+
+  disposeCrossTabSync = () => {
+    window.removeEventListener("storage", handleStorage);
+    disposeCrossTabSync = null;
+  };
+
+  return disposeCrossTabSync;
+};
