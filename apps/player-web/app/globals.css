@@ -151,6 +151,15 @@ p {
   transition: opacity 220ms ease;
 }
 
+.slotViewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-atmosphere) + 1);
+  pointer-events: none;
+  opacity: 0;
+}
+
 .slotViewport.is-bonus-entry::before {
   opacity: 1;
   background:
@@ -173,6 +182,91 @@ p {
   opacity: 0.82;
   filter: saturate(0.98) brightness(0.84) contrast(1.06);
   transform: scale(1.12);
+  transition: opacity 680ms cubic-bezier(0.22, 1, 0.36, 1), filter 680ms ease;
+}
+
+.slotBackdropBonus {
+  filter: saturate(1.08) brightness(0.88) contrast(1.08);
+}
+
+.slotViewport.is-bonus-active .slotBackdropBonus {
+  filter: saturate(1.14) brightness(0.92) contrast(1.12);
+}
+
+.slotViewport.is-bonus-enter-cinematic::after {
+  animation: bonusEntryLightningFlash 620ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.slotViewport.is-bonus-enter-cinematic .gameArea.machineStage {
+  animation: bonusEntryQuake 620ms cubic-bezier(0.16, 0.84, 0.34, 1);
+}
+
+.slotViewport.is-bonus-exit-cinematic .gameArea.machineStage {
+  animation: bonusExitSettle 680ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bonusEntryLightningFlash {
+  0% {
+    opacity: 0;
+    background: radial-gradient(circle at 50% 40%, rgba(255, 249, 227, 0), rgba(255, 248, 220, 0));
+  }
+
+  18% {
+    opacity: 0.9;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255, 251, 235, 0.86), rgba(255, 249, 227, 0.1) 42%, transparent 72%),
+      linear-gradient(180deg, rgba(255, 250, 237, 0.38), rgba(255, 248, 224, 0));
+  }
+
+  34% {
+    opacity: 0.26;
+  }
+
+  48% {
+    opacity: 0.62;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bonusEntryQuake {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  18% {
+    transform: translate3d(-5px, 2px, 0);
+  }
+
+  32% {
+    transform: translate3d(4px, -2px, 0);
+  }
+
+  46% {
+    transform: translate3d(-3px, 2px, 0);
+  }
+
+  62% {
+    transform: translate3d(2px, -1px, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bonusExitSettle {
+  0% {
+    filter: saturate(1.08) brightness(1.02);
+    transform: scale(1.008);
+  }
+
+  100% {
+    filter: saturate(1) brightness(1);
+    transform: scale(1);
+  }
 }
 
 .slotBackdrop::after {
@@ -2384,9 +2478,12 @@ button:disabled {
 }
 
 .bonusWinModal {
+  display: grid;
+  grid-template-rows: auto auto;
   width: min(540px, calc(100vw - 32px));
   border-radius: 24px;
   overflow: hidden;
+  justify-items: center;
   background:
     linear-gradient(180deg, rgba(18, 15, 19, 0.98), rgba(10, 10, 13, 0.98)),
     radial-gradient(circle at top, rgba(226, 190, 112, 0.12), transparent 34%);
@@ -2395,48 +2492,74 @@ button:disabled {
 .bonusWinHeader {
   display: grid;
   justify-items: center;
-  gap: 8px;
-  padding: 22px 24px 14px;
+  gap: 10px;
+  width: 100%;
+  padding: 24px 24px 12px;
   text-align: center;
-}
-
-.bonusWinLogo {
-  width: min(240px, 68%);
-  height: 76px;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  opacity: 0.96;
-  filter: drop-shadow(0 0 18px rgba(226, 190, 112, 0.12));
+  border-bottom: 0;
 }
 
 .bonusWinHeading {
   font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.4rem, 1.8vw, 1.9rem);
+  font-size: clamp(1.5rem, 1.9vw, 2rem);
   line-height: 1;
+}
+
+.bonusWinLead {
+  max-width: 36ch;
+  color: rgba(244, 239, 230, 0.76);
+  font-size: var(--font-sm);
+  line-height: 1.35;
 }
 
 .bonusWinBody {
   display: grid;
+  align-content: start;
   gap: 16px;
+  width: 100%;
   padding: 0 24px 24px;
   text-align: center;
+  justify-items: center;
+  overflow: visible;
 }
 
 .bonusWinCard {
   display: grid;
   gap: 8px;
+  width: min(100%, 380px);
   padding: 18px 18px 16px;
   border: 1px solid rgba(226, 190, 112, 0.16);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.03);
 }
 
-.bonusWinMeta {
+.bonusWinInfoGrid {
   display: grid;
-  gap: 4px;
+  gap: 8px;
+  width: min(100%, 380px);
+}
+
+.bonusWinInfoRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.bonusWinInfoRow span {
   color: rgba(244, 239, 230, 0.74);
   font-size: var(--font-sm);
+}
+
+.bonusWinInfoRow strong {
+  color: rgba(244, 239, 230, 0.94);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-sm);
+  text-align: right;
 }
 
 .winPresentationCard.is-bonus-summary {

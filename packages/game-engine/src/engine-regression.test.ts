@@ -107,7 +107,11 @@ test("bonus state transitions correctly from base spin into bonus spin and bonus
   assert.equal(triggerResult.bonusTriggered, true);
   assert.equal(triggerResult.bonusStateBefore, null);
   assert.ok(triggerResult.bonusStateAfter);
-  assert.ok((triggerResult.bonusStateAfter?.freeSpinsRemaining ?? 0) > 0);
+  assert.equal(
+    triggerResult.bonusStateAfter?.freeSpinsRemaining,
+    defaultGameConfig.bonusSpinsAwarded,
+    "Bonus trigger should award exactly one bundle of free spins"
+  );
 
   const bonusResult = resolveSpin({
     bet: 20,
@@ -118,6 +122,31 @@ test("bonus state transitions correctly from base spin into bonus spin and bonus
   assert.equal(bonusResult.mode, "bonus");
   assert.equal(bonusResult.debugMetadata.chargedBet, 0);
   assert.equal(bonusResult.walletDelta, bonusResult.totalWin);
+});
+
+test("base-spin bonus trigger never over-awards extra free-spin bundles in the same spin", () => {
+  const baseState = {
+    ...initialGameState(1000),
+    bonusMeter: defaultGameConfig.bonusMeterTarget - 1
+  };
+
+  for (let seed = 1; seed <= 3000; seed += 1) {
+    const result = resolveSpin({
+      bet: 20,
+      state: baseState,
+      seed
+    });
+
+    if (!result.bonusTriggered) {
+      continue;
+    }
+
+    assert.equal(
+      result.bonusStateAfter?.freeSpinsRemaining,
+      defaultGameConfig.bonusSpinsAwarded,
+      `Over-awarded free spins detected at seed ${seed}`
+    );
+  }
 });
 
 test("simulation output is deterministic, complete, and carries config version", () => {

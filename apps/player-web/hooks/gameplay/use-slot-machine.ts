@@ -35,6 +35,8 @@ const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
 const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
+const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 650;
+const BONUS_SUMMARY_MIN_VISIBLE_MS = 750;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
 const WIN_GLOW_START_MULTIPLE = 2;
 const BIG_WIN_THRESHOLD = 5;
@@ -364,6 +366,8 @@ export function useSlotMachine() {
   const [winPresentation, setWinPresentation] = useState<WinPresentationEntry | null>(null);
   const phaseTimersRef = useRef<number[]>([]);
   const presentationTimerRef = useRef<number | null>(null);
+  const bonusAnnouncementShownAtRef = useRef<number | null>(null);
+  const bonusSummaryShownAtRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
   const betRef = useRef(bet);
   const winMultiplierRef = useRef(winMultiplier);
@@ -768,6 +772,7 @@ const validateAutospinCount = useCallback(
             soundManager.play("bonus", soundEnabled);
 
             if (result.mode === "base" && result.nextState.bonusState) {
+              bonusAnnouncementShownAtRef.current = Date.now();
               setBonusAnnouncement(
                 buildBonusAnnouncement(
                   result,
@@ -794,6 +799,10 @@ const validateAutospinCount = useCallback(
         window.setTimeout(() => {
           const summary = buildBonusSummary(result);
           const presentation = summary ? null : buildWinPresentation(result, autoContinueNeverStop);
+
+          if (summary) {
+            bonusSummaryShownAtRef.current = Date.now();
+          }
 
           setBonusSummary(summary);
           setWinPresentation(presentation);
@@ -867,6 +876,10 @@ const validateAutospinCount = useCallback(
   }, [applyRoundResult, availableBalance, scheduleRoundFeedback]);
 
   const spin = useCallback(() => {
+    if (bonusAnnouncement || bonusSummary) {
+      return;
+    }
+
     if (!applyManualBet()) {
       return;
     }
@@ -876,7 +889,7 @@ const validateAutospinCount = useCallback(
     setAutoSpinRemaining(0);
     setBetValidationMessage("");
     void runSpin();
-  }, [applyManualBet, runSpin]);
+  }, [applyManualBet, bonusAnnouncement, bonusSummary, runSpin]);
 
   const startAutoSpin = useCallback(() => {
     if (!applyManualBet()) {
@@ -1075,12 +1088,28 @@ const validateAutospinCount = useCallback(
   }, [decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
 
   const dismissBonusAnnouncement = useCallback(() => {
+    if (bonusAnnouncement) {
+      const shownAt = bonusAnnouncementShownAtRef.current;
+      if (shownAt !== null && Date.now() - shownAt < BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS) {
+        return;
+      }
+    }
+
+    bonusAnnouncementShownAtRef.current = null;
     setBonusAnnouncement(null);
-  }, []);
+  }, [bonusAnnouncement]);
 
   const dismissBonusSummary = useCallback(() => {
+    if (bonusSummary) {
+      const shownAt = bonusSummaryShownAtRef.current;
+      if (shownAt !== null && Date.now() - shownAt < BONUS_SUMMARY_MIN_VISIBLE_MS) {
+        return;
+      }
+    }
+
+    bonusSummaryShownAtRef.current = null;
     setBonusSummary(null);
-  }, []);
+  }, [bonusSummary]);
 
   const dismissWinPresentation = useCallback(() => {
     if (presentationTimerRef.current) {

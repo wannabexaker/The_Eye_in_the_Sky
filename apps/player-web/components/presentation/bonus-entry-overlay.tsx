@@ -25,16 +25,9 @@ export function BonusEntryOverlay({
     <div className="overlayBackdrop bonusBackdrop" role="presentation">
       <section aria-label="Bonus Entered" className="overlayModal welcomeModal bonusEntryModal">
         <header className="overlayHeader welcomeHeader bonusEntryHeader">
-          <div className="welcomeLogoStack">
-            <div
-              aria-hidden="true"
-              className="welcomeLogo bonusEntryLogo"
-              style={{ backgroundImage: `url(${shellAssets.logo})` }}
-            />
-            <div className="overlayTitleBlock welcomeTitleBlock">
-              <h2>Sky Opens</h2>
-              <span className="overlayEyebrow">Bonus Unlocked</span>
-            </div>
+          <div className="overlayTitleBlock welcomeTitleBlock">
+            <h2>Sky Opens</h2>
+            <span className="overlayEyebrow">Bonus Unlocked</span>
           </div>
         </header>
 

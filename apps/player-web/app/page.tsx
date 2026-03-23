@@ -62,7 +62,12 @@ const symbolLabels: Record<string, string> = {
 export default function HomePage() {
   const shellRef = useRef<HTMLElement | null>(null);
   const depositPromptShownRef = useRef(false);
+  const previousBonusModeRef = useRef(false);
+  const bonusEnterTimerRef = useRef<number | null>(null);
+  const bonusExitTimerRef = useRef<number | null>(null);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
+  const [bonusEnterCinematic, setBonusEnterCinematic] = useState(false);
+  const [bonusExitCinematic, setBonusExitCinematic] = useState(false);
 
   // Keep screen awake while game is active
   useScreenWakeLock();
@@ -104,7 +109,62 @@ export default function HomePage() {
   const bonusModeActive = Boolean(slot.gameState.bonusState);
   const bonusFrameActive = Boolean(slot.gameState.bonusState || slot.lastResult?.bonusTriggered);
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
-  const shellBackground = bonusModeActive ? shellAssets.bonusOverlay : shellAssets.mainBackground;
+
+  useEffect(() => {
+    const wasBonusModeActive = previousBonusModeRef.current;
+
+    if (!wasBonusModeActive && bonusModeActive) {
+      setBonusExitCinematic(false);
+      setBonusEnterCinematic(true);
+
+      if (bonusExitTimerRef.current !== null) {
+        window.clearTimeout(bonusExitTimerRef.current);
+        bonusExitTimerRef.current = null;
+      }
+
+      if (bonusEnterTimerRef.current !== null) {
+        window.clearTimeout(bonusEnterTimerRef.current);
+      }
+
+      bonusEnterTimerRef.current = window.setTimeout(() => {
+        setBonusEnterCinematic(false);
+        bonusEnterTimerRef.current = null;
+      }, 760);
+    }
+
+    if (wasBonusModeActive && !bonusModeActive) {
+      setBonusEnterCinematic(false);
+      setBonusExitCinematic(true);
+
+      if (bonusEnterTimerRef.current !== null) {
+        window.clearTimeout(bonusEnterTimerRef.current);
+        bonusEnterTimerRef.current = null;
+      }
+
+      if (bonusExitTimerRef.current !== null) {
+        window.clearTimeout(bonusExitTimerRef.current);
+      }
+
+      bonusExitTimerRef.current = window.setTimeout(() => {
+        setBonusExitCinematic(false);
+        bonusExitTimerRef.current = null;
+      }, 680);
+    }
+
+    previousBonusModeRef.current = bonusModeActive;
+  }, [bonusModeActive]);
+
+  useEffect(() => {
+    return () => {
+      if (bonusEnterTimerRef.current !== null) {
+        window.clearTimeout(bonusEnterTimerRef.current);
+      }
+
+      if (bonusExitTimerRef.current !== null) {
+        window.clearTimeout(bonusExitTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const disposeSync = initPlayerStoreCrossTabSync();
@@ -241,13 +301,24 @@ export default function HomePage() {
 
   return (
     <main
-      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""}`}
+      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""}`}
       ref={shellRef}
     >
       <div
         aria-hidden="true"
-        className="slotBackdrop"
-        style={{ backgroundImage: `url(${shellBackground})` }}
+        className="slotBackdrop slotBackdropBase"
+        style={{
+          backgroundImage: `url(${shellAssets.mainBackground})`,
+          opacity: bonusModeActive ? 0.28 : 0.82
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="slotBackdrop slotBackdropBonus"
+        style={{
+          backgroundImage: `url(${shellAssets.bonusOverlay})`,
+          opacity: bonusModeActive ? 0.82 : 0
+        }}
       />
 
       <section className="gameArea machineStage">

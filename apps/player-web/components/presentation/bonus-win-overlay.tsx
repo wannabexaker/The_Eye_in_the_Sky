@@ -1,10 +1,9 @@
 /*
 Purpose: announces bonus entry and shows the triggering payout clearly
 Layer: frontend (player-web)
-Uses: win-presentation-types.ts and shell asset manifest
+Uses: win-presentation-types.ts
 */
 
-import { shellAssets } from "@/lib/assets/asset-manifest";
 import type { BonusAnnouncementEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusWinOverlayProps = {
@@ -29,25 +28,31 @@ export function BonusWinOverlay({
   return (
     <div className="overlayBackdrop bonusBackdrop bonusWinBackdrop" role="presentation">
       <section aria-label={announcement.title} className="overlayModal bonusWinModal">
-        <header className="overlayHeader bonusWinHeader">
-          <div
-            aria-hidden="true"
-            className="bonusWinLogo"
-            style={{ backgroundImage: `url(${shellAssets.logo})` }}
-          />
+        <header className="bonusWinHeader">
           <span className="winPresentationLabel">{announcement.title}</span>
           <h2 className="bonusWinHeading">Sky Opens</h2>
+          <p className="bonusWinLead">The temple vault is open. Bonus sequence is now active.</p>
         </header>
 
-        <div className="overlayBody bonusWinBody">
+        <div className="bonusWinBody">
           <div className="bonusWinCard">
             <span className="eyebrow">{announcement.sourceLabel}</span>
             <strong className="bonusWinAmount">+{formatMoney(announcement.entryWin)}</strong>
           </div>
 
-          <div className="bonusWinMeta">
-            <span>{announcement.freeSpins} free spins awarded</span>
-            <span>The bonus total now tracks separately.</span>
+          <div className="bonusWinInfoGrid">
+            <div className="bonusWinInfoRow">
+              <span>Free Spins</span>
+              <strong>{announcement.freeSpins}</strong>
+            </div>
+            <div className="bonusWinInfoRow">
+              <span>Entry Win</span>
+              <strong>+{formatMoney(announcement.entryWin)}</strong>
+            </div>
+            <div className="bonusWinInfoRow">
+              <span>Mode</span>
+              <strong>Sky Opens Active</strong>
+            </div>
           </div>
 
           <button className="welcomeButton compactPrimary" onClick={onContinue} type="button">

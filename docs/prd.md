@@ -529,6 +529,13 @@ and not only on naive width breakpoints.
 
 ## Change Log
 - `2026-03-23`
+  - Bonus atmosphere choreography update: entering bonus now triggers a short cinematic quake + lightning shell effect, and exiting bonus now transitions back to base state with smooth visual settle.
+  - Implemented dual-layer backdrop crossfade for base/bonus background swaps to remove abrupt transitions.
+  - Bonus integrity fix: Samsara trigger now awards only one free-spin bundle per base trigger spin, preventing accidental over-award from additional cascades in the same spin resolution.
+  - Added regression test coverage for single-bundle bonus awarding behavior.
+  - Corrected bonus-trigger overlay composition by decoupling it from generic modal header/body layout rules; content now uses dedicated centered structure with stable alignment.
+  - Removed remaining logo usage from legacy bonus-entry overlay path to keep bonus-trigger presentation consistently logo-free.
+  - Bonus-trigger modal UX update: removed logo from the `Bonus Triggered` overlay, centered content composition, and replaced loose text with clearer structured bonus information rows.
   - Bonus atmosphere update: while `Sky Opens` bonus mode is active, the full shell backdrop now switches from base temple sky art to the bonus `open sky` background.
   - Interaction polish: win and bonus presentation banners are now non-selectable (`user-select: none`) to prevent accidental text highlight during fast spin input.
   - Input behavior parity update: Spin button click now uses the same interrupt flow as `Space` (dismiss current presentation overlays and continue spinning immediately).

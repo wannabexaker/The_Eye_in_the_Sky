@@ -101,6 +101,13 @@
 
 ## Change Log
 - `2026-03-23`
+  - Added bonus cinematic shell transition: on bonus entry, viewport now plays a short quake + lightning flash effect; on bonus exit, scene settles with smooth calm-down animation.
+  - Reworked backdrop handling to dual-layer crossfade (`base` <-> `bonus`) for smoother visual transition when entering and leaving bonus mode.
+  - Fixed bonus over-award bug: prevented multiple free-spin bundle awards from cascading Samsara hits inside the same base spin.
+  - Added engine regression coverage to assert bonus trigger awards exactly one configured bundle (`bonusSpinsAwarded`) per trigger spin.
+  - Follow-up fix for bonus-trigger modal: removed inherited `overlayHeader/overlayBody` layout hooks to enforce strict centered alignment and eliminate skewed content.
+  - Removed logo from legacy `bonus-entry` overlay as well, so no bonus-trigger modal variant renders a logo block.
+  - Refined `Bonus Triggered` overlay modal: centered all internal content, removed logo block, and upgraded info presentation to structured rows (free spins, entry win, active bonus mode note).
   - Updated global shell backdrop behavior: while bonus mode is active (`bonusState`), the full page background now switches to `Sky Opens` art.
   - Disabled text selection on win/bonus presentation overlays so users cannot highlight/select win banner content during rapid interaction.
   - Fixed spin-input parity: mouse click on Spin now follows the same `dismiss overlays -> spin` path as `Space` key (no extra click blocking after round presentation).
