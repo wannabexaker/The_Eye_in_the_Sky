@@ -553,10 +553,10 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           persisted.gameStateSnapshot,
           persistedSamsaraExpiryAt
         );
-        const mergedSamsaraExpiryAt =
-          mergedGameStateSnapshot?.bonusMeter && mergedGameStateSnapshot.bonusMeter > 0
-            ? persistedSamsaraExpiryAt
-            : null;
+        // Restore TTL only if it hasn't expired yet. TTL validity is independent of bonusMeter post-sanitization.
+        const samsaraStillValid =
+          persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
+        const mergedSamsaraExpiryAt = samsaraStillValid ? persistedSamsaraExpiryAt : null;
 
         return {
           ...currentState,

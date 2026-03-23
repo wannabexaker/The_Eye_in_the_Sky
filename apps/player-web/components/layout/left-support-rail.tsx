@@ -12,6 +12,7 @@ import { SamsaraMeter } from "@/components/board/samsara-meter";
 
 type LeftSupportRailProps = {
   balance: string;
+  balanceExact: string;
   currentBet: string;
   roundWin: number;
   cascades: number;
@@ -49,6 +50,7 @@ const HANDHELD_PORTRAIT_VISIBLE_ENTRIES = 11;
 
 export function LeftSupportRail({
   balance,
+  balanceExact,
   currentBet,
   roundWin,
   cascades,
@@ -194,10 +196,10 @@ export function LeftSupportRail({
 
       <section
         className="compactPanel supportBlock supportBalanceBlock"
-        title={`Current wallet and bet values. Balance: ${balance}. Bet: ${currentBet}.`}
+        title={`Current wallet and bet values. Balance: ${balanceExact}. Bet: ${currentBet}.`}
       >
         <div className="bottomBarZone balanceZone supportBalanceZone">
-          <div className="bottomBarStat" title={`Wallet balance: ${balance}`}>
+          <div className="bottomBarStat" title={`Wallet balance: ${balanceExact}`}>
             <span>Balance</span>
             <strong>{balance}</strong>
           </div>
@@ -225,7 +227,7 @@ export function LeftSupportRail({
           </div>
           <div className="supportStatusBottomRow">
             <div
-              className="miniStat supportMiniStat"
+              className="miniStat supportMiniStat supportMiniStatCascade"
               title="Cascade count from the latest resolved spin."
             >
               <span>Cascade</span>
@@ -323,7 +325,7 @@ export function LeftSupportRail({
               </div>
               <div className="supportStatusBottomRow">
                 <div
-                  className="miniStat supportMiniStat"
+                  className="miniStat supportMiniStat supportMiniStatCascade"
                   title="Cascade count from the latest resolved spin."
                 >
                   <span>Cascade</span>

@@ -23,14 +23,14 @@ const scaleTiming = (ms: number) => Math.round(ms / PRESENTATION_SPEED);
 export const PRESENTATION_TIMINGS = {
   spinStart: scaleTiming(120),
   boardDrop: scaleTiming(350),
-  winHighlight: scaleTiming(560),
-  cascadeDrop: scaleTiming(240),
+  winHighlight: scaleTiming(820),
+  cascadeDrop: scaleTiming(320),
   modifierFlash: scaleTiming(300),
   bonusTrigger: scaleTiming(1200),
-  roundEnd: scaleTiming(450)
+  roundEnd: scaleTiming(500)
 } as const;
 
-export const WIN_PRESENTATION_AUTO_DISMISS_MS = scaleTiming(1150);
+export const WIN_PRESENTATION_AUTO_DISMISS_MS = scaleTiming(2240);
 
 export const phaseLabel = (phase: SpinPhase): string =>
   phase

@@ -107,7 +107,7 @@
 
 @media (max-width: 1280px), (max-height: 720px) {
   .slotViewport {
-    --machine-stage-columns: 124px minmax(0, 1fr) 196px;
+    --machine-stage-columns: 150px minmax(0, 1fr) 196px;
     --stage-status-width: min(100%, 640px);
     --board-frame-fit-height: calc(100dvh - 112px);
   }
@@ -318,6 +318,35 @@
 
   .betMetaRow {
     justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1880px) {
+  .slotViewport {
+    /* Smooth left-rail scaling: widened by ~5% for smaller Full HD desktop panels so the left support windows breathe properly. */
+    --machine-stage-columns: clamp(315px, calc(321px + 2vw), 399px) minmax(0, 1fr) 300px;
+    --left-rail-max-width: clamp(315px, calc(321px + 2vw), 399px);
+    --right-rail-max-width: 300px;
+    --machine-stage-gap: 12px;
+    --stage-status-width: min(100%, 356px);
+    --board-frame-fit-height: 100%;
+    --board-inline-breathe: 6px;
+    --board-frame-margin-bottom: 0;
+    --board-frame-translate-y: 0px;
+    --board-frame-radius: clamp(18px, 1.28vw, 30px);
+    --board-frame-border-width: clamp(1.1px, 0.088vw, 1.9px);
+    --board-stage-halo-radius: clamp(30px, 2.05vw, 44px);
+    --board-stage-halo-blur: clamp(17px, 1.48vw, 27px);
+  }
+
+  /* Balance/Bet panel fine-tuning for wider rails. */
+  .supportBalanceZone {
+    gap: clamp(6px, 0.45vw, 10px);
+  }
+
+  .supportBalanceZone .bottomBarStat {
+    min-height: 52px;
+    padding: 8px 10px;
   }
 }
 

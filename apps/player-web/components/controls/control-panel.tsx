@@ -68,12 +68,21 @@ export function ControlPanel({
   onToggleAutoContinueNeverStop
 }: ControlPanelProps) {
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
+  const [isManualClickedRef, setIsManualClicked] = useState(false);
+  const [isSpinButtonPressed, setIsSpinButtonPressed] = useState(false);
   const autoplayInputRef = useRef<HTMLInputElement>(null);
   const autoplayHoldTimerRef = useRef<number | null>(null);
   const autoplayLongPressTriggeredRef = useRef(false);
+  const manualClickTimerRef = useRef<number | null>(null);
+  const spinButtonRef = useRef<HTMLButtonElement>(null);
+  const lastSpinTimestampRef = useRef<number>(0);
+
+  // Minimum ms between manual spins — fast enough to feel responsive, slow enough to not glitch.
+  const SPIN_THROTTLE_MS = 320;
 
   useEffect(() => {
     if (isAutospinActive) {
+      setIsSpinButtonPressed(false);
       setAutoplayInputOpen(false);
     }
   }, [isAutospinActive]);
@@ -140,38 +149,107 @@ export function ControlPanel({
   useEffect(() => {
     return () => {
       clearAutoplayHoldTimer();
+      if (manualClickTimerRef.current !== null) {
+        window.clearTimeout(manualClickTimerRef.current);
+        manualClickTimerRef.current = null;
+      }
     };
   }, []);
+
+  const handleManualSpin = () => {
+    if (isAutospinActive) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastSpinTimestampRef.current < SPIN_THROTTLE_MS) {
+      return;
+    }
+    lastSpinTimestampRef.current = now;
+
+    setIsManualClicked(true);
+
+    if (manualClickTimerRef.current !== null) {
+      window.clearTimeout(manualClickTimerRef.current);
+    }
+
+    manualClickTimerRef.current = window.setTimeout(() => {
+      setIsManualClicked(false);
+      manualClickTimerRef.current = null;
+    }, 380);
+
+    onSpin();
+  };
+
+  const handleSpinKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if ((event.code === "Space" || event.key === " ") && !isAutospinActive) {
+      event.preventDefault();
+      if (!isSpinButtonPressed) {
+        setIsSpinButtonPressed(true);
+      }
+    }
+  };
+
+  const handleSpinKeyUp = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if ((event.code === "Space" || event.key === " ")) {
+      event.preventDefault();
+      setIsSpinButtonPressed(false);
+      if (!isAutospinActive) {
+        handleManualSpin();
+      }
+    }
+  };
+
+  const handleSpinButtonMouseDown = () => {
+    if (!isAutospinActive) {
+      setIsSpinButtonPressed(true);
+    }
+  };
+
+  const handleSpinButtonMouseUp = () => {
+    setIsSpinButtonPressed(false);
+    if (!isAutospinActive) {
+      handleManualSpin();
+    }
+  };
+
+  useEffect(() => {
+    const handleDocumentKeyUp = (event: KeyboardEvent) => {
+      if ((event.code === "Space" || event.key === " ")) {
+        setIsSpinButtonPressed(false);
+      }
+    };
+
+    window.addEventListener("keyup", handleDocumentKeyUp);
+    return () => {
+      window.removeEventListener("keyup", handleDocumentKeyUp);
+    };
+  }, [isAutospinActive]);
 
   const suppressSelectionOnPointerDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
   };
 
+  const autoplayIsStopState = isAutospinActive || autospinStopRequested;
+
   return (
     <div className="floatingGameDock">
       <div className="floatingGameDockInner">
-        {/* Top Row: Spin + Stop */}
+        {/* Top Row: Spin */}
         <div className="dockTopRow">
           <div className="dockSpinWrapper">
             <SpinButton
               disabled={!canSpin}
-              onClick={onSpin}
+              isManualClicked={isManualClickedRef}
+              isSpinButtonPressed={isSpinButtonPressed}
+              onKeyDown={handleSpinKeyDown}
+              onKeyUp={handleSpinKeyUp}
+              onMouseDown={handleSpinButtonMouseDown}
+              onMouseUp={handleSpinButtonMouseUp}
               pulseKey={spinPulseKey}
               spinPhase={spinPhase}
             />
           </div>
-
-          <button
-            aria-label="Stop autoplay now"
-            className="dockStopButton"
-            disabled={!isAutospinActive && !autospinStopRequested}
-            onMouseDown={suppressSelectionOnPointerDown}
-            onClick={onStopAutoSpin}
-            title="Stop autoplay"
-            type="button"
-          >
-            <span aria-hidden="true" className="dockStopCore" />
-          </button>
         </div>
 
         {/* Bottom Row: Bet Controls + Autoplay */}
@@ -260,7 +338,16 @@ export function ControlPanel({
               ) : null}
 
               <button
-                className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""}`}
+                aria-label={
+                  autospinStopRequested
+                    ? "Autoplay stopping"
+                    : isAutospinActive
+                      ? "Stop autoplay"
+                      : autoplayInputOpen
+                        ? "Start autoplay"
+                        : "Set autoplay count"
+                }
+                className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
                 disabled={areBetControlsLocked && !isAutospinActive}
                 onMouseDown={suppressSelectionOnPointerDown}
                 onPointerDown={handleAutoplayPointerDown}
@@ -268,13 +355,28 @@ export function ControlPanel({
                 onPointerLeave={clearAutoplayHoldTimer}
                 onPointerCancel={clearAutoplayHoldTimer}
                 onClick={handleAutoplayPress}
-                title={isAutospinActive ? "Stop autoplay" : autoplayInputOpen ? "Start autoplay" : "Set autoplay count"}
+                title={
+                  autospinStopRequested
+                    ? "Autoplay is stopping"
+                    : isAutospinActive
+                      ? "Stop autoplay"
+                      : autoplayInputOpen
+                        ? "Start autoplay"
+                        : "Set autoplay count"
+                }
                 type="button"
               >
-                <svg aria-hidden="true" className="dockSmallIcon autoplayActionIcon" viewBox="0 0 24 24">
-                  <path d="M13 4l8 8-8 8" />
-                  <path d="M3 4l8 8-8 8" />
-                </svg>
+                {autoplayIsStopState ? (
+                  <svg aria-hidden="true" className="dockSmallIcon autoplayStopXIcon" viewBox="0 0 24 24">
+                    <path d="M7 7l10 10" />
+                    <path d="M17 7l-10 10" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" className="dockSmallIcon autoplayActionIcon" viewBox="0 0 24 24">
+                    <path d="M13 4l8 8-8 8" />
+                    <path d="M3 4l8 8-8 8" />
+                  </svg>
+                )}
               </button>
             </div>
 

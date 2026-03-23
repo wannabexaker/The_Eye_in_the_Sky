@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-21`
+- Last updated: `2026-03-23`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -50,6 +50,17 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 ## UI Workflow Guardrails
 - Read `docs/prd.md` and `docs/tasks.md` before touching the board shell or footer geometry.
 - For risky board/footer CSS experiments, keep the previous working block commented or isolated until the replacement is verified.
+
+## Delivery Logging Protocol
+- Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
+- Every implementation pass must include a short step record in this order:
+  - `Intent`: what behavior we are changing.
+  - `Hypothesis`: why the current behavior is wrong.
+  - `Code change`: exact file and logic touched.
+  - `Verification`: what was tested and what outcome was observed.
+  - `Rollback note`: what to revert if the change regresses UX.
+- Never batch unrelated animation edits in one pass. One issue -> one isolated change -> verification -> log update.
+- If a fix fails, the failed hypothesis must still be logged as `Rejected` to prevent repeating the same attempt.
 
 ## Game Identity
 - Title: `The Eye in the Sky`

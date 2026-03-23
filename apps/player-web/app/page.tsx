@@ -46,6 +46,8 @@ const formatMoneyCompactEur = (value: number) =>
     maximumFractionDigits: 2
   }).format(value);
 
+const formatBalanceRoundedEur = (value: number) => `€${Math.round(value)}`;
+
 const symbolLabels: Record<string, string> = {
   ashen_sigil: "Ashen Sigil",
   broken_halo: "Broken Halo",
@@ -233,7 +235,8 @@ export default function HomePage() {
       <section className="gameArea machineStage">
         <LeftSupportRail
           activeBonusSpins={slot.activeBonusSpins}
-          balance={formatMoneyCompactEur(wallet.balance)}
+          balance={formatBalanceRoundedEur(wallet.balance)}
+          balanceExact={formatMoneyCompactEur(wallet.balance)}
           bonusActive={Boolean(slot.gameState.bonusState)}
           cascades={latestRound?.cascades.length ?? 0}
           currentBet={formatMoneyCompactEur(slot.bet)}

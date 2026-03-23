@@ -520,6 +520,10 @@ p {
   animation: samsaraCriticalBlink 560ms steps(2, end) infinite;
 }
 
+.samsaraEye.is-progressed {
+  animation: samsaraMeterProgress 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .samsaraEye.is-critical::before {
   background: radial-gradient(
     circle,
@@ -555,6 +559,30 @@ p {
       brightness(0.86)
       hue-rotate(-16deg)
       drop-shadow(0 0 16px rgba(171, 36, 29, 0.82));
+  }
+}
+
+@keyframes samsaraMeterProgress {
+  0% {
+    transform: translate(-50%, calc(-100% - 6px)) scale(1);
+    filter:
+      saturate(calc(0.78 + (var(--meter-gold, 0) * 0.9)))
+      brightness(calc(0.8 + (var(--meter-light, 0) * 0.55)));
+  }
+
+  50% {
+    transform: translate(-50%, calc(-100% - 6px)) scale(1.18);
+    filter:
+      saturate(calc(0.78 + (var(--meter-gold, 0) * 0.9)))
+      brightness(calc(0.8 + (var(--meter-light, 0) * 0.55)))
+      drop-shadow(0 0 18px rgba(226, 190, 112, 0.68));
+  }
+
+  100% {
+    transform: translate(-50%, calc(-100% - 6px)) scale(1);
+    filter:
+      saturate(calc(0.78 + (var(--meter-gold, 0) * 0.9)))
+      brightness(calc(0.8 + (var(--meter-light, 0) * 0.55)));
   }
 }
 
@@ -598,7 +626,7 @@ p {
   gap: 8px;
   padding-top: 4px;
   width: 100%;
-  max-width: min(var(--left-rail-max-width), 320px);
+  max-width: min(var(--left-rail-max-width), 480px);
   overflow: visible;
   position: relative;
   z-index: var(--z-surface);
@@ -1034,7 +1062,9 @@ p {
   cursor: pointer;
   overflow: hidden;
   z-index: var(--z-button);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .spinCta:hover {
@@ -1043,6 +1073,15 @@ p {
 
 .spinCta:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+.spinCta.is-pressed:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow:
+    0 0 0 1px rgba(226, 190, 112, 0.25),
+    0 0 0 6px rgba(226, 190, 112, 0.08),
+    0 0 18px rgba(226, 190, 112, 0.15),
+    inset 0 0 20px rgba(0, 0, 0, 0.48);
 }
 
 .spinCta:disabled {
@@ -1199,7 +1238,7 @@ p {
 }
 
 .spinCta.is-spinning .ouroborosRing {
-  animation: iconSpin 0.82s linear infinite;
+  animation: ouroboros360Spin 0.72s cubic-bezier(0.22, 0.61, 0.35, 1) forwards;
 }
 
 .spinCta.is-spinning .ouroborosBody {
@@ -2005,6 +2044,61 @@ button:disabled {
   }
 }
 
+@keyframes ouroboros360Spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinClickFlash {
+  0% {
+    box-shadow:
+      0 0 0 1px rgba(226, 190, 112, 0.18),
+      0 0 0 8px rgba(226, 190, 112, 0.04),
+      0 0 26px rgba(226, 190, 112, 0.18),
+      inset 0 0 24px rgba(0, 0, 0, 0.34);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(226, 190, 112, 0.45),
+      0 0 0 12px rgba(226, 190, 112, 0.12),
+      0 0 42px rgba(226, 190, 112, 0.42),
+      inset 0 0 28px rgba(0, 0, 0, 0.28);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(226, 190, 112, 0.18),
+      0 0 0 8px rgba(226, 190, 112, 0.04),
+      0 0 26px rgba(226, 190, 112, 0.18),
+      inset 0 0 24px rgba(0, 0, 0, 0.34);
+  }
+}
+
+@keyframes spinHeldGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(226, 190, 112, 0.28),
+      0 0 0 8px rgba(226, 190, 112, 0.06),
+      0 0 32px rgba(226, 190, 112, 0.28),
+      inset 0 0 24px rgba(0, 0, 0, 0.34);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(226, 190, 112, 0.42),
+      0 0 0 12px rgba(226, 190, 112, 0.14),
+      0 0 48px rgba(226, 190, 112, 0.48),
+      inset 0 0 26px rgba(0, 0, 0, 0.3);
+  }
+}
+
 @keyframes iconSpin {
   from {
     transform: rotate(0deg);
@@ -2249,7 +2343,11 @@ Current shell calibration:
   gap: 7px;
   min-height: 0;
   height: 100%;
-  justify-self: start;
+  justify-self: stretch;
+}
+
+.leftRail.supportRail {
+  max-width: min(var(--left-rail-max-width), 480px);
 }
 
 .brandingRail {
@@ -2324,8 +2422,9 @@ Current shell calibration:
 
 .supportBalanceZone {
   position: relative;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(82px, 94px));
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   /* backup: min-height: 62px; */
   min-height: 52px;
@@ -2362,6 +2461,15 @@ Current shell calibration:
   background: none;
   box-shadow: none;
   align-content: center;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  align-items: center;
+}
+
+.supportBalanceZone .bottomBarStat {
+  justify-items: center;
+  text-align: center;
 }
 
 .supportBalanceZone .bottomBarStat:first-child {
@@ -2485,6 +2593,13 @@ Current shell calibration:
   line-height: 1.1;
 }
 
+.supportMiniStatCascade span {
+  display: block;
+  width: 100%;
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+}
+
 .supportMiniStat strong {
   line-height: 1;
 }
@@ -2566,7 +2681,7 @@ Current shell calibration:
 .supportRailUtilityBar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 6px;
   margin-top: auto;
   padding: 6px 2px 0;
@@ -3389,6 +3504,23 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   font-weight: 600;
 }
 
+.dockSmallButton.is-active:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.96), rgba(163, 118, 49, 0.96));
+  border-color: rgba(255, 214, 131, 0.58);
+}
+
+.autoplayButton:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 131, 0.28),
+    0 0 10px rgba(226, 190, 112, 0.2);
+}
+
+.autoplayButton.is-stop:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(255, 214, 131, 0.28),
+    0 0 10px rgba(226, 190, 112, 0.2);
+}
+
 .dockSmallIcon {
   width: 10px;
   height: 10px;
@@ -3472,6 +3604,17 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   box-shadow:
     0 0 0 1px rgba(255, 214, 131, 0.36),
     0 0 14px rgba(226, 190, 112, 0.34);
+}
+
+.autoplayStopXIcon {
+  width: 17px;
+  height: 17px;
+}
+
+.autoplayStopXIcon path {
+  stroke: currentColor;
+  stroke-width: 3.4;
+  stroke-linecap: round;
 }
 
 @keyframes autoplayInputReveal {

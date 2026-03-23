@@ -4,8 +4,8 @@ Layer: frontend (player-web)
 Uses: shared shell asset manifest for the eye core icon
 */
 
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { shellAssets } from "@/lib/assets/asset-manifest";
-import type { CSSProperties } from "react";
 
 type SamsaraMeterProps = {
   meterRatio: number;
@@ -14,6 +14,35 @@ type SamsaraMeterProps = {
 };
 
 export function SamsaraMeter({ meterRatio, current, target }: SamsaraMeterProps) {
+  const [meterProgressed, setMeterProgressed] = useState(false);
+  const previousCurrentRef = useRef(current);
+  const progressAnimationTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (current > previousCurrentRef.current) {
+      setMeterProgressed(true);
+
+      if (progressAnimationTimerRef.current !== null) {
+        window.clearTimeout(progressAnimationTimerRef.current);
+      }
+
+      progressAnimationTimerRef.current = window.setTimeout(() => {
+        setMeterProgressed(false);
+        progressAnimationTimerRef.current = null;
+      }, 420);
+    }
+
+    previousCurrentRef.current = current;
+  }, [current]);
+
+  useEffect(() => {
+    return () => {
+      if (progressAnimationTimerRef.current !== null) {
+        window.clearTimeout(progressAnimationTimerRef.current);
+      }
+    };
+  }, []);
+
   const clamped = Math.max(0, Math.min(1, meterRatio));
   const darkPhaseCutoff = 1 / 17;
   const goldenPhaseStart = 8 / 17;
@@ -43,7 +72,7 @@ export function SamsaraMeter({ meterRatio, current, target }: SamsaraMeterProps)
       >
         <div
           aria-hidden="true"
-          className={`samsaraEye ${clamped >= 1 ? "is-critical" : ""}`}
+          className={`samsaraEye ${clamped >= 1 ? "is-critical" : ""} ${meterProgressed ? "is-progressed" : ""}`}
           style={{ backgroundImage: `url(${shellAssets.meterEye})` }}
         />
         <div className="samsaraFill" style={{ width: `${clamped * 100}%` }} />

@@ -19,6 +19,12 @@ import {
 } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { symbolAssetSources } from "@/lib/assets/asset-manifest";
+import {
+  FLOATING_TEXT_FADE_MS,
+  FLOATING_TEXT_HOLD_MS,
+  getFloatingTextAlpha,
+  shouldSuppressBoardDropAnimation
+} from "@/lib/presentation/board-animation-rules";
 import { ParticleSystem } from "@/lib/presentation/particle-system";
 import {
   PRESENTATION_TIMINGS,
@@ -46,6 +52,9 @@ const easeOutBack = (t: number) => {
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 };
+
+// No overshoot — used for CASCADE drops so symbols settle without bouncing.
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 
@@ -214,6 +223,7 @@ export function PixiTempleBoard({
   const winPathRef = useRef<Graphics | null>(null);
   const backgroundLayerRef = useRef<Container | null>(null);
   const floatingTextsRef = useRef<Text[]>([]);
+  const floatingTextLayerRef = useRef<Container | null>(null);
   const cellRefs = useRef<CellSprite[]>([]);
   const cloudRefs = useRef<DriftSprite[]>([]);
   const eyeRefs = useRef<DriftSprite[]>([]);
@@ -230,6 +240,11 @@ export function PixiTempleBoard({
   const guidanceUntilRef = useRef(0);
   const lossVeilUntilRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
+  // When true, paintBoardCells places cells at their target position without drop animation.
+  // Used for cascade.boardBefore updates which are same-frame redraws, not new-symbol drops.
+  const suppressDropAnimationRef = useRef(false);
+  const shouldResetSuppressAfterPaintRef = useRef(false);
+  const lastPresentedRoundIdRef = useRef<string | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [displayBoard, setDisplayBoard] = useState(board);
   const [highlightedCells, setHighlightedCells] = useState<{ row: number; col: number }[]>([]);
@@ -423,13 +438,18 @@ export function PixiTempleBoard({
   };
 
   const queueFloatingText = (
-    root: Container,
+    _root: Container,
     text: string,
     x: number,
     y: number,
     size: number,
     color: number
   ) => {
+    const layer = floatingTextLayerRef.current;
+    if (!layer) {
+      return;
+    }
+
     const node = new Text({
       text,
       style: {
@@ -443,7 +463,8 @@ export function PixiTempleBoard({
     node.anchor.set(0.5);
     node.x = x;
     node.y = y;
-    root.addChild(node);
+    (node as any).createdAt = performance.now();
+    layer.addChild(node);
     floatingTextsRef.current.push(node);
   };
 
@@ -486,10 +507,15 @@ export function PixiTempleBoard({
 
         applySymbolTexture(cell, symbol, palette.accent);
 
-        cell.startY = cell.targetY - dropDistance;
-        cell.animStart = app.ticker.lastTime + colIndex * 34 + rowIndex * 12;
-        cell.animDuration = phase === "CASCADE" ? 220 : 360;
-        cell.animating = true;
+        if (suppressDropAnimationRef.current) {
+          // No drop — place cell directly at target without animation.
+          cell.animating = false;
+        } else {
+          cell.startY = cell.targetY - dropDistance;
+          cell.animStart = app.ticker.lastTime + colIndex * 34 + rowIndex * 12;
+          cell.animDuration = phase === "CASCADE" ? 220 : 360;
+          cell.animating = true;
+        }
       });
     });
 
@@ -497,14 +523,24 @@ export function PixiTempleBoard({
   }, []);
 
   useEffect(() => {
+    if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
+      suppressDropAnimationRef.current = true;
+      shouldResetSuppressAfterPaintRef.current = true;
+    }
+
     setDisplayBoard(board);
-  }, [board]);
+  }, [board, spinPhase]);
 
   useEffect(() => {
     timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
     timeoutsRef.current = [];
 
     if (!result || result.cascades.length === 0) {
+      if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
+        suppressDropAnimationRef.current = true;
+        shouldResetSuppressAfterPaintRef.current = true;
+      }
+
       setDisplayBoard(board);
       clearWinningCells();
       return;
@@ -536,6 +572,9 @@ export function PixiTempleBoard({
     result.cascades.forEach((cascade) => {
       timeoutsRef.current.push(
         window.setTimeout(() => {
+          // boardBefore is a redraw of the current visible state — no drop animation needed.
+          suppressDropAnimationRef.current = true;
+          shouldResetSuppressAfterPaintRef.current = true;
           setDisplayBoard(cascade.boardBefore);
           clearWinningCells();
         }, cursor)
@@ -550,6 +589,25 @@ export function PixiTempleBoard({
       timeoutsRef.current.push(
         window.setTimeout(() => {
           emitWinParticles(cascade.wins);
+
+          // Emit per-cascade win amount near the winning cells centroid.
+          if (cascade.stepWin > 0) {
+            const root = rootRef.current;
+            if (root) {
+              const winCells = cascade.wins.flatMap((w) => w.cells);
+              let spawnX = logicalWidth / 2;
+              let spawnY = logicalHeight / 2;
+              if (winCells.length > 0) {
+                const avgRow = winCells.reduce((acc, c) => acc + c.row, 0) / winCells.length;
+                const avgCol = winCells.reduce((acc, c) => acc + c.col, 0) / winCells.length;
+                spawnX = boardOffsetX + avgCol * (cellWidth + gap) + cellWidth / 2;
+                spawnY = boardOffsetY + avgRow * (cellHeight + gap) + cellHeight / 2 - 20;
+              }
+
+              const isBig = cascade.stepWin >= result.bet * 5;
+              queueFloatingText(root, `+${formatMoney(cascade.stepWin)}`, spawnX, spawnY - 60, isBig ? 32 : 22, 0xf8edd9);
+            }
+          }
         }, cursor + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight - 80)
       );
 
@@ -571,7 +629,7 @@ export function PixiTempleBoard({
       timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
       timeoutsRef.current = [];
     };
-  }, [board, result]);
+  }, [board, result, spinPhase]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -693,6 +751,13 @@ export function PixiTempleBoard({
       lightning.zIndex = 36;
       lightningRef.current = lightning;
       root.addChild(lightning);
+
+      // Floating text layer must sit above ALL other layers so win amounts
+      // and multiplier callouts are never occluded by the board or particles.
+      const floatingTextLayer = new Container();
+      floatingTextLayer.zIndex = 50;
+      floatingTextLayerRef.current = floatingTextLayer;
+      root.addChild(floatingTextLayer);
 
       const frame = new Graphics();
       frame.zIndex = 0;
@@ -856,27 +921,42 @@ export function PixiTempleBoard({
         }
 
         cloudRefs.current.forEach((cloud, index) => {
-          cloud.node.x = cloud.baseX + Math.sin(now / 1800 + cloud.seed) * (10 + index * 0.5);
-          cloud.node.alpha = 0.025 + (Math.sin(now / 1400 + cloud.seed) + 1) * 0.014;
+          if (phaseRef.current === "CASCADE") {
+            cloud.node.alpha = 0;
+          } else {
+            cloud.node.x = cloud.baseX + Math.sin(now / 1800 + cloud.seed) * (10 + index * 0.5);
+            cloud.node.alpha = 0.025 + (Math.sin(now / 1400 + cloud.seed) + 1) * 0.014;
+          }
         });
 
         eyeRefs.current.forEach((eye) => {
-          eye.node.x = eye.baseX + Math.sin(now / 2200 + eye.seed) * 12;
-          eye.node.y = eye.baseY + Math.cos(now / 1700 + eye.seed) * 4;
-          eye.node.alpha = 0.03 + (Math.sin(now / 1300 + eye.seed) + 1) * 0.012;
+          if (phaseRef.current === "CASCADE") {
+            eye.node.alpha = 0;
+          } else {
+            eye.node.x = eye.baseX + Math.sin(now / 2200 + eye.seed) * 12;
+            eye.node.y = eye.baseY + Math.cos(now / 1700 + eye.seed) * 4;
+            eye.node.alpha = 0.03 + (Math.sin(now / 1300 + eye.seed) + 1) * 0.012;
+          }
         });
 
         moteRefs.current.forEach((mote) => {
-          mote.node.x = mote.baseX + Math.sin(now / 900 + mote.seed) * 10;
-          mote.node.y = mote.baseY + Math.cos(now / 1100 + mote.seed) * 14;
-          mote.node.alpha = 0.08 + (Math.sin(now / 700 + mote.seed) + 1) * 0.08;
+          if (phaseRef.current === "CASCADE") {
+            mote.node.alpha = 0;
+          } else {
+            mote.node.x = mote.baseX + Math.sin(now / 900 + mote.seed) * 10;
+            mote.node.y = mote.baseY + Math.cos(now / 1100 + mote.seed) * 14;
+            mote.node.alpha = 0.08 + (Math.sin(now / 700 + mote.seed) + 1) * 0.08;
+          }
         });
 
         particleSystemRef.current?.update(deltaMs);
 
         floatingTextsRef.current = floatingTextsRef.current.filter((text) => {
           text.y -= 0.35;
-          text.alpha -= 0.013;
+
+          const createdAt = (text as any).createdAt ?? now;
+          const elapsedMs = now - createdAt;
+          text.alpha = getFloatingTextAlpha(elapsedMs, FLOATING_TEXT_HOLD_MS, FLOATING_TEXT_FADE_MS);
 
           if (text.alpha <= 0) {
             text.destroy();
@@ -889,17 +969,13 @@ export function PixiTempleBoard({
         drawRuneLayer(runeLayer, now);
         drawWinPaths(winPath, highlightedWinsRef.current, now);
 
-        const highlightPulse = highlightedWinsRef.current.length > 0
-          ? 0.72 + (Math.sin((now - highlightStartRef.current) / 85) + 1) * 0.14
-          : 0;
-
         cellRefs.current.forEach((cell) => {
           const currentPhase = phaseRef.current;
           const idleMotionActive =
-            (currentPhase === "IDLE" || currentPhase === "ROUND_END") && !cell.animating;
+            currentPhase === "IDLE" && !cell.animating;
           const progress = Math.min(1, Math.max(0, (now - cell.animStart) / cell.animDuration));
           const animating = cell.animating && now >= cell.animStart;
-          const eased = easeOutBack(progress);
+          const eased = easeOutCubic(progress);
           const animatedY = animating
             ? cell.startY + (cell.targetY - cell.startY) * eased
             : cell.targetY;
@@ -913,10 +989,7 @@ export function PixiTempleBoard({
             ? Math.sin(now / 880 + cell.breathingSeed) * 0.012
             : 0;
           const hoverBoost = idleMotionActive && cell.hovered ? 0.05 : 0;
-          const pulseBoost = cell.pulseUntil > now
-            ? Math.sin((1 - (cell.pulseUntil - now) / PRESENTATION_TIMINGS.winHighlight) * Math.PI * 3) * 0.035
-            : 0;
-          const scale = 1 + breathing + hoverBoost + pulseBoost;
+          const scale = 1 + breathing + hoverBoost;
 
           cell.container.x = cell.baseX + shake;
           cell.container.y = animatedY + shakeY;
@@ -925,7 +998,7 @@ export function PixiTempleBoard({
 
           cell.glow.alpha =
             (cell.hovered ? 0.14 : 0.04) +
-            (cell.highlighted ? 0.18 * highlightPulse : 0);
+            (cell.highlighted ? 0.18 : 0);
 
           if (progress >= 1) {
             cell.animating = false;
@@ -940,7 +1013,7 @@ export function PixiTempleBoard({
         if (phaseRef.current === "WIN_CHECK" && highlightedWinsRef.current.length > 0) {
           overlay.rect(0, 0, logicalWidth, logicalHeight).fill({
             color: 0xf0ca72,
-            alpha: 0.025 + highlightPulse * 0.025
+            alpha: 0.04
           });
         }
 
@@ -1045,7 +1118,20 @@ export function PixiTempleBoard({
     if (!paintBoardCells()) {
       return;
     }
+
+    if (shouldResetSuppressAfterPaintRef.current) {
+      suppressDropAnimationRef.current = false;
+      shouldResetSuppressAfterPaintRef.current = false;
+    }
   }, [displayBoard, highlightedCells, paintBoardCells]);
+
+  useEffect(() => {
+    const nextRoundId = result?.roundSummary.roundId ?? null;
+    if (nextRoundId !== lastPresentedRoundIdRef.current) {
+      clearFloatingTexts();
+      lastPresentedRoundIdRef.current = nextRoundId;
+    }
+  }, [result]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -1053,27 +1139,27 @@ export function PixiTempleBoard({
       return;
     }
 
-    clearFloatingTexts();
-
     if (!result) {
       return;
     }
 
     if (spinPhase === "MODIFIER_APPLY" && result.appliedWinMultiplier > 1) {
-      queueFloatingText(root, `x${result.appliedWinMultiplier}`, logicalWidth / 2, 30, 28, 0xf0ca72);
+      queueFloatingText(root, `x${result.appliedWinMultiplier}`, logicalWidth / 2, logicalHeight / 2 - 24, 28, 0xf0ca72);
     }
 
+    // Show a total summary only for multi-cascade rounds at ROUND_END.
     if (
       result.totalWin > 0 &&
-      (spinPhase === "WIN_CHECK" || spinPhase === "CASCADE" || spinPhase === "ROUND_END")
+      result.cascades.length > 1 &&
+      spinPhase === "ROUND_END"
     ) {
       queueFloatingText(
         root,
-        `+${formatMoney(result.totalWin)}`,
+        `TOTAL +${formatMoney(result.totalWin)}`,
         logicalWidth / 2,
-        logicalHeight - 20,
-        result.totalWin >= result.bet * 5 ? 34 : 22,
-        0xf8edd9
+        logicalHeight / 2 + 40,
+        result.totalWin >= result.bet * 5 ? 30 : 20,
+        0xf0ca72
       );
     }
   }, [result, spinPhase]);

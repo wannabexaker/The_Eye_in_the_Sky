@@ -333,6 +333,7 @@ export function useSlotMachine() {
     autoContinueNeverStop,
     wallet,
     gameStateSnapshot,
+    hasHydrated,
     applyRoundResult,
     syncGameState,
     resetSession
@@ -457,6 +458,15 @@ const validateAutospinCount = useCallback(
     setGameState(gameStateSnapshot);
   }, [gameStateSnapshot]);
 
+  // After rehydration, ensure persisted gameState is loaded into UI
+  useEffect(() => {
+    if (!hasHydrated || !gameStateSnapshot) {
+      return;
+    }
+
+    setGameState(gameStateSnapshot);
+  }, [hasHydrated, gameStateSnapshot]);
+
   useEffect(() => {
     betRef.current = bet;
   }, [bet]);
@@ -474,9 +484,15 @@ const validateAutospinCount = useCallback(
     };
   }, []);
 
+  // Only sync gameState back to the store AFTER hydration is complete.
+  // Without this guard, the initialGameState() on mount overwrites the persisted Samsara meter.
   useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
     syncGameState(gameState);
-  }, [gameState, syncGameState]);
+  }, [gameState, syncGameState, hasHydrated]);
 
   useEffect(() => {
     if (areBetControlsLocked || bonusModeActive) {
@@ -629,6 +645,19 @@ const validateAutospinCount = useCallback(
   const scheduleRoundFeedback = useCallback(
     (result: SpinResult) => {
       clearTimers();
+
+      // Extra time to keep phase schedule in sync with the board's per-cascade animation loop.
+      // Board step = boardDrop + winHighlight + cascadeDrop + 110ms buffer.
+      // For N cascades the board runs N × stepMs; the fixed schedule only covers 1 step,
+      // so each additional cascade needs another stepMs added to all post-CASCADE timers.
+      const cascadeStepMs =
+        PRESENTATION_TIMINGS.boardDrop +
+        PRESENTATION_TIMINGS.winHighlight +
+        PRESENTATION_TIMINGS.cascadeDrop +
+        110;
+      const extraCascadeMs =
+        result.cascades.length > 1 ? (result.cascades.length - 1) * cascadeStepMs : 0;
+
       setSpinPulseKey((current) => current + 1);
       setSpinPhase("SPIN_START");
       setPhaseMessage(
@@ -697,7 +726,7 @@ const validateAutospinCount = useCallback(
           if (hasMultiplierEvent(result)) {
             soundManager.play("multiplier", soundEnabled);
           }
-        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop)
+        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + extraCascadeMs)
       );
 
       if (hasBonusTrigger(result)) {
@@ -714,7 +743,7 @@ const validateAutospinCount = useCallback(
                 )
               );
             }
-          }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + PRESENTATION_TIMINGS.modifierFlash)
+          }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + extraCascadeMs + PRESENTATION_TIMINGS.modifierFlash)
         );
       }
 
@@ -726,7 +755,7 @@ const validateAutospinCount = useCallback(
               ? `Round complete. ${formatMoney(result.totalWin)} claimed.`
               : "Round complete. The Eye remains watchful."
           );
-        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0))
+        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + extraCascadeMs + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0))
       );
 
       phaseTimersRef.current.push(
@@ -750,13 +779,16 @@ const validateAutospinCount = useCallback(
               ? `${result.nextState.bonusState.freeSpinsRemaining} bonus spins remain in Sky Opens.`
               : "Awaiting the next ritual."
           );
-        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0) + PRESENTATION_TIMINGS.roundEnd)
+        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + PRESENTATION_TIMINGS.cascadeDrop + extraCascadeMs + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0) + PRESENTATION_TIMINGS.roundEnd)
       );
     },
     [autoContinueNeverStop, clearTimers, soundEnabled]
   );
 
   const runSpin = useCallback(() => {
+    // Increment pulse key to restart animations immediately
+    setSpinPulseKey((current) => current + 1);
+
     const currentState =
       gameStateRef.current.balance === availableBalance
         ? gameStateRef.current

@@ -7,6 +7,9 @@
 - `blocked`
 
 ## Active Tasks
+- `in_progress` Keep a strict per-fix step log (Intent -> Hypothesis -> Code change -> Verification -> Rollback note) for every board animation tweak
+- `in_progress` Stabilize floating win amount visibility timing so numbers remain readable before fade-out without breaking board layering
+- `in_progress` Eliminate residual non-spin waving triggers (especially on idle bet-change state)
 - `in_progress` Move player state into a fuller Zustand-driven store
 - `in_progress` Produce painted production art pack from approved SVG first-pass assets
 - `in_progress` Clean the active `player-web` shell CSS into single authoritative selector blocks with variable-driven breakpoint overrides
@@ -97,6 +100,24 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-03-23`
+  - Added documentation-level delivery rule to keep per-fix step logging mandatory for board/presentation/animation changes.
+  - Investigated residual waving reports and identified a non-spin trigger path during idle bet-change when board references refresh.
+  - Added and verified cascade redraw suppression path around `cascade.boardBefore` to avoid redundant drop animation on same-frame redraws.
+  - Added idle/default-board animation suppression guard in Pixi board update path to reduce false drop animations when no spin is active.
+  - Attempted first floating-win visibility extension using hold+fade timestamps; user-reported outcome indicated mismatch with expected behavior.
+  - Reverted the first unsuccessful floating-text timing approach and continued with stricter isolated tuning workflow.
+  - Recorded failed and accepted approaches to avoid repeating the same animation-timing mistake.
+  - Added deterministic presentation helper module in player-web for board animation suppression and floating text alpha timeline rules.
+  - Added player-web regression tests for:
+    - default Ashen board detection
+    - IDLE + default-board suppress condition
+    - floating win amount alpha hold/fade schedule
+  - Added player-web test script and validated pass: `3/3` tests green via `corepack pnpm --filter player-web test`.
+  - Root-cause fix for "instant fade" symptom: floating texts were being cleared on each `spinPhase` transition, not by alpha timeline itself.
+  - Moved floating-text clear lifecycle to round-boundary only (new round id) so per-cascade win amounts persist according to configured hold/fade durations.
+  - Extended no-drop suppression to additional redraw paths (`result absent/no cascades` and `cascade.boardBefore`) and deferred suppress reset until post-paint.
+
 - `2026-03-21`
   - Fixed spin/autoplay control UX: removed text selection/caret artifacts from spin control area; only bet and autoplay count inputs remain writable/selectable
   - Added autoplay long-press shortcut: holding autoplay button for 3 seconds now starts infinite autospin directly

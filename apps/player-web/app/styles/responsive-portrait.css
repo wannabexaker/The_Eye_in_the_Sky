@@ -100,6 +100,17 @@
     grid-area: balance;
   }
 
+  .supportRail .supportBalanceZone {
+    gap: 4px;
+  }
+
+  .supportRail .supportBalanceZone .bottomBarStat {
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    align-items: center;
+  }
+
   .supportRail .supportStatusBlock {
     grid-area: status;
   }
@@ -196,11 +207,16 @@
 
   .supportRail.is-handheld-portrait .supportBalanceZone {
     min-height: 0;
+    gap: 4px;
   }
 
   .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat {
     min-height: 34px;
     padding: 4px 6px;
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    align-items: center;
   }
 
   .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat span {
@@ -262,6 +278,11 @@
   .supportRail.is-handheld-portrait .supportMiniStat span {
     font-size: 0.56rem;
     letter-spacing: 0.12em;
+  }
+
+  .supportRail.is-handheld-portrait .supportMiniStatCascade span {
+    letter-spacing: 0.08em;
+    text-indent: 0.08em;
   }
 
   .supportRail.is-handheld-portrait .supportMiniStat strong {

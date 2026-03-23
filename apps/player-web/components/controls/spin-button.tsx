@@ -9,14 +9,25 @@ import { type MouseEvent as ReactMouseEvent } from "react";
 
 type SpinButtonProps = {
   disabled: boolean;
-  onClick: () => void;
+  isManualClicked: boolean;
+  isSpinButtonPressed: boolean;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  onKeyUp?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  onMouseDown?: () => void;
+  onMouseUp?: () => void;
   spinPhase: SpinPhase;
   pulseKey: number;
 };
 
 export function SpinButton({
   disabled,
+  isManualClicked,
+  isSpinButtonPressed,
   onClick,
+  onKeyDown,
+  onKeyUp,
+  onMouseDown,
+  onMouseUp,
   spinPhase,
   pulseKey
 }: SpinButtonProps) {
@@ -28,15 +39,21 @@ export function SpinButton({
 
   return (
     <button
-      className={`spinCta ${spinning ? "is-spinning" : ""}`}
+      className={`spinCta ${spinning ? "is-spinning" : ""} ${isManualClicked ? "is-manual-clicked" : ""} ${isSpinButtonPressed ? "is-pressed" : ""}`}
       data-phase={spinPhase}
       disabled={disabled}
-      onMouseDown={suppressSelectionOnMouseDown}
-      onClick={onClick}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      onMouseDown={(event) => {
+        suppressSelectionOnMouseDown(event);
+        onMouseDown?.();
+      }}
+      onMouseUp={onMouseUp}
+      title="Spin"
       type="button"
     >
       <span className="spinRipple" key={pulseKey} />
-      <span aria-hidden="true" className="ouroborosRing">
+      <span aria-hidden="true" className="ouroborosRing" key={`ouroboros-${pulseKey}`}>
         <span className="ouroborosBody" />
         <span className="ouroborosHead" />
         <span className="ouroborosEye" />
