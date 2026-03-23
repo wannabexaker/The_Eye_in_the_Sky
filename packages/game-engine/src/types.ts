@@ -68,11 +68,14 @@ export type BonusState = {
   freeSpinsRemaining: number;
   totalBonusWin: number;
   stickyMultiplier: number;
+  betPerSpin: number;
 };
 
 export type GameState = {
   balance: number;
   bonusMeter: number;
+  samsaraCollectedBets: number;
+  samsaraContributionLog: number[];
   bonusState: BonusState | null;
   lastTotalWin: number;
 };
@@ -110,6 +113,8 @@ export type ModifierEvent =
       cascadeIndex: number;
       source: "samsara";
       freeSpinsAwarded: number;
+      collectedAmount: number;
+      bonusBetPerSpin: number;
     };
 
 export type MultiplierTrigger = {

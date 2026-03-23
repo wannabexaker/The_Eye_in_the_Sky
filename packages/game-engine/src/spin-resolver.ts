@@ -139,8 +139,13 @@ export const resolveSpin = (
     : 1;
   const mode = options.state.bonusState?.freeSpinsRemaining ? "bonus" : "base";
   const chargedBet = mode === "bonus" ? 0 : options.bet;
+  const effectiveBet =
+    mode === "bonus" && options.state.bonusState
+      ? options.state.bonusState.betPerSpin
+      : options.bet;
   const bonusStateBefore = cloneBonusState(options.state.bonusState);
   const meterBefore = options.state.bonusMeter;
+  const samsaraCollectedBefore = options.state.samsaraCollectedBets;
 
   let state: GameState = {
     ...cloneState(options.state),
@@ -161,6 +166,7 @@ export const resolveSpin = (
       board,
       config,
       state,
+      effectiveBet,
       mode,
       cascadeIndex + 1,
       random
@@ -169,7 +175,7 @@ export const resolveSpin = (
     board = modifierResult.board;
     state = modifierResult.state;
 
-    const wins = resolveClusters(board, config, options.bet);
+    const wins = resolveClusters(board, config, effectiveBet);
     if (wins.length === 0) {
       modifiersTriggered.push(...modifierResult.events);
       break;
@@ -227,7 +233,7 @@ export const resolveSpin = (
     cascadeIndex += 1;
   }
 
-  if (state.bonusState) {
+  if (mode === "bonus" && state.bonusState) {
     state.bonusState = {
       ...state.bonusState,
       freeSpinsRemaining: Math.max(state.bonusState.freeSpinsRemaining - 1, 0),
@@ -236,6 +242,16 @@ export const resolveSpin = (
 
     if (state.bonusState.freeSpinsRemaining === 0) {
       state.bonusState = null;
+      state.bonusMeter = 0;
+      state.samsaraCollectedBets = 0;
+      state.samsaraContributionLog = [];
+    }
+  }
+
+  if (mode === "base") {
+    const collectedThisSpin = Number((state.samsaraCollectedBets - samsaraCollectedBefore).toFixed(2));
+    if (collectedThisSpin > 0) {
+      state.samsaraContributionLog = [...state.samsaraContributionLog, collectedThisSpin];
     }
   }
 
@@ -261,7 +277,7 @@ export const resolveSpin = (
   const roundSummary: RoundSummary = {
     roundId,
     timestamp,
-    bet: options.bet,
+    bet: effectiveBet,
     totalWin,
     walletDelta,
     mode,
@@ -275,7 +291,7 @@ export const resolveSpin = (
   return {
     seedUsed,
     configVersion: config.version,
-    bet: options.bet,
+    bet: effectiveBet,
     mode,
     appliedWinMultiplier,
     initialBoard,

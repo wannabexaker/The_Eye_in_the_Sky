@@ -101,6 +101,31 @@
 
 ## Change Log
 - `2026-03-23`
+  - Updated global shell backdrop behavior: while bonus mode is active (`bonusState`), the full page background now switches to `Sky Opens` art.
+  - Disabled text selection on win/bonus presentation overlays so users cannot highlight/select win banner content during rapid interaction.
+  - Fixed spin-input parity: mouse click on Spin now follows the same `dismiss overlays -> spin` path as `Space` key (no extra click blocking after round presentation).
+  - Removed manual spin-button click throttle in control panel so fast click cadence behaves like keyboard-triggered spin.
+  - Accelerated global presentation speed to target ~`1000ms` total spin resolution on the single-cascade path while preserving smooth phase sequencing.
+  - Reduced post-break safety buffer before win banner so the final result appears within the new fast timeline.
+  - Retuned pre-break choreography for winning symbols: exactly `2` flashes before break, then immediate break, with faster cascade feel.
+  - Reduced `winHighlight` timing for faster per-cascade resolution while preserving spin-phase sequencing.
+  - Updated cascade break timing to `1.0s` per cascade (shared `winHighlight` timing) for more readable symbol-break stage.
+  - Moved win banner scheduling to always appear after the final cascade break sequence with an explicit post-break safety buffer.
+  - Added clickable Samsara eye context window showing per-spin contribution entries (latest 10) and running collected total.
+  - Added deterministic engine-side contribution history (`samsaraContributionLog`) and wired it through hook -> page -> left rail -> meter.
+  - Added persistence migration safety for `samsaraContributionLog` in player store snapshot sanitization.
+  - Fixed bonus trigger resolution edge case so a base spin that triggers bonus does not consume a free spin immediately.
+  - Samsara-only implementation pass (requested "one-by-one" rollout) completed without touching core Pixi spin choreography.
+  - Implemented Samsara economy contract:
+    - each Samsara hit collects current bet into `samsaraCollectedBets`.
+    - bonus trigger now locks meter at full target `17` during bonus.
+    - free spins set to `7` and use fixed `betPerSpin = samsaraCollectedBets / 7`.
+  - Added engine-side protection against free-spin bet exploit by using fixed bonus stake from bonus state instead of user-editable stake input.
+  - Added UI meter support:
+    - hover on Samsara eye shows collected total amount.
+    - cursed eye visual while bonus is active.
+  - Added persisted snapshot normalization for newly introduced Samsara fields (`samsaraCollectedBets`, `bonusState.betPerSpin`) to keep legacy localStorage data compatible.
+  - Reconfirmed permanent workflow rule: every meaningful change is logged in both PRD and Tasks.
   - **CRITICAL DISCOVERY**: Root cause of extended wave/spin effect timing problem was **coupling between `phaseMessage` state updates and effect triggers**. Every ritual/support log message update in `use-slot-machine.ts` was inadvertently triggering spin effects. This was a state-management side-effect issue, not a pure animation bug — logging writes were concurrently driving visual state changes, creating the appearance of "extra spin effects" that appeared without visible spin commands.
   - This coupling pattern explains the 3+ week elusiveness of the issue: the effect trigger was indirect (via message updates) rather than directly visible in animation dispatch code, creating a false sense that the problem was in the presentation layer when it was actually in the gameplay state hook's message orchestration.
   - Future mitigation: Separate logging lifecycle from visual effect dispatch. Phase transitions should only drive phaseMessage updates OR effect commands, never both in the same state change cycle. Added this architectural note to prevent reoccurrence.

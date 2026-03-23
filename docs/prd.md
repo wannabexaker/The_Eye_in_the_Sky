@@ -53,6 +53,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
+- Permanent operating rule: every meaningful implementation change must be recorded in both `docs/tasks.md` (execution log) and `docs/prd.md` (product/architecture impact), without exception.
 - Every implementation pass must include a short step record in this order:
   - `Intent`: what behavior we are changing.
   - `Hypothesis`: why the current behavior is wrong.
@@ -90,6 +91,13 @@ setPhaseMessage(newMessage);
 - Spin phase transitions should be the ONLY driver of visual effects. If a state change is not explicitly a spin phase transition, it should not trigger animation.
 - If you find that "logging updates are causing visuals to break," the bug is almost certainly a coupling issue, not an animation timing issue. Separate the concerns immediately.
 - Test logging systems independently from effect systems — use a debug mode that logs without rendering, and verify effects without logging.
+
+## Architecture Lessons (Samsara Economy Pass)
+- Samsara economy is now budget-driven, not symbol-count-only.
+- Each base-mode Samsara hit contributes the current bet amount into `samsaraCollectedBets`.
+- Bonus entry derives a fixed bonus stake as `samsaraCollectedBets / 7` and this fixed stake is used for all 7 free spins.
+- Bonus meter remains visually full at `17` during active bonus and resets with the collected budget when bonus completes.
+- Engine remains source-of-truth for bonus stake to prevent frontend stake manipulation during free spins.
 
 ## Game Identity
 - Title: `The Eye in the Sky`
@@ -520,6 +528,21 @@ and not only on naive width breakpoints.
    - `9:16`
 
 ## Change Log
+- `2026-03-23`
+  - Bonus atmosphere update: while `Sky Opens` bonus mode is active, the full shell backdrop now switches from base temple sky art to the bonus `open sky` background.
+  - Interaction polish: win and bonus presentation banners are now non-selectable (`user-select: none`) to prevent accidental text highlight during fast spin input.
+  - Input behavior parity update: Spin button click now uses the same interrupt flow as `Space` (dismiss current presentation overlays and continue spinning immediately).
+  - Removed additional mouse-only spin throttle to support fast click cadence consistent with keyboard flow.
+  - Updated spin presentation pacing target to approximately `1000ms` total on the standard (single-cascade, non-bonus) path, keeping animation phases smooth rather than abrupt.
+  - Reduced post-break win-banner delay to align final result reveal with the faster timeline target.
+  - Updated cascade pre-break behavior to a faster profile: winning cells now flash exactly `2` times and then break immediately.
+  - Reduced per-cascade highlight window (`winHighlight`) to speed up overall cascade cadence while keeping phase ordering deterministic.
+  - Presentation timing update: cascade break/highlight stage is now fixed to `1.0s` per cascade for clearer readability.
+  - Win banner presentation is now scheduled strictly after the final cascade break timeline completes (with additional safety buffer) to prevent early overlay appearance.
+  - Added explicit Samsara meter context interaction: clicking the Samsara eye now opens a context window that lists per-spin contribution amounts collected into the meter.
+  - Added engine-level `samsaraContributionLog` in `GameState` so UI breakdown uses deterministic round data, not inferred frontend approximations.
+  - Updated bonus-entry spin handling so the base spin that triggers `Sky Opens` is not incorrectly consumed as a free spin in the same resolution cycle.
+  - Added persisted snapshot normalization for `samsaraContributionLog` to keep legacy localStorage payloads backward-compatible.
 - `2026-03-15`
   - Created initial living PRD
   - Recorded current Phase 1 scope, architecture direction, MVP features, and implementation status

@@ -448,8 +448,16 @@ p {
     brightness(calc(0.8 + (var(--meter-light, 0) * 0.55)))
     drop-shadow(0 0 calc(3px + (var(--meter-light, 0) * 10px)) rgba(248, 239, 221, calc(var(--meter-light, 0) * 0.58)))
     drop-shadow(0 0 calc(var(--meter-gold, 0) * 12px) rgba(226, 190, 112, calc(var(--meter-gold, 0) * 0.72)));
-  pointer-events: none;
+  border: 0;
+  padding: 0;
+  background-color: transparent;
+  cursor: pointer;
   z-index: 2;
+}
+
+.samsaraEye:focus-visible {
+  outline: 2px solid rgba(255, 241, 206, 0.72);
+  outline-offset: 2px;
 }
 
 .samsaraEye::before {
@@ -539,6 +547,25 @@ p {
   opacity: 1;
 }
 
+.samsaraEye.is-cursed {
+  animation: samsaraCursedPulse 720ms ease-in-out infinite;
+}
+
+.samsaraEye.is-cursed::before {
+  background: radial-gradient(
+    circle,
+    rgba(255, 248, 232, 0.7) 0%,
+    rgba(219, 72, 54, 0.54) 42%,
+    rgba(136, 21, 18, 0.6) 68%,
+    rgba(0, 0, 0, 0) 84%
+  );
+}
+
+.samsaraEye.is-cursed::after {
+  background: linear-gradient(180deg, rgba(255, 223, 218, 0.92) 0%, rgba(219, 72, 54, 0.82) 52%, rgba(136, 21, 18, 0.24) 100%);
+  opacity: 1;
+}
+
 @keyframes samsaraCriticalBlink {
   0%,
   100% {
@@ -586,12 +613,120 @@ p {
   }
 }
 
+@keyframes samsaraCursedPulse {
+  0%,
+  100% {
+    filter:
+      sepia(0.38)
+      saturate(1.52)
+      brightness(0.98)
+      hue-rotate(-8deg)
+      drop-shadow(0 0 10px rgba(219, 72, 54, 0.56))
+      drop-shadow(0 0 14px rgba(136, 21, 18, 0.38));
+  }
+
+  50% {
+    filter:
+      sepia(0.66)
+      saturate(1.92)
+      brightness(0.88)
+      hue-rotate(-14deg)
+      drop-shadow(0 0 15px rgba(219, 72, 54, 0.82))
+      drop-shadow(0 0 18px rgba(136, 21, 18, 0.56));
+  }
+}
+
 .samsaraTrack {
   position: relative;
   overflow: visible;
   height: 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.samsaraContextWindow {
+  position: fixed;
+  width: min(clamp(190px, 19vw, 250px), calc(100vw - 24px));
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(14, 12, 17, 0.96), rgba(8, 7, 10, 0.98));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.46);
+  padding: 10px;
+  z-index: calc(var(--z-modal) - 1);
+}
+
+.samsaraContextWindow::after {
+  content: "";
+  position: absolute;
+  left: var(--samsara-context-caret-x, 50%);
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid rgba(226, 190, 112, 0.24);
+  border-bottom: 1px solid rgba(226, 190, 112, 0.24);
+  background: rgba(8, 7, 10, 0.98);
+}
+
+.samsaraContextWindow.is-down::after {
+  top: -7px;
+  bottom: auto;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 1px solid rgba(226, 190, 112, 0.24);
+  border-top: 1px solid rgba(226, 190, 112, 0.24);
+}
+
+.samsaraContextHeader {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.samsaraContextHeader strong {
+  font-size: 0.66rem;
+  color: rgba(244, 239, 230, 0.94);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.samsaraContextHeader span {
+  color: rgba(226, 190, 112, 0.9);
+  font-size: 0.72rem;
+}
+
+.samsaraContextEmpty {
+  color: rgba(156, 142, 121, 0.92);
+  font-size: 0.7rem;
+}
+
+.samsaraContextList {
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.samsaraContextRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid rgba(226, 190, 112, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.samsaraContextRow span {
+  color: rgba(168, 156, 139, 0.94);
+  font-size: 0.68rem;
+}
+
+.samsaraContextRow strong {
+  color: rgba(244, 239, 230, 0.96);
+  font-size: 0.68rem;
 }
 
 .samsaraFill {
@@ -1550,6 +1685,8 @@ p {
   place-items: center;
   padding: 24px;
   pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .winPresentationLayer::before {
@@ -1584,6 +1721,8 @@ p {
     0 0 calc(26px + (var(--win-glow-level) * 30px)) rgba(226, 190, 112, calc(0.08 + (var(--win-glow-level) * 0.24)));
   text-align: center;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .winPresentationHero {

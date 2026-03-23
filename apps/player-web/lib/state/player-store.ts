@@ -182,13 +182,38 @@ const sanitizeSamsaraSnapshot = (
     ? samsaraExpiryAt
     : null;
 
+  const normalizedSnapshot: GameState = {
+    ...snapshot,
+    samsaraCollectedBets: Number.isFinite((snapshot as GameState).samsaraCollectedBets)
+      ? (snapshot as GameState).samsaraCollectedBets
+      : 0,
+    samsaraContributionLog: Array.isArray((snapshot as GameState).samsaraContributionLog)
+      ? (snapshot as GameState).samsaraContributionLog.filter(
+          (entry) => typeof entry === "number" && Number.isFinite(entry) && entry > 0
+        )
+      : [],
+    bonusState: snapshot.bonusState
+      ? {
+          ...snapshot.bonusState,
+          betPerSpin:
+            Number.isFinite(
+              (snapshot.bonusState as unknown as { betPerSpin?: number }).betPerSpin
+            )
+              ? (snapshot.bonusState as unknown as { betPerSpin?: number }).betPerSpin ?? 0
+              : 0
+        }
+      : null
+  };
+
   if (parsedExpiry === null || Date.now() <= parsedExpiry) {
-    return snapshot;
+    return normalizedSnapshot;
   }
 
   return {
-    ...snapshot,
-    bonusMeter: 0
+    ...normalizedSnapshot,
+    bonusMeter: 0,
+    samsaraCollectedBets: 0,
+    samsaraContributionLog: []
   };
 };
 
@@ -503,7 +528,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
               balance: result.balanceAfter
             },
             samsaraExpiryAt:
-              result.nextState.bonusMeter > 0 ? Date.now() + SAMSARA_PROGRESS_TTL_MS : null,
+              result.nextState.bonusMeter > 0 || result.nextState.bonusState
+                ? Date.now() + SAMSARA_PROGRESS_TTL_MS
+                : null,
             gameStateSnapshot: result.nextState,
             walletTransactions: nextTransactions.slice(0, 50),
             roundsLog: [...state.roundsLog, analyticsEntry].slice(-1000)

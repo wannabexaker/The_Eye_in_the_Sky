@@ -22,6 +22,8 @@ type LeftSupportRailProps = {
   phaseMessage: string;
   meterRatio: number;
   meterCurrent: number;
+  meterCollected: number;
+  meterContributionLog: number[];
   meterTarget: number;
   history: SpinResult[];
   soundEnabled: boolean;
@@ -60,6 +62,8 @@ export function LeftSupportRail({
   phaseMessage,
   meterRatio,
   meterCurrent,
+  meterCollected,
+  meterContributionLog,
   meterTarget,
   history,
   soundEnabled,
@@ -255,7 +259,14 @@ export function LeftSupportRail({
         <div className="panelHeader">
           <p className="eyebrow">Samsara</p>
         </div>
-        <SamsaraMeter current={meterCurrent} meterRatio={meterRatio} target={meterTarget} />
+        <SamsaraMeter
+          bonusActive={bonusActive}
+          collectedBets={meterCollected}
+          contributionLog={meterContributionLog}
+          current={meterCurrent}
+          meterRatio={meterRatio}
+          target={meterTarget}
+        />
       </section>
 
       <section

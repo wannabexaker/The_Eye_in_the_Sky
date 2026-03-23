@@ -34,8 +34,8 @@ export const legacyGameConfig: GameConfig = {
   clusterThreshold: 4,
   maxCascadeSteps: 12,
   cascadeMultiplierLadder: [1, 1.25, 1.5, 2, 2.5],
-  bonusMeterTarget: 16,
-  bonusSpinsAwarded: 8,
+  bonusMeterTarget: 17,
+  bonusSpinsAwarded: 7,
   winMultiplierOptions: [1, 2, 3],
   maxBonusMultiplier: 4,
   symbolWeights: [
@@ -79,7 +79,7 @@ export const mathBaseV2GameConfig: GameConfig = {
   maxCascadeSteps: 12,
   cascadeMultiplierLadder: [1, 1.2, 1.45, 1.9, 2.35],
   bonusMeterTarget: 17,
-  bonusSpinsAwarded: 8,
+  bonusSpinsAwarded: 7,
   winMultiplierOptions: [1, 2, 3],
   maxBonusMultiplier: 4,
   symbolWeights: [
@@ -160,6 +160,8 @@ export const listGameConfigProfiles = (): GameConfigProfile[] =>
 export const initialGameState = (balance = 1000): GameState => ({
   balance,
   bonusMeter: 0,
+  samsaraCollectedBets: 0,
+  samsaraContributionLog: [],
   bonusState: null,
   lastTotalWin: 0
 });

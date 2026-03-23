@@ -26,6 +26,7 @@ export const applyModifierSymbols = (
   board: SymbolId[][],
   config: GameConfig,
   state: GameState,
+  bet: number,
   mode: "base" | "bonus",
   cascadeIndex: number,
   random: () => number
@@ -80,22 +81,30 @@ export const applyModifierSymbols = (
 
   const samsaraCells = collectSymbolCells(nextBoard, "samsara");
   if (mode === "base" && samsaraCells.length > 0) {
+    const collectedAmount = Number((bet * samsaraCells.length).toFixed(2));
+    const totalCollected = Number((nextState.samsaraCollectedBets + collectedAmount).toFixed(2));
+    nextState.samsaraCollectedBets = totalCollected;
+
     const bonusMeter = nextState.bonusMeter + samsaraCells.length;
     if (bonusMeter >= config.bonusMeterTarget) {
-      nextState.bonusMeter = bonusMeter - config.bonusMeterTarget;
+      nextState.bonusMeter = config.bonusMeterTarget;
       const spinsAwarded = config.bonusSpinsAwarded;
+      const bonusBetPerSpin = Number((totalCollected / spinsAwarded).toFixed(2));
       nextState.bonusState = nextState.bonusState
         ? {
             ...nextState.bonusState,
-            freeSpinsRemaining: nextState.bonusState.freeSpinsRemaining + spinsAwarded
+            freeSpinsRemaining: nextState.bonusState.freeSpinsRemaining + spinsAwarded,
+            betPerSpin: bonusBetPerSpin
           }
-        : createBonusState(config);
+        : createBonusState(config, bonusBetPerSpin);
 
       events.push({
         type: "samsara_bonus_trigger",
         cascadeIndex,
         source: "samsara",
-        freeSpinsAwarded: spinsAwarded
+        freeSpinsAwarded: spinsAwarded,
+        collectedAmount,
+        bonusBetPerSpin
       });
     } else {
       nextState.bonusMeter = bonusMeter;

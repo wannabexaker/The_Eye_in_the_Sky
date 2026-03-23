@@ -16,14 +16,16 @@ Layer: frontend (player-web)
 Used by: use-slot-machine.ts and Pixi presentation timing
 */
 
-const PRESENTATION_SPEED = 0.8;
+// Target: ~1000ms total for a typical single-cascade spin while keeping smooth phase transitions.
+const PRESENTATION_SPEED = 2.2;
 
 const scaleTiming = (ms: number) => Math.round(ms / PRESENTATION_SPEED);
 
 export const PRESENTATION_TIMINGS = {
   spinStart: scaleTiming(120),
   boardDrop: scaleTiming(350),
-  winHighlight: scaleTiming(820),
+  // Faster break/highlight stage for snappier cascade pacing.
+  winHighlight: scaleTiming(520),
   cascadeDrop: scaleTiming(320),
   modifierFlash: scaleTiming(300),
   bonusTrigger: scaleTiming(1200),

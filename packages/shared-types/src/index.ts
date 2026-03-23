@@ -17,6 +17,7 @@ export type BonusStateDto = {
   freeSpinsRemaining: number;
   totalBonusWin: number;
   stickyMultiplier: number;
+  betPerSpin: number;
 };
 
 export type RoundSummaryDto = {

@@ -207,6 +207,7 @@ const getCellCenter = (row: number, col: number) => ({
 
 const CASCADE_WAVE_COLUMN_DELAY_MS = 26;
 const CASCADE_WAVE_LIFT_PX = 5;
+const PRE_BREAK_FLASH_COUNT = 2;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -381,7 +382,11 @@ export function PixiTempleBoard({
       return;
     }
 
-    const pulse = 0.65 + (Math.sin((now - highlightStartRef.current) / 90) + 1) * 0.18;
+    const elapsed = Math.max(0, now - highlightStartRef.current);
+    const highlightDuration = Math.max(1, PRESENTATION_TIMINGS.winHighlight);
+    const progress = Math.min(1, elapsed / highlightDuration);
+    const flashPhase = progress * PRE_BREAK_FLASH_COUNT * Math.PI;
+    const pulse = 0.52 + Math.abs(Math.sin(flashPhase)) * 0.52;
 
     wins.forEach((win) => {
       const cellMap = new Set(win.cells.map((cell) => `${cell.row}:${cell.col}`));

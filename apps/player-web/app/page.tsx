@@ -101,8 +101,10 @@ export default function HomePage() {
   const fullHistory = slot.history.slice(0, 10);
   const fullWalletHistory = walletTransactions.slice(0, 10);
   const latestRound = slot.lastResult;
+  const bonusModeActive = Boolean(slot.gameState.bonusState);
   const bonusFrameActive = Boolean(slot.gameState.bonusState || slot.lastResult?.bonusTriggered);
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
+  const shellBackground = bonusModeActive ? shellAssets.bonusOverlay : shellAssets.mainBackground;
 
   useEffect(() => {
     const disposeSync = initPlayerStoreCrossTabSync();
@@ -221,6 +223,22 @@ export default function HomePage() {
     claimWelcomeBonus();
   };
 
+  const spinFromInputIntent = () => {
+    if (slot.bonusSummary) {
+      slot.dismissBonusSummary();
+    }
+
+    if (slot.bonusAnnouncement) {
+      slot.dismissBonusAnnouncement();
+    }
+
+    if (slot.winPresentation) {
+      slot.dismissWinPresentation();
+    }
+
+    slot.spin();
+  };
+
   return (
     <main
       className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""}`}
@@ -229,7 +247,7 @@ export default function HomePage() {
       <div
         aria-hidden="true"
         className="slotBackdrop"
-        style={{ backgroundImage: `url(${shellAssets.mainBackground})` }}
+        style={{ backgroundImage: `url(${shellBackground})` }}
       />
 
       <section className="gameArea machineStage">
@@ -242,6 +260,8 @@ export default function HomePage() {
           currentBet={formatMoneyCompactEur(slot.bet)}
           freeSpins={slot.activeBonusSpins}
           history={slot.history}
+          meterCollected={slot.samsaraCollectedBets}
+          meterContributionLog={slot.samsaraContributionLog}
           meterCurrent={slot.gameState.bonusMeter}
           meterRatio={slot.meterRatio}
           meterTarget={activeGameConfig.bonusMeterTarget}
@@ -296,7 +316,7 @@ export default function HomePage() {
         betRiskTooltip={slot.betRiskTooltip}
         betValidationMessage={slot.betValidationMessage}
         betValidationTooltip={slot.betValidationTooltip}
-        canSpin={slot.canSpin}
+        canSpin={slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation)}
         canStartAutospin={slot.canStartAutospin}
         isAutospinActive={slot.isAutospinActive}
         onCommitBetInput={slot.applyManualBet}
@@ -305,7 +325,7 @@ export default function HomePage() {
         onBetInputChange={slot.setBetInput}
         onDecreaseBet={slot.decrementBetByStep}
         onIncreaseBet={slot.incrementBetByStep}
-        onSpin={slot.spin}
+        onSpin={spinFromInputIntent}
         onStartAutospin={slot.startAutoSpin}
         onStartAutospinInfinite={slot.startAutoSpinInfinite}
         onStopAutoSpin={slot.stopAutoSpin}

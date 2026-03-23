@@ -74,11 +74,6 @@ export function ControlPanel({
   const autoplayHoldTimerRef = useRef<number | null>(null);
   const autoplayLongPressTriggeredRef = useRef(false);
   const manualClickTimerRef = useRef<number | null>(null);
-  const spinButtonRef = useRef<HTMLButtonElement>(null);
-  const lastSpinTimestampRef = useRef<number>(0);
-
-  // Minimum ms between manual spins — fast enough to feel responsive, slow enough to not glitch.
-  const SPIN_THROTTLE_MS = 320;
 
   useEffect(() => {
     if (isAutospinActive) {
@@ -160,12 +155,6 @@ export function ControlPanel({
     if (isAutospinActive) {
       return;
     }
-
-    const now = Date.now();
-    if (now - lastSpinTimestampRef.current < SPIN_THROTTLE_MS) {
-      return;
-    }
-    lastSpinTimestampRef.current = now;
 
     setIsManualClicked(true);
 
