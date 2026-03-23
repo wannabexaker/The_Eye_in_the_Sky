@@ -205,6 +205,14 @@ const getCellCenter = (row: number, col: number) => ({
   y: boardOffsetY + row * (cellHeight + gap) + cellHeight / 2
 });
 
+const CASCADE_WAVE_COLUMN_DELAY_MS = 26;
+const CASCADE_WAVE_LIFT_PX = 5;
+
+type PaintBoardOptions = {
+  allowWave?: boolean;
+  allowMotion?: boolean;
+};
+
 export function PixiTempleBoard({
   board,
   result,
@@ -244,6 +252,9 @@ export function PixiTempleBoard({
   // Used for cascade.boardBefore updates which are same-frame redraws, not new-symbol drops.
   const suppressDropAnimationRef = useRef(false);
   const shouldResetSuppressAfterPaintRef = useRef(false);
+  const pendingCascadeWaveRef = useRef(false);
+  const isWavingRef = useRef(false);
+  const waveUnlockTimerRef = useRef<number | null>(null);
   const lastPresentedRoundIdRef = useRef<string | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [displayBoard, setDisplayBoard] = useState(board);
@@ -468,13 +479,36 @@ export function PixiTempleBoard({
     floatingTextsRef.current.push(node);
   };
 
-  const paintBoardCells = useCallback(() => {
+  const paintBoardCells = useCallback((options?: PaintBoardOptions) => {
     const app = appRef.current;
     if (!app || cellRefs.current.length === 0) {
       return false;
     }
 
     const phase = phaseRef.current;
+    const allowWave = options?.allowWave ?? true;
+    const allowMotion = options?.allowMotion ?? true;
+    const shouldStartCascadeWave =
+      allowMotion &&
+      allowWave &&
+      phase === "CASCADE" &&
+      pendingCascadeWaveRef.current &&
+      !suppressDropAnimationRef.current &&
+      !isWavingRef.current;
+
+    if (shouldStartCascadeWave) {
+      pendingCascadeWaveRef.current = false;
+      isWavingRef.current = true;
+
+      if (waveUnlockTimerRef.current !== null) {
+        window.clearTimeout(waveUnlockTimerRef.current);
+      }
+
+      waveUnlockTimerRef.current = window.setTimeout(() => {
+        isWavingRef.current = false;
+        waveUnlockTimerRef.current = null;
+      }, 220 + (cols - 1) * CASCADE_WAVE_COLUMN_DELAY_MS + 40);
+    }
 
     // sync visible tiles with the latest resolved board state
     displayBoardRef.current.forEach((row, rowIndex) => {
@@ -507,12 +541,19 @@ export function PixiTempleBoard({
 
         applySymbolTexture(cell, symbol, palette.accent);
 
+        if (!allowMotion) {
+          return;
+        }
+
         if (suppressDropAnimationRef.current) {
           // No drop — place cell directly at target without animation.
           cell.animating = false;
         } else {
-          cell.startY = cell.targetY - dropDistance;
-          cell.animStart = app.ticker.lastTime + colIndex * 34 + rowIndex * 12;
+          const waveLift = shouldStartCascadeWave ? CASCADE_WAVE_LIFT_PX : 0;
+          cell.startY = cell.targetY - dropDistance - waveLift;
+          cell.animStart =
+            app.ticker.lastTime +
+            (shouldStartCascadeWave ? colIndex * CASCADE_WAVE_COLUMN_DELAY_MS : 0);
           cell.animDuration = phase === "CASCADE" ? 220 : 360;
           cell.animating = true;
         }
@@ -529,13 +570,20 @@ export function PixiTempleBoard({
     }
 
     setDisplayBoard(board);
-  }, [board, spinPhase]);
+  }, [board]);
 
   useEffect(() => {
     timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
     timeoutsRef.current = [];
 
     if (!result || result.cascades.length === 0) {
+      pendingCascadeWaveRef.current = false;
+      isWavingRef.current = false;
+      if (waveUnlockTimerRef.current !== null) {
+        window.clearTimeout(waveUnlockTimerRef.current);
+        waveUnlockTimerRef.current = null;
+      }
+
       if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
         suppressDropAnimationRef.current = true;
         shouldResetSuppressAfterPaintRef.current = true;
@@ -614,6 +662,7 @@ export function PixiTempleBoard({
       timeoutsRef.current.push(
         window.setTimeout(() => {
           clearWinningCells();
+          pendingCascadeWaveRef.current = true;
           setDisplayBoard(cascade.boardAfter);
         }, cursor + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + 60)
       );
@@ -1108,6 +1157,10 @@ export function PixiTempleBoard({
       clearFloatingTexts();
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+      if (waveUnlockTimerRef.current !== null) {
+        window.clearTimeout(waveUnlockTimerRef.current);
+        waveUnlockTimerRef.current = null;
+      }
       app.destroy(true, { children: true });
       appRef.current = null;
       rootRef.current = null;
@@ -1123,7 +1176,11 @@ export function PixiTempleBoard({
       suppressDropAnimationRef.current = false;
       shouldResetSuppressAfterPaintRef.current = false;
     }
-  }, [displayBoard, highlightedCells, paintBoardCells]);
+  }, [displayBoard, paintBoardCells]);
+
+  useEffect(() => {
+    paintBoardCells({ allowWave: false, allowMotion: false });
+  }, [highlightedCells, paintBoardCells]);
 
   useEffect(() => {
     const nextRoundId = result?.roundSummary.roundId ?? null;
@@ -1166,7 +1223,7 @@ export function PixiTempleBoard({
 
   return (
     <div className="pixiStageShell">
-      <div className={`pixiStage phase-${spinPhase.toLowerCase()}`} ref={hostRef} />
+      <div className="pixiStage" ref={hostRef} />
       {hoveredSymbol ? (
         <div
           className="symbolTooltip"

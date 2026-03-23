@@ -101,6 +101,9 @@
 
 ## Change Log
 - `2026-03-23`
+  - **CRITICAL DISCOVERY**: Root cause of extended wave/spin effect timing problem was **coupling between `phaseMessage` state updates and effect triggers**. Every ritual/support log message update in `use-slot-machine.ts` was inadvertently triggering spin effects. This was a state-management side-effect issue, not a pure animation bug — logging writes were concurrently driving visual state changes, creating the appearance of "extra spin effects" that appeared without visible spin commands.
+  - This coupling pattern explains the 3+ week elusiveness of the issue: the effect trigger was indirect (via message updates) rather than directly visible in animation dispatch code, creating a false sense that the problem was in the presentation layer when it was actually in the gameplay state hook's message orchestration.
+  - Future mitigation: Separate logging lifecycle from visual effect dispatch. Phase transitions should only drive phaseMessage updates OR effect commands, never both in the same state change cycle. Added this architectural note to prevent reoccurrence.
   - Added documentation-level delivery rule to keep per-fix step logging mandatory for board/presentation/animation changes.
   - Investigated residual waving reports and identified a non-spin trigger path during idle bet-change when board references refresh.
   - Added and verified cascade redraw suppression path around `cascade.boardBefore` to avoid redundant drop animation on same-frame redraws.

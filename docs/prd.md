@@ -62,6 +62,35 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Never batch unrelated animation edits in one pass. One issue -> one isolated change -> verification -> log update.
 - If a fix fails, the failed hypothesis must still be logged as `Rejected` to prevent repeating the same attempt.
 
+## Architecture Lessons (Phase 1 Critical Findings)
+
+### State Coupling Hazard: Logging + Visual Dispatch
+**Incident**: Extended investigation (3+ weeks) into "extra spin effects" during idle state revealed that the root cause was **implicit coupling between `phaseMessage` updates and effect triggers** in `use-slot-machine.ts`. Every ritual log write was concurrently updating state in a way that inadvertently triggered spin effects. This was NOT a pure animation bug in the presentation layer — it was a state-management side-effect in the gameplay orchestration hook.
+
+**Pattern to avoid**:
+```
+// ❌ WRONG: State update drives both logging AND visual side-effect
+setPhaseMessage(newMessage); // <-- Triggers effect?
+// If setPhaseMessage's parent useEffect also dispatches animation, we have coupling.
+```
+
+**Correct pattern**:
+```
+// ✓ CORRECT: Separate logging lifecycle from visual state dispatch
+// 1. Update message for UI display
+setPhaseMessage(newMessage);
+
+// 2. Visual effects are driven ONLY by explicit phase transitions,
+//    never as a side-effect of message updates
+// Phase transitions go through the spin state machine, not through logging
+```
+
+**Mitigation**:
+- Logging (phaseMessage, ritual log, debug output) is a **read-only concern**. It must never be in the critical path of state changes that drive visual effects.
+- Spin phase transitions should be the ONLY driver of visual effects. If a state change is not explicitly a spin phase transition, it should not trigger animation.
+- If you find that "logging updates are causing visuals to break," the bug is almost certainly a coupling issue, not an animation timing issue. Separate the concerns immediately.
+- Test logging systems independently from effect systems — use a debug mode that logs without rendering, and verify effects without logging.
+
 ## Game Identity
 - Title: `The Eye in the Sky`
 - Tone: `dark, divine, ominous, premium, mysterious`
