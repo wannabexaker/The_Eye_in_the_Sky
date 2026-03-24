@@ -100,6 +100,27 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-03-24`
+  - Rebuilt bonus economy contract in engine/player: bonus now tracks `initialBonusBudget`, `remainingBonusBudget`, `preBonusBet`; bonus exit restores the pre-bonus base bet deterministically.
+  - Enabled user-managed bonus bet inside `Samsara` budget pool: default is equal split, but player can set any per-spin bonus bet up to remaining budget; final bonus spin auto-commits all leftover budget.
+  - Added bonus-state guidance messages for budget-edge cases: exhausted budget (`0.00` spin reveal path), final-spin all-in, and remaining bonus budget status.
+  - Updated `+` bet-step clamp behavior: if the next ladder step exceeds available funds (example `1.00 -> 2.00` with `1.50` balance), bet now clamps to player max (`1.50`) instead of failing.
+  - Updated `Sky Opens` entry window value contract: `Bonus Entry Win` now displays the full collected `Samsara` pool (`initialBonusBudget`), not just trigger-spin win.
+  - Added Samsara carryover during bonus: `Samsara` hits inside bonus are retained for the next bonus pool instead of being discarded.
+  - Stabilized admin live analytics polling (`GameStatsViewer`): replaced overlapping interval fetches with single-flight timeout/backoff polling and improved offline/error handling to reduce load/fail flapping.
+  - Added admin one-click `Sky Opens` QA preview card: button opens the bonus-entry window directly for deterministic visual/pacing checks.
+  - Hardened `Sky Opens` announcement lock: enforced `2000ms` input lock path with keyboard/spin-intent blocking and lock-layer interception while banner is locked.
+  - Intent: stop `Sky Opens` `BonusAnnouncement` from being skipped by unintended input paths while preserving the deliberate fast-key exception on `F`.
+  - Hypothesis: the banner was not controlled by one owner; global keyboard handling, focused spin-button keyboard handling, and presentation dismiss callbacks were overlapping.
+  - Code change:
+    - `apps/player-web/app/page.tsx`
+      - `Space` is a guarded spin path only.
+      - active `BonusAnnouncement` now ignores `Space` and all pointer spin intents.
+      - `F` is the only keyboard path allowed to request banner dismiss, and it still routes through `dismissBonusAnnouncement()` so the min-visible lock remains authoritative.
+    - `apps/player-web/components/controls/control-panel.tsx`
+      - removed local `Space -> manual spin` ownership from the focused spin button; local button keyboard action now stays on `Enter`.
+  - Verification: code audit completed across `page.tsx`, `control-panel.tsx`, `use-slot-machine.ts`, `bonus-win-overlay.tsx`, and `win-presentation-controller.tsx` to map every known banner dismiss and spin-entry path before changing the owner logic.
+  - Rollback note: if fast-spin UX regresses, revert only the `page.tsx` hotkey branch and `control-panel.tsx` local spin-button keyup behavior, not the hook-level bonus-announcement lock.
 - `2026-03-23`
   - Added bonus cinematic shell transition: on bonus entry, viewport now plays a short quake + lightning flash effect; on bonus exit, scene settles with smooth calm-down animation.
   - Reworked backdrop handling to dual-layer crossfade (`base` <-> `bonus`) for smoother visual transition when entering and leaving bonus mode.

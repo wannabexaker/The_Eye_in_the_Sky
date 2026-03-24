@@ -33,9 +33,11 @@ const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
-const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 1350;
+const BONUS_ENTRY_CINEMATIC_DELAY_MS = 1100;
+const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 2000;
+const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 2000;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
-const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 650;
+const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 2000;
 const BONUS_SUMMARY_MIN_VISIBLE_MS = 750;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
 const WIN_GLOW_START_MULTIPLE = 2;
@@ -217,6 +219,52 @@ const hasMultiplierEvent = (result: SpinResult) =>
     )
   );
 
+const getBonusSpinStartMessage = (result: SpinResult) => {
+  if (result.mode !== "bonus" || !result.bonusStateBefore) {
+    return "Sky Opens answers with a free spin.";
+  }
+
+  const spinsBefore = Math.max(result.bonusStateBefore.freeSpinsRemaining, 0);
+  const budgetBefore = roundCurrency(Math.max(0, result.bonusStateBefore.remainingBonusBudget));
+  const betUsed = roundCurrency(Math.max(0, result.bet));
+  const isLastBonusSpin = spinsBefore === 1;
+
+  if (budgetBefore <= 0 || betUsed <= 0) {
+    return "Samsara budget is exhausted. Spin resolves at 0.00 bet for board reveal only.";
+  }
+
+  if (isLastBonusSpin && betUsed === budgetBefore) {
+    return `Final bonus spin: all remaining ${formatMoney(budgetBefore)} is committed.`;
+  }
+
+  return "Sky Opens answers with a free spin.";
+};
+
+const getBonusIdleMessage = (result: SpinResult) => {
+  if (!result.nextState.bonusState) {
+    return "Awaiting the next ritual.";
+  }
+
+  const remainingSpins = result.nextState.bonusState.freeSpinsRemaining;
+  const remainingBudget = roundCurrency(result.nextState.bonusState.remainingBonusBudget);
+
+  if (remainingBudget <= 0) {
+    return `${remainingSpins} bonus spins remain with 0.00 budget. 0.00 x 100 = 0.00.`;
+  }
+
+  return `${remainingSpins} bonus spins remain in Sky Opens.`;
+};
+
+const getRoundEndMessage = (result: SpinResult) => {
+  if (result.mode === "bonus" && result.bet <= 0 && result.totalWin <= 0) {
+    return "Round complete. No budget left: 0.00 x 100 = 0.00.";
+  }
+
+  return result.totalWin > 0
+    ? `Round complete. ${formatMoney(result.totalWin)} claimed.`
+    : "Round complete. The Eye remains watchful.";
+};
+
 const getCascadeDetailRows = (result: SpinResult) => {
   if (result.cascades.length <= 1) {
     return undefined;
@@ -241,13 +289,17 @@ const getFinalBonusTotal = (result: SpinResult) => {
 const buildBonusAnnouncement = (
   result: SpinResult,
   freeSpins: number
-): BonusAnnouncementEntry => ({
-  title: "BONUS TRIGGERED",
-  freeSpins,
-  entryWin: result.totalWin,
-  sourceLabel: "BONUS ENTRY WIN",
-  continueLabel: "Enter Bonus"
-});
+): BonusAnnouncementEntry => {
+  const entryBudget = result.nextState.bonusState?.initialBonusBudget ?? result.totalWin;
+
+  return {
+    title: "BONUS TRIGGERED",
+    freeSpins,
+    entryWin: entryBudget,
+    sourceLabel: "BONUS ENTRY WIN",
+    continueLabel: "Enter Bonus"
+  };
+};
 
 const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
   const finalBonusTotal = getFinalBonusTotal(result);
@@ -362,13 +414,16 @@ export function useSlotMachine() {
   const [phaseMessage, setPhaseMessage] = useState("Awaiting the next ritual.");
   const [spinPulseKey, setSpinPulseKey] = useState(0);
   const [bonusAnnouncement, setBonusAnnouncement] = useState<BonusAnnouncementEntry | null>(null);
+  const [bonusAnnouncementLocked, setBonusAnnouncementLocked] = useState(false);
   const [bonusSummary, setBonusSummary] = useState<BonusSummaryEntry | null>(null);
   const [winPresentation, setWinPresentation] = useState<WinPresentationEntry | null>(null);
   const phaseTimersRef = useRef<number[]>([]);
   const presentationTimerRef = useRef<number | null>(null);
+  const bonusAnnouncementLockTimerRef = useRef<number | null>(null);
   const bonusAnnouncementShownAtRef = useRef<number | null>(null);
   const bonusSummaryShownAtRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
+  const previousBonusStateRef = useRef<GameState["bonusState"]>(gameState.bonusState);
   const betRef = useRef(bet);
   const winMultiplierRef = useRef(winMultiplier);
 
@@ -382,20 +437,42 @@ export function useSlotMachine() {
     activeBonusSpins
   );
   const bonusModeActive = Boolean(gameState.bonusState);
-  const areBetControlsLocked = isAutoSpinning || autospinStopRequested || bonusModeActive;
+  const areBetControlsLocked = isAutoSpinning || autospinStopRequested;
 
   useEffect(() => {
-    if (!gameState.bonusState) {
-      return;
-    }
+    const previousBonusState = previousBonusStateRef.current;
+    const currentBonusState = gameState.bonusState;
 
-    const fixedBonusBet = roundCurrency(gameState.bonusState.betPerSpin);
-    if (fixedBonusBet !== betRef.current) {
-      setBet(fixedBonusBet);
-      setBetInput(String(fixedBonusBet));
+    if (!previousBonusState && currentBonusState) {
+      const defaultBonusBet = roundCurrency(currentBonusState.betPerSpin);
+      betRef.current = defaultBonusBet;
+      setBet(defaultBonusBet);
+      setBetInput(String(defaultBonusBet));
       setBetValidationMessage("");
       setBetValidationTooltip("");
     }
+
+    if (previousBonusState && currentBonusState) {
+      const nextBonusBet = roundCurrency(currentBonusState.betPerSpin);
+      if (nextBonusBet !== betRef.current) {
+        betRef.current = nextBonusBet;
+        setBet(nextBonusBet);
+        setBetInput(String(nextBonusBet));
+        setBetValidationMessage("");
+        setBetValidationTooltip("");
+      }
+    }
+
+    if (previousBonusState && !currentBonusState) {
+      const restoredBaseBet = roundCurrency(Math.max(MIN_BET, previousBonusState.preBonusBet));
+      betRef.current = restoredBaseBet;
+      setBet(restoredBaseBet);
+      setBetInput(String(restoredBaseBet));
+      setBetValidationMessage("");
+      setBetValidationTooltip("");
+    }
+
+    previousBonusStateRef.current = currentBonusState;
   }, [gameState.bonusState]);
 
   const validateBetAmount = useCallback(
@@ -405,6 +482,37 @@ export function useSlotMachine() {
           message: "❌ Invalid",
           tooltip: "Please enter a valid bet amount."
         };
+      }
+
+      if (bonusModeActive && gameState.bonusState) {
+        const remainingBudget = roundCurrency(gameState.bonusState.remainingBonusBudget);
+
+        if (remainingBudget <= 0) {
+          if (amount === 0) {
+            return { message: "", tooltip: "" };
+          }
+
+          return {
+            message: "❌ Budget exhausted",
+            tooltip: "No Samsara bonus budget remains for the remaining free spins."
+          };
+        }
+
+        if (amount <= 0) {
+          return {
+            message: "❌ Invalid bonus bet",
+            tooltip: "Bonus bet must be greater than 0 while Samsara budget remains."
+          };
+        }
+
+        if (amount > remainingBudget) {
+          return {
+            message: "❌ Exceeds bonus budget",
+            tooltip: `Bonus bet cannot exceed remaining Samsara budget ${formatMoney(remainingBudget)}.`
+          };
+        }
+
+        return { message: "", tooltip: "" };
       }
 
       if (amount < MIN_BET) {
@@ -430,7 +538,7 @@ export function useSlotMachine() {
 
       return { message: "", tooltip: "" };
     },
-    [availableBalance, bonusModeActive, rawMaxBet]
+    [availableBalance, bonusModeActive, gameState.bonusState, rawMaxBet]
   );
 
 const validateAutospinCount = useCallback(
@@ -498,6 +606,9 @@ const validateAutospinCount = useCallback(
       phaseTimersRef.current.forEach((timer) => window.clearTimeout(timer));
       if (presentationTimerRef.current) {
         window.clearTimeout(presentationTimerRef.current);
+      }
+      if (bonusAnnouncementLockTimerRef.current) {
+        window.clearTimeout(bonusAnnouncementLockTimerRef.current);
       }
     };
   }, []);
@@ -587,13 +698,6 @@ const validateAutospinCount = useCallback(
   const applyBetValue = useCallback(
     (nextBet: number | null) => {
       if (areBetControlsLocked) {
-        if (bonusModeActive) {
-          const fixedBonusBet = gameStateRef.current.bonusState?.betPerSpin ?? betRef.current;
-          setBetValidationMessage(`Bonus bet is fixed at ${formatMoney(fixedBonusBet)}.`);
-          setBetValidationTooltip("Samsara-collected budget is distributed equally across all free spins.");
-          return false;
-        }
-
         setBetValidationMessage("Bet is locked while autospin is active. Press Stop first.");
         setBetValidationTooltip("");
         return false;
@@ -607,21 +711,37 @@ const validateAutospinCount = useCallback(
       }
 
       const normalizedBet = roundCurrency(nextBet ?? MIN_BET);
-      setBet(normalizedBet);
-      setBetInput(String(normalizedBet));
+      const normalizedBetInput = String(normalizedBet);
+
+      if (normalizedBet !== betRef.current) {
+        setBet(normalizedBet);
+      }
+
+      if (normalizedBetInput !== betInput) {
+        setBetInput(normalizedBetInput);
+      }
+
       setBetValidationMessage("");
       setBetValidationTooltip("");
       return true;
     },
-    [areBetControlsLocked, bonusModeActive, validateBetAmount]
+    [areBetControlsLocked, betInput, validateBetAmount]
   );
 
   const incrementBetByStep = useCallback(() => {
     const parsedInputBet = parsePositiveNumber(betInput);
     const currentValue = parsedInputBet ?? bet;
     const nextBet = getNextBetValue(currentValue, rawMaxBet);
-    return nextBet ? applyBetValue(nextBet) : false;
-  }, [applyBetValue, bet, betInput, rawMaxBet]);
+    if (!nextBet) {
+      return false;
+    }
+
+    const maxAllowedBet = bonusModeActive && gameState.bonusState
+      ? roundCurrency(gameState.bonusState.remainingBonusBudget)
+      : rawMaxBet;
+    const clampedNextBet = roundCurrency(Math.min(nextBet, maxAllowedBet));
+    return applyBetValue(clampedNextBet);
+  }, [applyBetValue, bet, betInput, bonusModeActive, gameState.bonusState, rawMaxBet]);
 
   const decrementBetByStep = useCallback(() => {
     const parsedInputBet = parsePositiveNumber(betInput);
@@ -631,13 +751,9 @@ const validateAutospinCount = useCallback(
   }, [applyBetValue, bet, betInput, rawMaxBet]);
 
   const applyManualBet = useCallback(() => {
-    if (bonusModeActive) {
-      return true;
-    }
-
     const parsed = parsePositiveNumber(betInput);
     return applyBetValue(parsed);
-  }, [applyBetValue, betInput, bonusModeActive]);
+  }, [applyBetValue, betInput]);
 
   const clearAutospinValidation = useCallback(() => {
     setAutospinValidationMessage("");
@@ -674,6 +790,17 @@ const validateAutospinCount = useCallback(
   const scheduleRoundFeedback = useCallback(
     (result: SpinResult) => {
       clearTimers();
+      const bonusEntryTransition =
+        result.mode === "base" &&
+        !result.bonusStateBefore &&
+        Boolean(result.nextState.bonusState);
+      const shouldRunBonusEntryCue = hasBonusTrigger(result) || bonusEntryTransition;
+      const bonusEntryRevealOffsetMs = bonusEntryTransition
+        ? BONUS_ENTRY_CINEMATIC_DELAY_MS
+        : 0;
+      const bonusPhaseHoldMs = shouldRunBonusEntryCue
+        ? PRESENTATION_TIMINGS.bonusTrigger
+        : 0;
 
       // Extra time to keep phase schedule in sync with the board's per-cascade animation loop.
       // Board step = boardDrop + winHighlight + cascadeDrop + 110ms buffer.
@@ -698,7 +825,7 @@ const validateAutospinCount = useCallback(
       setSpinPhase("SPIN_START");
       setPhaseMessage(
         result.mode === "bonus"
-          ? "Sky Opens answers with a free spin."
+          ? getBonusSpinStartMessage(result)
           : "The Eye begins its descent."
       );
       soundManager.play("spin", soundEnabled);
@@ -765,34 +892,40 @@ const validateAutospinCount = useCallback(
         }, totalCascadeTimelineMs)
       );
 
-      if (hasBonusTrigger(result)) {
+      if (shouldRunBonusEntryCue) {
         phaseTimersRef.current.push(
           window.setTimeout(() => {
             setPhaseMessage("Samsara fractures. Sky Opens.");
             soundManager.play("bonus", soundEnabled);
 
-            if (result.mode === "base" && result.nextState.bonusState) {
+            if (bonusEntryTransition && result.nextState.bonusState) {
               bonusAnnouncementShownAtRef.current = Date.now();
+              setBonusAnnouncementLocked(true);
               setBonusAnnouncement(
                 buildBonusAnnouncement(
                   result,
                   result.nextState.bonusState.freeSpinsRemaining
                 )
               );
+
+              if (bonusAnnouncementLockTimerRef.current) {
+                window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+              }
+
+              bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
+                setBonusAnnouncementLocked(false);
+                bonusAnnouncementLockTimerRef.current = null;
+              }, BONUS_ANNOUNCEMENT_INPUT_LOCK_MS);
             }
-          }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash)
+          }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusEntryRevealOffsetMs)
         );
       }
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("ROUND_END");
-          setPhaseMessage(
-            result.totalWin > 0
-              ? `Round complete. ${formatMoney(result.totalWin)} claimed.`
-              : "Round complete. The Eye remains watchful."
-          );
-        }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0))
+          setPhaseMessage(getRoundEndMessage(result));
+        }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusPhaseHoldMs)
       );
 
       phaseTimersRef.current.push(
@@ -815,15 +948,11 @@ const validateAutospinCount = useCallback(
           }
 
           setSpinPhase("IDLE");
-          setPhaseMessage(
-            result.nextState.bonusState
-              ? `${result.nextState.bonusState.freeSpinsRemaining} bonus spins remain in Sky Opens.`
-              : "Awaiting the next ritual."
-          );
+          setPhaseMessage(getBonusIdleMessage(result));
         },
           totalCascadeTimelineMs +
             PRESENTATION_TIMINGS.modifierFlash +
-            (hasBonusTrigger(result) ? PRESENTATION_TIMINGS.bonusTrigger : 0) +
+            bonusPhaseHoldMs +
             PRESENTATION_TIMINGS.roundEnd +
             postBreakSafetyBufferMs)
       );
@@ -1015,11 +1144,25 @@ const validateAutospinCount = useCallback(
     }
 
     const timer = window.setTimeout(() => {
+      setBonusAnnouncementLocked(false);
+      bonusAnnouncementShownAtRef.current = null;
       setBonusAnnouncement(null);
     }, BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS);
 
     return () => window.clearTimeout(timer);
   }, [autoContinueNeverStop, bonusAnnouncement]);
+
+  useEffect(() => {
+    if (bonusAnnouncement) {
+      return;
+    }
+
+    setBonusAnnouncementLocked(false);
+    if (bonusAnnouncementLockTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      bonusAnnouncementLockTimerRef.current = null;
+    }
+  }, [bonusAnnouncement]);
 
   useEffect(() => {
     if (!autoContinueNeverStop || !bonusSummary) {
@@ -1055,6 +1198,11 @@ const validateAutospinCount = useCallback(
         return;
       }
 
+      if (bonusAnnouncementLocked) {
+        event.preventDefault();
+        return;
+      }
+
       const key = event.key.toLowerCase();
 
       if (key === "s") {
@@ -1085,19 +1233,33 @@ const validateAutospinCount = useCallback(
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
+  }, [bonusAnnouncementLocked, decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
 
   const dismissBonusAnnouncement = useCallback(() => {
     if (bonusAnnouncement) {
+      if (autoContinueNeverStop) {
+        return;
+      }
+
+      if (bonusAnnouncementLocked) {
+        return;
+      }
+
       const shownAt = bonusAnnouncementShownAtRef.current;
       if (shownAt !== null && Date.now() - shownAt < BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS) {
         return;
       }
     }
 
+    if (bonusAnnouncementLockTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      bonusAnnouncementLockTimerRef.current = null;
+    }
+
     bonusAnnouncementShownAtRef.current = null;
+    setBonusAnnouncementLocked(false);
     setBonusAnnouncement(null);
-  }, [bonusAnnouncement]);
+  }, [autoContinueNeverStop, bonusAnnouncement, bonusAnnouncementLocked]);
 
   const dismissBonusSummary = useCallback(() => {
     if (bonusSummary) {
@@ -1122,6 +1284,10 @@ const validateAutospinCount = useCallback(
 
   const reset = useCallback(() => {
     clearTimers();
+    if (bonusAnnouncementLockTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      bonusAnnouncementLockTimerRef.current = null;
+    }
     setIsAutoSpinning(false);
     setAutospinStopRequested(false);
     setAutoSpinRemaining(0);
@@ -1129,6 +1295,7 @@ const validateAutospinCount = useCallback(
     setAutospinCountInput(String(DEFAULT_AUTOSPIN_COUNT));
     setAutospinValidationMessage("");
     setBonusAnnouncement(null);
+    setBonusAnnouncementLocked(false);
     setBonusSummary(null);
     setWinPresentation(null);
     setSpinPhase("IDLE");
@@ -1142,6 +1309,14 @@ const validateAutospinCount = useCallback(
     setBetValidationMessage("");
     setBetRiskMessage("");
   }, [clearTimers, resetSession]);
+
+  useEffect(() => {
+    return () => {
+      if (bonusAnnouncementLockTimerRef.current) {
+        window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      }
+    };
+  }, []);
 
   const headerStats = useMemo(
     () => [
@@ -1232,6 +1407,7 @@ const validateAutospinCount = useCallback(
     needsDepositPrompt,
     spinPulseKey,
     bonusAnnouncement,
+    bonusAnnouncementLocked,
     dismissBonusAnnouncement,
     bonusSummary,
     dismissBonusSummary,

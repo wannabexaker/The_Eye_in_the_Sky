@@ -23,7 +23,6 @@ export function SpinButton({
   disabled,
   isManualClicked,
   isSpinButtonPressed,
-  onClick,
   onKeyDown,
   onKeyUp,
   onMouseDown,

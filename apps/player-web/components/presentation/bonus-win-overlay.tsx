@@ -8,6 +8,7 @@ import type { BonusAnnouncementEntry } from "@/lib/presentation/win-presentation
 
 type BonusWinOverlayProps = {
   announcement: BonusAnnouncementEntry | null;
+  locked: boolean;
   onContinue: () => void;
 };
 
@@ -19,6 +20,7 @@ const formatMoney = (value: number) =>
 
 export function BonusWinOverlay({
   announcement,
+  locked,
   onContinue
 }: BonusWinOverlayProps) {
   if (!announcement) {
@@ -46,7 +48,7 @@ export function BonusWinOverlay({
               <strong>{announcement.freeSpins}</strong>
             </div>
             <div className="bonusWinInfoRow">
-              <span>Entry Win</span>
+              <span>Bonus Entry Win</span>
               <strong>+{formatMoney(announcement.entryWin)}</strong>
             </div>
             <div className="bonusWinInfoRow">
@@ -55,7 +57,12 @@ export function BonusWinOverlay({
             </div>
           </div>
 
-          <button className="welcomeButton compactPrimary" onClick={onContinue} type="button">
+          <button
+            className="welcomeButton compactPrimary"
+            disabled={locked}
+            onClick={onContinue}
+            type="button"
+          >
             {announcement.continueLabel ?? "Continue"}
           </button>
         </div>

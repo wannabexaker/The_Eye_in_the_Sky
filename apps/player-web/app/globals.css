@@ -1599,6 +1599,14 @@ p {
   backdrop-filter: blur(10px);
 }
 
+.slotInputLockLayer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-button) + 21);
+  pointer-events: auto;
+  background: transparent;
+}
+
 .overlayModal {
   width: min(720px, 100%);
   max-height: min(80dvh, 780px);

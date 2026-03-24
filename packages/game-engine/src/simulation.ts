@@ -35,9 +35,12 @@ export const simulateSpins = (
 
   for (let index = 0; index < input.spins; index += 1) {
     const spinSeed = deriveSpinSeed(input.baseSeed, index);
+    const requestedBetForSpin = state.bonusState
+      ? state.bonusState.betPerSpin
+      : input.bet;
     const result = resolveSpin(
       {
-        bet: input.bet,
+        bet: requestedBetForSpin,
         state,
         winMultiplier: input.winMultiplier ?? 1,
         seed: spinSeed

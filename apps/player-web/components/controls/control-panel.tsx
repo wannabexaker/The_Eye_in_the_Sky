@@ -171,7 +171,10 @@ export function ControlPanel({
   };
 
   const handleSpinKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if ((event.code === "Space" || event.key === " ") && !isAutospinActive) {
+    const isSpaceKey = event.code === "Space" || event.key === " ";
+    const isEnterKey = event.code === "Enter" || event.key === "Enter";
+
+    if ((isSpaceKey || isEnterKey) && !isAutospinActive) {
       event.preventDefault();
       if (!isSpinButtonPressed) {
         setIsSpinButtonPressed(true);
@@ -180,10 +183,13 @@ export function ControlPanel({
   };
 
   const handleSpinKeyUp = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if ((event.code === "Space" || event.key === " ")) {
+    const isSpaceKey = event.code === "Space" || event.key === " ";
+    const isEnterKey = event.code === "Enter" || event.key === "Enter";
+
+    if (isSpaceKey || isEnterKey) {
       event.preventDefault();
       setIsSpinButtonPressed(false);
-      if (!isAutospinActive) {
+      if (isEnterKey && !isAutospinActive) {
         handleManualSpin();
       }
     }

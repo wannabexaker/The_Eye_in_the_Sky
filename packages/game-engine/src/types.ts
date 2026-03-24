@@ -69,6 +69,9 @@ export type BonusState = {
   totalBonusWin: number;
   stickyMultiplier: number;
   betPerSpin: number;
+  initialBonusBudget: number;
+  remainingBonusBudget: number;
+  preBonusBet: number;
 };
 
 export type GameState = {

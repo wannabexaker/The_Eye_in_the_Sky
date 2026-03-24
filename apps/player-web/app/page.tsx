@@ -196,6 +196,14 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (slot.bonusAnnouncementLocked) {
+        event.preventDefault();
+        return;
+      }
+
+      const isSpaceHotkey = event.code === "Space" || event.key === " ";
+      const isFastSpinHotkey = event.code === "KeyF" || event.key.toLowerCase() === "f";
+
       if (event.code === "Escape") {
         if (!slot.isAutospinActive && !slot.autospinStopRequested) {
           return;
@@ -225,18 +233,35 @@ export default function HomePage() {
         return;
       }
 
-      if (event.code !== "Space" && event.key !== " ") {
+      if (!isSpaceHotkey && !isFastSpinHotkey) {
         return;
       }
 
       event.preventDefault();
 
-      if (slot.bonusSummary) {
-        slot.dismissBonusSummary();
+      if (isSpaceHotkey && event.repeat) {
+        return;
       }
 
       if (slot.bonusAnnouncement) {
-        slot.dismissBonusAnnouncement();
+        if (isFastSpinHotkey) {
+          slot.dismissBonusAnnouncement();
+        }
+
+        return;
+      }
+
+      if (isSpaceHotkey) {
+        if (slot.bonusSummary || slot.winPresentation) {
+          return;
+        }
+
+        slot.spin();
+        return;
+      }
+
+      if (slot.bonusSummary) {
+        slot.dismissBonusSummary();
       }
 
       if (slot.winPresentation) {
@@ -284,12 +309,16 @@ export default function HomePage() {
   };
 
   const spinFromInputIntent = () => {
-    if (slot.bonusSummary) {
-      slot.dismissBonusSummary();
+    if (slot.bonusAnnouncementLocked) {
+      return;
     }
 
     if (slot.bonusAnnouncement) {
-      slot.dismissBonusAnnouncement();
+      return;
+    }
+
+    if (slot.bonusSummary) {
+      slot.dismissBonusSummary();
     }
 
     if (slot.winPresentation) {
@@ -301,7 +330,7 @@ export default function HomePage() {
 
   return (
     <main
-      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""}`}
+      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""}`}
       ref={shellRef}
     >
       <div
@@ -404,6 +433,10 @@ export default function HomePage() {
         spinPhase={slot.spinPhase}
         spinPulseKey={slot.spinPulseKey}
       />
+
+      {slot.bonusAnnouncementLocked ? (
+        <div aria-hidden="true" className="slotInputLockLayer" />
+      ) : null}
 
       <OverlayModal onClose={toggleHistory} open={historyOpen} title="Round History">
         <div className="history overlayHistory">
@@ -574,6 +607,7 @@ export default function HomePage() {
 
       <WinPresentationController
         bonusAnnouncement={slot.bonusAnnouncement}
+        bonusAnnouncementLocked={slot.bonusAnnouncementLocked}
         bonusSummary={slot.bonusSummary}
         onDismissBonusAnnouncement={slot.dismissBonusAnnouncement}
         onDismissBonusSummary={slot.dismissBonusSummary}

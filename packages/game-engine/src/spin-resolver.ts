@@ -138,11 +138,25 @@ export const resolveSpin = (
     ? requestedWinMultiplier
     : 1;
   const mode = options.state.bonusState?.freeSpinsRemaining ? "bonus" : "base";
-  const chargedBet = mode === "bonus" ? 0 : options.bet;
-  const effectiveBet =
-    mode === "bonus" && options.state.bonusState
-      ? options.state.bonusState.betPerSpin
-      : options.bet;
+  let chargedBet = mode === "bonus" ? 0 : options.bet;
+  let effectiveBet = options.bet;
+
+  if (mode === "bonus" && options.state.bonusState) {
+    const spinsRemaining = Math.max(options.state.bonusState.freeSpinsRemaining, 1);
+    const remainingBudget = Number(
+      Math.max(0, options.state.bonusState.remainingBonusBudget).toFixed(2)
+    );
+    const fallbackEqualBet = Number((remainingBudget / spinsRemaining).toFixed(2));
+    const requestedBet = Number(options.bet.toFixed(2));
+    const normalizedRequestedBet =
+      Number.isFinite(requestedBet) && requestedBet > 0 ? requestedBet : fallbackEqualBet;
+
+    const boundedRequestedBet = Math.max(0, Math.min(normalizedRequestedBet, remainingBudget));
+
+    // Force all-in on the final bonus spin so no budget is left stranded.
+    effectiveBet = Number((spinsRemaining === 1 ? remainingBudget : boundedRequestedBet).toFixed(2));
+    chargedBet = 0;
+  }
   const bonusStateBefore = cloneBonusState(options.state.bonusState);
   const meterBefore = options.state.bonusMeter;
   const samsaraCollectedBefore = options.state.samsaraCollectedBets;
@@ -234,25 +248,36 @@ export const resolveSpin = (
   }
 
   if (mode === "bonus" && state.bonusState) {
+    const remainingBonusBudget = Number(
+      Math.max(0, state.bonusState.remainingBonusBudget - effectiveBet).toFixed(2)
+    );
+    const nextSpinsRemaining = Math.max(state.bonusState.freeSpinsRemaining - 1, 0);
+    const nextDefaultBet =
+      nextSpinsRemaining > 0
+        ? Number((remainingBonusBudget / nextSpinsRemaining).toFixed(2))
+        : 0;
+
     state.bonusState = {
       ...state.bonusState,
-      freeSpinsRemaining: Math.max(state.bonusState.freeSpinsRemaining - 1, 0),
-      totalBonusWin: Number((state.bonusState.totalBonusWin + totalWin).toFixed(2))
+      freeSpinsRemaining: nextSpinsRemaining,
+      totalBonusWin: Number((state.bonusState.totalBonusWin + totalWin).toFixed(2)),
+      remainingBonusBudget,
+      betPerSpin: nextDefaultBet
     };
 
     if (state.bonusState.freeSpinsRemaining === 0) {
+      const carryOverCollected = Number(
+        Math.max(0, state.samsaraCollectedBets - state.bonusState.initialBonusBudget).toFixed(2)
+      );
       state.bonusState = null;
       state.bonusMeter = 0;
-      state.samsaraCollectedBets = 0;
-      state.samsaraContributionLog = [];
+      state.samsaraCollectedBets = carryOverCollected;
     }
   }
 
-  if (mode === "base") {
-    const collectedThisSpin = Number((state.samsaraCollectedBets - samsaraCollectedBefore).toFixed(2));
-    if (collectedThisSpin > 0) {
-      state.samsaraContributionLog = [...state.samsaraContributionLog, collectedThisSpin];
-    }
+  const collectedThisSpin = Number((state.samsaraCollectedBets - samsaraCollectedBefore).toFixed(2));
+  if (collectedThisSpin > 0) {
+    state.samsaraContributionLog = [...state.samsaraContributionLog, collectedThisSpin];
   }
 
   state.balance = Number((state.balance + totalWin).toFixed(2));

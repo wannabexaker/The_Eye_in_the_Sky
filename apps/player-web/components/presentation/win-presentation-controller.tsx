@@ -15,6 +15,7 @@ import { WinPresentationOverlay } from "@/components/presentation/win-presentati
 
 type WinPresentationControllerProps = {
   bonusAnnouncement: BonusAnnouncementEntry | null;
+  bonusAnnouncementLocked: boolean;
   bonusSummary: BonusSummaryEntry | null;
   winPresentation: WinPresentationEntry | null;
   onDismissBonusAnnouncement: () => void;
@@ -24,6 +25,7 @@ type WinPresentationControllerProps = {
 
 export function WinPresentationController({
   bonusAnnouncement,
+  bonusAnnouncementLocked,
   bonusSummary,
   winPresentation,
   onDismissBonusAnnouncement,
@@ -34,6 +36,7 @@ export function WinPresentationController({
     <>
       <BonusWinOverlay
         announcement={bonusAnnouncement}
+        locked={bonusAnnouncementLocked}
         onContinue={onDismissBonusAnnouncement}
       />
       <BonusSummaryOverlay onContinue={onDismissBonusSummary} summary={bonusSummary} />

@@ -200,6 +200,24 @@ const sanitizeSamsaraSnapshot = (
               (snapshot.bonusState as unknown as { betPerSpin?: number }).betPerSpin
             )
               ? (snapshot.bonusState as unknown as { betPerSpin?: number }).betPerSpin ?? 0
+              : 0,
+          initialBonusBudget:
+            Number.isFinite(
+              (snapshot.bonusState as unknown as { initialBonusBudget?: number }).initialBonusBudget
+            )
+              ? (snapshot.bonusState as unknown as { initialBonusBudget?: number }).initialBonusBudget ?? 0
+              : 0,
+          remainingBonusBudget:
+            Number.isFinite(
+              (snapshot.bonusState as unknown as { remainingBonusBudget?: number }).remainingBonusBudget
+            )
+              ? (snapshot.bonusState as unknown as { remainingBonusBudget?: number }).remainingBonusBudget ?? 0
+              : 0,
+          preBonusBet:
+            Number.isFinite(
+              (snapshot.bonusState as unknown as { preBonusBet?: number }).preBonusBet
+            )
+              ? (snapshot.bonusState as unknown as { preBonusBet?: number }).preBonusBet ?? 0
               : 0
         }
       : null

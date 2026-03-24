@@ -80,35 +80,42 @@ export const applyModifierSymbols = (
   }
 
   const samsaraCells = collectSymbolCells(nextBoard, "samsara");
-  if (mode === "base" && samsaraCells.length > 0) {
+  if (samsaraCells.length > 0) {
     const collectedAmount = Number((bet * samsaraCells.length).toFixed(2));
     const totalCollected = Number((nextState.samsaraCollectedBets + collectedAmount).toFixed(2));
     nextState.samsaraCollectedBets = totalCollected;
 
-    // Once bonus state exists during a base-spin cascade chain, keep meter locked
-    // and avoid awarding additional free-spin bundles from the same resolved spin.
-    if (nextState.bonusState) {
-      nextState.bonusMeter = config.bonusMeterTarget;
-      return { board: nextBoard, state: nextState, events };
-    }
+    if (mode === "base") {
+      // Once bonus state exists during a base-spin cascade chain, keep meter locked
+      // and avoid awarding additional free-spin bundles from the same resolved spin.
+      if (nextState.bonusState) {
+        nextState.bonusMeter = config.bonusMeterTarget;
+        return { board: nextBoard, state: nextState, events };
+      }
 
-    const bonusMeter = nextState.bonusMeter + samsaraCells.length;
-    if (bonusMeter >= config.bonusMeterTarget) {
-      nextState.bonusMeter = config.bonusMeterTarget;
-      const spinsAwarded = config.bonusSpinsAwarded;
-      const bonusBetPerSpin = Number((totalCollected / spinsAwarded).toFixed(2));
-      nextState.bonusState = createBonusState(config, bonusBetPerSpin);
+      const bonusMeter = nextState.bonusMeter + samsaraCells.length;
+      if (bonusMeter >= config.bonusMeterTarget) {
+        nextState.bonusMeter = config.bonusMeterTarget;
+        const spinsAwarded = config.bonusSpinsAwarded;
+        const bonusBetPerSpin = Number((totalCollected / spinsAwarded).toFixed(2));
+        nextState.bonusState = createBonusState(
+          config,
+          bonusBetPerSpin,
+          totalCollected,
+          bet
+        );
 
-      events.push({
-        type: "samsara_bonus_trigger",
-        cascadeIndex,
-        source: "samsara",
-        freeSpinsAwarded: spinsAwarded,
-        collectedAmount,
-        bonusBetPerSpin
-      });
-    } else {
-      nextState.bonusMeter = bonusMeter;
+        events.push({
+          type: "samsara_bonus_trigger",
+          cascadeIndex,
+          source: "samsara",
+          freeSpinsAwarded: spinsAwarded,
+          collectedAmount,
+          bonusBetPerSpin
+        });
+      } else {
+        nextState.bonusMeter = bonusMeter;
+      }
     }
   }
 

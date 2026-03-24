@@ -4,8 +4,8 @@ dist
 .turbo
 coverage
 
-# Working assets (local development only, never commit)
-/assets/
+# Local working assets only. Never touch, never commit.
+/NOT-FOR-USE/
 
 # TypeScript incremental/build artifacts
 *.tsbuildinfo

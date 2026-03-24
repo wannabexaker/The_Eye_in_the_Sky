@@ -528,6 +528,24 @@ and not only on naive width breakpoints.
    - `9:16`
 
 ## Change Log
+- `2026-03-24`
+  - Bonus economy model upgraded from fixed bonus stake to managed budget pool: bonus state now carries `initialBonusBudget`, `remainingBonusBudget`, and `preBonusBet`; exiting bonus restores the exact pre-bonus base bet.
+  - Bonus bet control updated: during bonus, player may set per-spin bet within remaining `Samsara` budget; default remains equal split, and final bonus spin forces all-in on remaining budget to avoid stranded value.
+  - Bonus edge-case UX contract updated: exhausted bonus budget keeps free-spin sequence running at `0.00` bet for board reveal only; messaging now explicitly communicates `0.00 x 100 = 0.00` style outcomes.
+  - `Bonus Entry Win` definition locked to total collected `Samsara` pool (`initialBonusBudget`) for both gameplay and QA preview surfaces.
+  - `Samsara` collection during active bonus is now retained as carryover for the next bonus cycle instead of being discarded.
+  - Admin live analytics reliability update: dashboard polling now uses timeout + backoff + single-flight scheduling to prevent repeated loading/failure oscillation.
+  - Admin QA tooling expanded: added one-click `Sky Opens` preview panel that opens the same bonus-entry composition on demand.
+  - `Sky Opens` input-freeze rule reinforced: bonus-entry banner enforces a full `2000ms` interaction lock window before any manual dismissal path is accepted.
+  - Bonus-announcement input ownership audit completed for `Sky Opens` entry flow.
+  - Locked product rule: `BonusAnnouncement` is a hard gate, not a normal presentation overlay.
+  - Banner contract is now:
+    - `Space` must never dismiss or skip the banner.
+    - pointer/gameplay spin intents must never dismiss or skip the banner.
+    - autoplay/autocontinue must never advance through the banner.
+    - the only permitted keyboard dismiss path is `F`, and it still goes through the timed lock guard rather than bypassing it directly.
+  - Input-ownership note: `page.tsx` is the keyboard owner for `Space` / `F`; `control-panel.tsx` must not introduce a second `Space` action path on the focused spin button.
+  - Failure mode recorded: a previous partial fix changed the global `Space` path but left a local `ControlPanel` keyup path alive, so the banner behavior still looked inconsistent.
 - `2026-03-23`
   - Bonus atmosphere choreography update: entering bonus now triggers a short cinematic quake + lightning shell effect, and exiting bonus now transitions back to base state with smooth visual settle.
   - Implemented dual-layer backdrop crossfade for base/bonus background swaps to remove abrupt transitions.

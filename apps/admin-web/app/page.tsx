@@ -4,6 +4,7 @@ import { MathProfileSelector } from "@/components/math-profile-selector";
 import { GameStatsViewer } from "@/components/game-stats-viewer";
 import { SafetyNote } from "@/components/safety-note";
 import { WinTierPreview } from "@/components/win-tier-preview";
+import { BonusEntryPreview } from "@/components/bonus-entry-preview";
 
 const sections = [
   {
@@ -22,6 +23,12 @@ const sections = [
     title: "Win tier QA preview",
     description: "Trigger WIN/BIG/HUGE/SUPER visuals instantly for art direction and staging checks.",
     component: WinTierPreview,
+    ready: true
+  },
+  {
+    title: "Bonus entry QA preview",
+    description: "Open the Sky Opens bonus announcement window on demand to validate composition and pacing.",
+    component: BonusEntryPreview,
     ready: true
   },
   {

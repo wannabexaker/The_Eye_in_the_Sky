@@ -18,6 +18,9 @@ export type BonusStateDto = {
   totalBonusWin: number;
   stickyMultiplier: number;
   betPerSpin: number;
+  initialBonusBudget: number;
+  remainingBonusBudget: number;
+  preBonusBet: number;
 };
 
 export type RoundSummaryDto = {

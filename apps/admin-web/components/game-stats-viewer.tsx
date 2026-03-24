@@ -6,7 +6,7 @@ Phase 2: replace with API-driven live aggregations from server-side sessions
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const TRACKED_METRICS = [
   "Total spins, wagered, returned, net P/L",
@@ -142,30 +142,83 @@ export function GameStatsViewer() {
   const [dashboard, setDashboard] = useState<LiveAnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const hasLoadedOnceRef = useRef(false);
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-        setOffline(false);
+    let disposed = false;
+    let timer: number | null = null;
+    let failures = 0;
 
-        const response = await fetch(`${apiBase}/analytics/dashboard?limit=5000`);
+    const scheduleNextPoll = (delayMs: number) => {
+      if (disposed) {
+        return;
+      }
+
+      timer = window.setTimeout(() => {
+        void fetchSummary();
+      }, delayMs);
+    };
+
+    const fetchSummary = async () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 4500);
+
+      try {
+        if (!hasLoadedOnceRef.current) {
+          setLoading(true);
+        }
+
+        const response = await fetch(`${apiBase}/analytics/dashboard?limit=2000`, {
+          signal: controller.signal,
+          cache: "no-store"
+        });
         if (!response.ok) {
-          throw new Error("summary fetch failed");
+          throw new Error(`dashboard fetch failed (${response.status})`);
         }
 
         const data = (await response.json()) as LiveAnalyticsDashboard;
+        if (disposed) {
+          return;
+        }
+
         setDashboard(data);
-      } catch {
-        setOffline(true);
+        setOffline(false);
+        setLastError(null);
+        setLastUpdatedAt(Date.now());
+        failures = 0;
+        hasLoadedOnceRef.current = true;
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+
+        failures += 1;
+        setLastError(error instanceof Error ? error.message : "Unknown analytics fetch error");
+
+        // Avoid visual flapping on one transient failure.
+        if (failures >= 2 || !hasLoadedOnceRef.current) {
+          setOffline(true);
+        }
       } finally {
-        setLoading(false);
+        window.clearTimeout(timeout);
+        if (!disposed) {
+          setLoading(false);
+          const nextDelay = failures > 0 ? 8000 : 5000;
+          scheduleNextPoll(nextDelay);
+        }
       }
     };
 
-    fetchSummary();
-    const timer = window.setInterval(fetchSummary, 5000);
-    return () => window.clearInterval(timer);
+    void fetchSummary();
+
+    return () => {
+      disposed = true;
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
+    };
   }, [apiBase]);
 
   const summary = dashboard?.summary ?? null;
@@ -197,10 +250,15 @@ export function GameStatsViewer() {
           }}
         >
           API unreachable at {apiBase}. Live analytics disabled.
+          {lastError ? (
+            <div style={{ marginTop: 6, fontSize: 11, opacity: 0.85 }}>
+              Last error: {lastError}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
-      {loading ? (
+      {loading && !dashboard ? (
         <div style={{ color: "#bda98d", fontSize: 12 }}>Loading live analytics...</div>
       ) : summary ? (
         <>
@@ -246,6 +304,12 @@ export function GameStatsViewer() {
             {toEur(summary.peakWin)} (x{summary.peakMultiple.toFixed(2)})
           </div>
           </div>
+
+          {lastUpdatedAt ? (
+            <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+              Last updated: {new Date(lastUpdatedAt).toLocaleTimeString()}
+            </p>
+          ) : null}
 
           {dashboard ? (
             <div style={{ display: "grid", gap: 10 }}>
