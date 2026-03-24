@@ -34,10 +34,9 @@ const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 100
 const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
 const BONUS_ENTRY_CINEMATIC_DELAY_MS = 1100;
-const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 2000;
-const BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS = 2000;
+const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 1400;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
-const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 2000;
+const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 1400;
 const BONUS_SUMMARY_MIN_VISIBLE_MS = 750;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
 const WIN_GLOW_START_MULTIPLE = 2;
@@ -420,6 +419,7 @@ export function useSlotMachine() {
   const phaseTimersRef = useRef<number[]>([]);
   const presentationTimerRef = useRef<number | null>(null);
   const bonusAnnouncementLockTimerRef = useRef<number | null>(null);
+  const bonusAnnouncementFastContinueTimerRef = useRef<number | null>(null);
   const bonusAnnouncementShownAtRef = useRef<number | null>(null);
   const bonusSummaryShownAtRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
@@ -610,6 +610,9 @@ const validateAutospinCount = useCallback(
       if (bonusAnnouncementLockTimerRef.current) {
         window.clearTimeout(bonusAnnouncementLockTimerRef.current);
       }
+      if (bonusAnnouncementFastContinueTimerRef.current) {
+        window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      }
     };
   }, []);
 
@@ -671,6 +674,7 @@ const validateAutospinCount = useCallback(
       setIsAutoSpinning(false);
       setAutospinStopRequested(false);
       setAutoSpinRemaining(0);
+      setAutospinValidationMessage("");
     }
   }, [autoSpinRemaining, autospinStopRequested, isAutoSpinning, spinPhase]);
 
@@ -1139,22 +1143,13 @@ const validateAutospinCount = useCallback(
   ]);
 
   useEffect(() => {
-    if (!autoContinueNeverStop || !bonusAnnouncement) {
+    if (bonusAnnouncement) {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      setBonusAnnouncementLocked(false);
-      bonusAnnouncementShownAtRef.current = null;
-      setBonusAnnouncement(null);
-    }, BONUS_ANNOUNCEMENT_AUTO_DISMISS_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [autoContinueNeverStop, bonusAnnouncement]);
-
-  useEffect(() => {
-    if (bonusAnnouncement) {
-      return;
+    if (bonusAnnouncementFastContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      bonusAnnouncementFastContinueTimerRef.current = null;
     }
 
     setBonusAnnouncementLocked(false);
@@ -1198,12 +1193,20 @@ const validateAutospinCount = useCallback(
         return;
       }
 
+      const key = event.key.toLowerCase();
+      const isFastContinueKey = key === "f";
+
+      if (bonusAnnouncement) {
+        if (!isFastContinueKey) {
+          event.preventDefault();
+        }
+        return;
+      }
+
       if (bonusAnnouncementLocked) {
         event.preventDefault();
         return;
       }
-
-      const key = event.key.toLowerCase();
 
       if (key === "s") {
         event.preventDefault();
@@ -1237,10 +1240,6 @@ const validateAutospinCount = useCallback(
 
   const dismissBonusAnnouncement = useCallback(() => {
     if (bonusAnnouncement) {
-      if (autoContinueNeverStop) {
-        return;
-      }
-
       if (bonusAnnouncementLocked) {
         return;
       }
@@ -1255,11 +1254,39 @@ const validateAutospinCount = useCallback(
       window.clearTimeout(bonusAnnouncementLockTimerRef.current);
       bonusAnnouncementLockTimerRef.current = null;
     }
+    if (bonusAnnouncementFastContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      bonusAnnouncementFastContinueTimerRef.current = null;
+    }
 
     bonusAnnouncementShownAtRef.current = null;
     setBonusAnnouncementLocked(false);
     setBonusAnnouncement(null);
-  }, [autoContinueNeverStop, bonusAnnouncement, bonusAnnouncementLocked]);
+  }, [bonusAnnouncement, bonusAnnouncementLocked]);
+
+  const requestBonusAnnouncementFastContinue = useCallback(() => {
+    if (!bonusAnnouncement) {
+      return;
+    }
+
+    const shownAt = bonusAnnouncementShownAtRef.current;
+    const elapsedMs = shownAt === null ? BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS : Date.now() - shownAt;
+    const remainingMs = Math.max(0, BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS - elapsedMs);
+
+    if (remainingMs === 0 && !bonusAnnouncementLocked) {
+      dismissBonusAnnouncement();
+      return;
+    }
+
+    if (bonusAnnouncementFastContinueTimerRef.current) {
+      return;
+    }
+
+    bonusAnnouncementFastContinueTimerRef.current = window.setTimeout(() => {
+      bonusAnnouncementFastContinueTimerRef.current = null;
+      dismissBonusAnnouncement();
+    }, remainingMs);
+  }, [bonusAnnouncement, bonusAnnouncementLocked, dismissBonusAnnouncement]);
 
   const dismissBonusSummary = useCallback(() => {
     if (bonusSummary) {
@@ -1287,6 +1314,10 @@ const validateAutospinCount = useCallback(
     if (bonusAnnouncementLockTimerRef.current) {
       window.clearTimeout(bonusAnnouncementLockTimerRef.current);
       bonusAnnouncementLockTimerRef.current = null;
+    }
+    if (bonusAnnouncementFastContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      bonusAnnouncementFastContinueTimerRef.current = null;
     }
     setIsAutoSpinning(false);
     setAutospinStopRequested(false);
@@ -1409,6 +1440,7 @@ const validateAutospinCount = useCallback(
     bonusAnnouncement,
     bonusAnnouncementLocked,
     dismissBonusAnnouncement,
+    requestBonusAnnouncementFastContinue,
     bonusSummary,
     dismissBonusSummary,
     winPresentation,

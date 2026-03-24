@@ -196,13 +196,23 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const isSpaceHotkey = event.code === "Space" || event.key === " ";
+      const isFastSpinHotkey = event.code === "KeyF" || event.key.toLowerCase() === "f";
+
+      if (slot.bonusAnnouncement) {
+        event.preventDefault();
+
+        if (isFastSpinHotkey) {
+          slot.requestBonusAnnouncementFastContinue();
+        }
+
+        return;
+      }
+
       if (slot.bonusAnnouncementLocked) {
         event.preventDefault();
         return;
       }
-
-      const isSpaceHotkey = event.code === "Space" || event.key === " ";
-      const isFastSpinHotkey = event.code === "KeyF" || event.key.toLowerCase() === "f";
 
       if (event.code === "Escape") {
         if (!slot.isAutospinActive && !slot.autospinStopRequested) {
@@ -240,14 +250,6 @@ export default function HomePage() {
       event.preventDefault();
 
       if (isSpaceHotkey && event.repeat) {
-        return;
-      }
-
-      if (slot.bonusAnnouncement) {
-        if (isFastSpinHotkey) {
-          slot.dismissBonusAnnouncement();
-        }
-
         return;
       }
 

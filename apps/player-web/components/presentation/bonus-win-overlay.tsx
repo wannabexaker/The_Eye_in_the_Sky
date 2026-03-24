@@ -60,6 +60,8 @@ export function BonusWinOverlay({
           <button
             className="welcomeButton compactPrimary"
             disabled={locked}
+            onKeyDown={(event) => event.preventDefault()}
+            onKeyUp={(event) => event.preventDefault()}
             onClick={onContinue}
             type="button"
           >
