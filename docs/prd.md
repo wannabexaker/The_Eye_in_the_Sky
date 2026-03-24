@@ -539,6 +539,9 @@ and not only on naive width breakpoints.
   - `Sky Opens` input-freeze rule reinforced: bonus-entry banner now enforces a mandatory `1400ms` visibility/interaction lock window before `Enter Bonus` can unlock.
   - Root-cause timing fix for missing `Sky Opens` banner: the bonus announcement had been scheduled later than the trigger spin's `ROUND_END/IDLE` transition because `bonusTrigger` hold (`~545ms`) was shorter than the extra reveal delay (`1100ms`). The banner now fires with no extra cinematic delay, and bonus-mode visuals stay suppressed while the announcement is on screen so the player reads the banner before the bonus shell activates.
   - Entry-flow gating strengthened again: the UI now uses an explicit `bonusEntryPending` state from the moment the trigger spin resolves into bonus, freezing normal bonus visuals and interaction until the `Sky Opens` announcement has actually been shown and acknowledged/fast-continued.
+  - `Nonstop` contract for bonus banners updated:
+    - `Enter Bonus`: normal flow remains manual after the base `1400ms` lock, but with `nonstop` enabled the banner now holds for `2000ms` total and then auto-continues into bonus without button click.
+    - `Sky Opens Bonus Complete`: with `nonstop` enabled the completion banner also holds for `2000ms` total and then auto-closes back into base flow without button click.
   - Bonus-announcement input ownership audit completed for `Sky Opens` entry flow.
   - Locked product rule: `BonusAnnouncement` is a hard gate, not a normal presentation overlay.
   - Banner contract is now:

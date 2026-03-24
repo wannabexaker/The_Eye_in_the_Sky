@@ -7,6 +7,7 @@ Uses: win-presentation-types.ts and player bonus-summary state
 import type { BonusSummaryEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusSummaryOverlayProps = {
+  locked: boolean;
   summary: BonusSummaryEntry | null;
   onContinue: () => void;
 };
@@ -18,6 +19,7 @@ const formatMoney = (value: number) =>
   }).format(value);
 
 export function BonusSummaryOverlay({
+  locked,
   summary,
   onContinue
 }: BonusSummaryOverlayProps) {
@@ -33,7 +35,12 @@ export function BonusSummaryOverlay({
         <span className="bonusSummaryCaption">TOTAL BONUS WIN</span>
         <strong className="winPresentationAmount">{formatMoney(summary.totalWin)}</strong>
 
-        <button className="welcomeButton compactPrimary" onClick={onContinue} type="button">
+        <button
+          className="welcomeButton compactPrimary"
+          disabled={locked}
+          onClick={onContinue}
+          type="button"
+        >
           {summary.continueLabel ?? "Continue"}
         </button>
       </section>

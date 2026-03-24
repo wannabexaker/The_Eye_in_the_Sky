@@ -219,7 +219,7 @@ export default function HomePage() {
         return;
       }
 
-      if (slot.bonusAnnouncementLocked) {
+      if (slot.bonusAnnouncementLocked || slot.bonusSummaryLocked) {
         event.preventDefault();
         return;
       }
@@ -326,6 +326,10 @@ export default function HomePage() {
     }
 
     if (slot.bonusAnnouncementLocked) {
+      return;
+    }
+
+    if (slot.bonusSummaryLocked) {
       return;
     }
 
@@ -450,7 +454,7 @@ export default function HomePage() {
         spinPulseKey={slot.spinPulseKey}
       />
 
-      {slot.bonusAnnouncementLocked ? (
+      {slot.bonusAnnouncementLocked || slot.bonusSummaryLocked ? (
         <div aria-hidden="true" className="slotInputLockLayer" />
       ) : null}
 
@@ -625,6 +629,7 @@ export default function HomePage() {
         bonusAnnouncement={slot.bonusAnnouncement}
         bonusAnnouncementLocked={slot.bonusAnnouncementLocked}
         bonusSummary={slot.bonusSummary}
+        bonusSummaryLocked={slot.bonusSummaryLocked}
         onDismissBonusAnnouncement={slot.dismissBonusAnnouncement}
         onDismissBonusSummary={slot.dismissBonusSummary}
         onDismissWinPresentation={slot.dismissWinPresentation}

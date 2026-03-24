@@ -17,6 +17,7 @@ type WinPresentationControllerProps = {
   bonusAnnouncement: BonusAnnouncementEntry | null;
   bonusAnnouncementLocked: boolean;
   bonusSummary: BonusSummaryEntry | null;
+  bonusSummaryLocked: boolean;
   winPresentation: WinPresentationEntry | null;
   onDismissBonusAnnouncement: () => void;
   onDismissBonusSummary: () => void;
@@ -27,6 +28,7 @@ export function WinPresentationController({
   bonusAnnouncement,
   bonusAnnouncementLocked,
   bonusSummary,
+  bonusSummaryLocked,
   winPresentation,
   onDismissBonusAnnouncement,
   onDismissBonusSummary,
@@ -39,7 +41,11 @@ export function WinPresentationController({
         locked={bonusAnnouncementLocked}
         onContinue={onDismissBonusAnnouncement}
       />
-      <BonusSummaryOverlay onContinue={onDismissBonusSummary} summary={bonusSummary} />
+      <BonusSummaryOverlay
+        locked={bonusSummaryLocked}
+        onContinue={onDismissBonusSummary}
+        summary={bonusSummary}
+      />
       <WinPresentationOverlay
         onContinue={onDismissWinPresentation}
         presentation={winPresentation}

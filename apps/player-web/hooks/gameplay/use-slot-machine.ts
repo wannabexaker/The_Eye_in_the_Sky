@@ -35,8 +35,8 @@ const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
 const BONUS_ENTRY_CINEMATIC_DELAY_MS = 0;
 const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 1400;
-const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
 const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 1400;
+const BONUS_NONSTOP_AUTO_CONTINUE_MS = 2000;
 const BONUS_SUMMARY_MIN_VISIBLE_MS = 750;
 const BIG_WIN_AUTO_DISMISS_MS = 2200;
 const WIN_GLOW_START_MULTIPLE = 2;
@@ -416,12 +416,16 @@ export function useSlotMachine() {
   const [bonusAnnouncement, setBonusAnnouncement] = useState<BonusAnnouncementEntry | null>(null);
   const [bonusAnnouncementLocked, setBonusAnnouncementLocked] = useState(false);
   const [bonusSummary, setBonusSummary] = useState<BonusSummaryEntry | null>(null);
+  const [bonusSummaryLocked, setBonusSummaryLocked] = useState(false);
   const [winPresentation, setWinPresentation] = useState<WinPresentationEntry | null>(null);
   const phaseTimersRef = useRef<number[]>([]);
   const presentationTimerRef = useRef<number | null>(null);
   const bonusAnnouncementLockTimerRef = useRef<number | null>(null);
   const bonusAnnouncementFastContinueTimerRef = useRef<number | null>(null);
+  const bonusAnnouncementAutoContinueTimerRef = useRef<number | null>(null);
   const bonusAnnouncementShownAtRef = useRef<number | null>(null);
+  const bonusSummaryLockTimerRef = useRef<number | null>(null);
+  const bonusSummaryAutoContinueTimerRef = useRef<number | null>(null);
   const bonusSummaryShownAtRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
   const previousBonusStateRef = useRef<GameState["bonusState"]>(gameState.bonusState);
@@ -613,6 +617,15 @@ const validateAutospinCount = useCallback(
       }
       if (bonusAnnouncementFastContinueTimerRef.current) {
         window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      }
+      if (bonusAnnouncementAutoContinueTimerRef.current) {
+        window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      }
+      if (bonusSummaryLockTimerRef.current) {
+        window.clearTimeout(bonusSummaryLockTimerRef.current);
+      }
+      if (bonusSummaryAutoContinueTimerRef.current) {
+        window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
       }
     };
   }, []);
@@ -919,11 +932,24 @@ const validateAutospinCount = useCallback(
               if (bonusAnnouncementLockTimerRef.current) {
                 window.clearTimeout(bonusAnnouncementLockTimerRef.current);
               }
+              if (bonusAnnouncementAutoContinueTimerRef.current) {
+                window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+              }
 
-              bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
-                setBonusAnnouncementLocked(false);
-                bonusAnnouncementLockTimerRef.current = null;
-              }, BONUS_ANNOUNCEMENT_INPUT_LOCK_MS);
+              if (autoContinueNeverStop) {
+                bonusAnnouncementAutoContinueTimerRef.current = window.setTimeout(() => {
+                  bonusAnnouncementAutoContinueTimerRef.current = null;
+                  bonusAnnouncementShownAtRef.current = null;
+                  setBonusAnnouncementLocked(false);
+                  setBonusEntryPending(false);
+                  setBonusAnnouncement(null);
+                }, BONUS_NONSTOP_AUTO_CONTINUE_MS);
+              } else {
+                bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
+                  setBonusAnnouncementLocked(false);
+                  bonusAnnouncementLockTimerRef.current = null;
+                }, BONUS_ANNOUNCEMENT_INPUT_LOCK_MS);
+              }
             }
           }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusEntryRevealOffsetMs)
         );
@@ -943,6 +969,26 @@ const validateAutospinCount = useCallback(
 
           if (summary) {
             bonusSummaryShownAtRef.current = Date.now();
+            if (bonusSummaryLockTimerRef.current) {
+              window.clearTimeout(bonusSummaryLockTimerRef.current);
+            }
+            if (bonusSummaryAutoContinueTimerRef.current) {
+              window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+            }
+
+            if (autoContinueNeverStop) {
+              setBonusSummaryLocked(true);
+              bonusSummaryAutoContinueTimerRef.current = window.setTimeout(() => {
+                bonusSummaryAutoContinueTimerRef.current = null;
+                bonusSummaryShownAtRef.current = null;
+                setBonusSummaryLocked(false);
+                setBonusSummary(null);
+              }, BONUS_NONSTOP_AUTO_CONTINUE_MS);
+            } else {
+              setBonusSummaryLocked(false);
+            }
+          } else {
+            setBonusSummaryLocked(false);
           }
 
           setBonusSummary(summary);
@@ -1158,6 +1204,10 @@ const validateAutospinCount = useCallback(
       window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
       bonusAnnouncementFastContinueTimerRef.current = null;
     }
+    if (bonusAnnouncementAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      bonusAnnouncementAutoContinueTimerRef.current = null;
+    }
 
     setBonusAnnouncementLocked(false);
     if (bonusAnnouncementLockTimerRef.current) {
@@ -1167,16 +1217,21 @@ const validateAutospinCount = useCallback(
   }, [bonusAnnouncement]);
 
   useEffect(() => {
-    if (!autoContinueNeverStop || !bonusSummary) {
+    if (bonusSummary) {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      setBonusSummary(null);
-    }, BONUS_SUMMARY_AUTO_DISMISS_MS);
+    if (bonusSummaryLockTimerRef.current) {
+      window.clearTimeout(bonusSummaryLockTimerRef.current);
+      bonusSummaryLockTimerRef.current = null;
+    }
+    if (bonusSummaryAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+      bonusSummaryAutoContinueTimerRef.current = null;
+    }
 
-    return () => window.clearTimeout(timer);
-  }, [autoContinueNeverStop, bonusSummary]);
+    setBonusSummaryLocked(false);
+  }, [bonusSummary]);
 
   useEffect(() => {
     if (!autoContinueNeverStop || !winPresentation) {
@@ -1210,7 +1265,7 @@ const validateAutospinCount = useCallback(
         return;
       }
 
-      if (bonusAnnouncementLocked) {
+      if (bonusAnnouncementLocked || bonusSummaryLocked) {
         event.preventDefault();
         return;
       }
@@ -1243,7 +1298,7 @@ const validateAutospinCount = useCallback(
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [bonusAnnouncementLocked, decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
+  }, [bonusAnnouncement, bonusAnnouncementLocked, bonusSummaryLocked, decrementBetByStep, incrementBetByStep, isAutoSpinning, startAutoSpinInfinite, stopAutoSpin]);
 
   const dismissBonusAnnouncement = useCallback(() => {
     if (bonusAnnouncement) {
@@ -1264,6 +1319,10 @@ const validateAutospinCount = useCallback(
     if (bonusAnnouncementFastContinueTimerRef.current) {
       window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
       bonusAnnouncementFastContinueTimerRef.current = null;
+    }
+    if (bonusAnnouncementAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      bonusAnnouncementAutoContinueTimerRef.current = null;
     }
 
     bonusAnnouncementShownAtRef.current = null;
@@ -1298,15 +1357,29 @@ const validateAutospinCount = useCallback(
 
   const dismissBonusSummary = useCallback(() => {
     if (bonusSummary) {
+      if (bonusSummaryLocked) {
+        return;
+      }
+
       const shownAt = bonusSummaryShownAtRef.current;
       if (shownAt !== null && Date.now() - shownAt < BONUS_SUMMARY_MIN_VISIBLE_MS) {
         return;
       }
     }
 
+    if (bonusSummaryLockTimerRef.current) {
+      window.clearTimeout(bonusSummaryLockTimerRef.current);
+      bonusSummaryLockTimerRef.current = null;
+    }
+    if (bonusSummaryAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+      bonusSummaryAutoContinueTimerRef.current = null;
+    }
+
     bonusSummaryShownAtRef.current = null;
+    setBonusSummaryLocked(false);
     setBonusSummary(null);
-  }, [bonusSummary]);
+  }, [bonusSummary, bonusSummaryLocked]);
 
   const dismissWinPresentation = useCallback(() => {
     if (presentationTimerRef.current) {
@@ -1327,6 +1400,18 @@ const validateAutospinCount = useCallback(
       window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
       bonusAnnouncementFastContinueTimerRef.current = null;
     }
+    if (bonusAnnouncementAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      bonusAnnouncementAutoContinueTimerRef.current = null;
+    }
+    if (bonusSummaryLockTimerRef.current) {
+      window.clearTimeout(bonusSummaryLockTimerRef.current);
+      bonusSummaryLockTimerRef.current = null;
+    }
+    if (bonusSummaryAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+      bonusSummaryAutoContinueTimerRef.current = null;
+    }
     setIsAutoSpinning(false);
     setAutospinStopRequested(false);
     setAutoSpinRemaining(0);
@@ -1336,6 +1421,7 @@ const validateAutospinCount = useCallback(
     setBonusEntryPending(false);
     setBonusAnnouncement(null);
     setBonusAnnouncementLocked(false);
+    setBonusSummaryLocked(false);
     setBonusSummary(null);
     setWinPresentation(null);
     setSpinPhase("IDLE");
@@ -1354,6 +1440,15 @@ const validateAutospinCount = useCallback(
     return () => {
       if (bonusAnnouncementLockTimerRef.current) {
         window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      }
+      if (bonusAnnouncementAutoContinueTimerRef.current) {
+        window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      }
+      if (bonusSummaryLockTimerRef.current) {
+        window.clearTimeout(bonusSummaryLockTimerRef.current);
+      }
+      if (bonusSummaryAutoContinueTimerRef.current) {
+        window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
       }
     };
   }, []);
@@ -1453,6 +1548,7 @@ const validateAutospinCount = useCallback(
     dismissBonusAnnouncement,
     requestBonusAnnouncementFastContinue,
     bonusSummary,
+    bonusSummaryLocked,
     dismissBonusSummary,
     winPresentation,
     dismissWinPresentation,

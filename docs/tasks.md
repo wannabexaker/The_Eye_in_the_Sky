@@ -112,6 +112,10 @@
   - Hardened `Sky Opens` announcement lock: enforced `1400ms` mandatory-visibility path with keyboard/spin-intent blocking and lock-layer interception while banner is locked.
   - Rejected timing hypothesis corrected: the banner issue was not only input skip. The real flow bug was that the bonus announcement reveal delay was longer than the trigger-phase hold, so `ROUND_END/IDLE` and bonus-shell activation could happen before the banner was shown.
   - Follow-up gating fix: added explicit `bonusEntryPending` ownership so the UI freezes from trigger resolution until the banner has been shown and closed, instead of letting bonus-mode visuals or controls become active in the gap before banner render.
+  - Updated `nonstop` bonus-banner behavior:
+    - `Enter Bonus` now uses `2000ms` total hold when `nonstop` is enabled, then auto-continues.
+    - `Bonus Complete` now uses the same `2000ms` total hold when `nonstop` is enabled, then auto-closes.
+    - both flows keep their buttons disabled and global input blocked during the timed hold.
   - Code change:
     - `apps/player-web/hooks/gameplay/use-slot-machine.ts`
       - removed the extra bonus-entry cinematic reveal delay so the announcement fires at the trigger point.
