@@ -551,6 +551,8 @@ and not only on naive width breakpoints.
     - the only permitted keyboard fast-continue path is `F`; before `1400ms` it only queues continuation, and after `1400ms` it may advance without the `Enter Bonus` click.
   - Input-ownership note: `page.tsx` is the keyboard owner for `Space` / `F`; `control-panel.tsx` must not introduce a second `Space` action path on the focused spin button.
   - Failure mode recorded: a previous partial fix changed the global `Space` path but left a local `ControlPanel` keyup path alive, so the banner behavior still looked inconsistent.
+  - Testing hotkey exception recorded: held `F` remains intentionally unthrottled for ultra-fast QA spin testing.
+  - Known dev/runtime bug recorded: with `F` held down continuously, Next/React dev mode can still surface maximum-update-depth style runtime overlays through the bet-validation/spin path; this issue is currently accepted to preserve the original fast-spin testing behavior.
 - `2026-03-23`
   - Bonus atmosphere choreography update: entering bonus now triggers a short cinematic quake + lightning shell effect, and exiting bonus now transitions back to base state with smooth visual settle.
   - Implemented dual-layer backdrop crossfade for base/bonus background swaps to remove abrupt transitions.

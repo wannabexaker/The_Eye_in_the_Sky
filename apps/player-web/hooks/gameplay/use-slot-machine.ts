@@ -717,15 +717,19 @@ const validateAutospinCount = useCallback(
   const applyBetValue = useCallback(
     (nextBet: number | null) => {
       if (areBetControlsLocked) {
-        setBetValidationMessage("Bet is locked while autospin is active. Press Stop first.");
-        setBetValidationTooltip("");
+        setBetValidationMessage((current) =>
+          current === "Bet is locked while autospin is active. Press Stop first."
+            ? current
+            : "Bet is locked while autospin is active. Press Stop first."
+        );
+        setBetValidationTooltip((current) => (current === "" ? current : ""));
         return false;
       }
 
       const validation = validateBetAmount(nextBet);
       if (validation.message) {
-        setBetValidationMessage(validation.message);
-        setBetValidationTooltip(validation.tooltip);
+        setBetValidationMessage((current) => (current === validation.message ? current : validation.message));
+        setBetValidationTooltip((current) => (current === validation.tooltip ? current : validation.tooltip));
         return false;
       }
 
@@ -740,8 +744,8 @@ const validateAutospinCount = useCallback(
         setBetInput(normalizedBetInput);
       }
 
-      setBetValidationMessage("");
-      setBetValidationTooltip("");
+      setBetValidationMessage((current) => (current === "" ? current : ""));
+      setBetValidationTooltip((current) => (current === "" ? current : ""));
       return true;
     },
     [areBetControlsLocked, betInput, validateBetAmount]
@@ -1070,7 +1074,7 @@ const validateAutospinCount = useCallback(
     setIsAutoSpinning(false);
     setAutospinStopRequested(false);
     setAutoSpinRemaining(0);
-    setBetValidationMessage("");
+    setBetValidationMessage((current) => (current === "" ? current : ""));
     void runSpin();
   }, [applyManualBet, bonusAnnouncement, bonusEntryPending, bonusSummary, runSpin]);
 

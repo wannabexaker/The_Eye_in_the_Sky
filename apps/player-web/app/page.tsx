@@ -7,6 +7,7 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { SymbolId } from "@eye/game-engine";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
 import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
@@ -22,7 +23,7 @@ import { WinPresentationController } from "@/components/presentation/win-present
 import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytics-overlay";
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
-import { shellAssets } from "@/lib/assets/asset-manifest";
+import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
 import { activeGameConfig } from "@/lib/game-config";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
@@ -56,8 +57,66 @@ const symbolLabels: Record<string, string> = {
   seraphim_feather: "Seraphim Feather",
   burning_crown: "Burning Crown",
   ophidian_relic: "Ophidian Relic",
-  celestial_gate: "Celestial Gate"
+  celestial_gate: "Celestial Gate",
+  seraphim_eye: "Seraphim Eye",
+  samsara: "Samsara",
+  ouroboros: "Ouroboros",
+  panepoptis_ophthalmos: "Panepoptis Ophthalmos"
 };
+
+const paytableClusterSizes = Array.from(
+  new Set(activeGameConfig.paytable.flatMap((entry) => Object.keys(entry.payouts).map(Number)))
+).sort((left, right) => left - right);
+
+const bonusRuleRows = [
+  {
+    label: "Board",
+    value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
+  },
+  {
+    label: "How wins break",
+    value: `${activeGameConfig.clusterThreshold}+ orthogonal cluster`
+  },
+  {
+    label: "Gravity",
+    value: activeGameConfig.gravity === "top-down" ? "Top-down symbol drop" : activeGameConfig.gravity
+  },
+  {
+    label: "Cascades",
+    value: `Continue while a paying win remains, up to ${activeGameConfig.maxCascadeSteps} steps`
+  },
+  {
+    label: "Cascade ladder",
+    value: activeGameConfig.cascadeMultiplierLadder.map((value) => `x${value}`).join(" -> ")
+  },
+  {
+    label: "Bonus trigger",
+    value: `${activeGameConfig.bonusMeterTarget} Samsara symbols fill the meter`
+  },
+  {
+    label: "Bonus award",
+    value: `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`
+  }
+] as const;
+
+const specialSymbolRows: Array<{ symbol: SymbolId; effect: string }> = [
+  {
+    symbol: "seraphim_eye",
+    effect: "Converts 1-2 regular symbols into wilds. During bonus it can also add +1 sticky multiplier."
+  },
+  {
+    symbol: "samsara",
+    effect: "Each symbol adds +1 to the meter and collects the current bet into the bonus budget pool. Reaching the target opens Sky Opens."
+  },
+  {
+    symbol: "ouroboros",
+    effect: "During bonus, each hit adds +1 sticky multiplier up to the configured cap."
+  },
+  {
+    symbol: "panepoptis_ophthalmos",
+    effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
+  }
+];
 
 export default function HomePage() {
   const shellRef = useRef<HTMLElement | null>(null);
@@ -504,7 +563,7 @@ export default function HomePage() {
       </OverlayModal>
 
       <OverlayModal onClose={toggleSettings} open={settingsOpen} title="Menu">
-        <section className="modalSection">
+        <section className="modalSection menuSectionControls">
           <p className="eyebrow">Win Multiplier</p>
           <div className="chipRow">
             {slot.winMultiplierOptions.map((option) => (
@@ -520,35 +579,62 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="modalSection">
-          <p className="eyebrow">Board Rules</p>
-          <ul className="statsList">
-            {slot.boardRules.map((rule) => (
-              <li key={rule}>{rule}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="modalSection">
-          <p className="eyebrow">Paytable</p>
-          <div className="paytableGrid">
-            {activeGameConfig.paytable.map((entry) => (
-              <article className="paytableCard" key={entry.symbol}>
-                <strong>{symbolLabels[entry.symbol] ?? entry.symbol}</strong>
-                <div className="paytableRows">
-                  {Object.entries(entry.payouts).map(([size, multiplier]) => (
-                    <div className="paytableRow" key={`${entry.symbol}-${size}`}>
-                      <span>{size}+ cluster</span>
-                      <span>{formatMoney(slot.bet * multiplier)}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
+        <section className="modalSection menuSectionRules">
+          <p className="eyebrow">Game Rules</p>
+          <div className="menuRuleTable">
+            {bonusRuleRows.map((row) => (
+              <div className="menuRuleRow" key={row.label}>
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
+              </div>
             ))}
           </div>
         </section>
 
-        <section className="modalSection">
+        <section className="modalSection menuSectionPaytable">
+          <p className="eyebrow">Paytable</p>
+          <div className="paytableTableWrap">
+            <table className="paytableTable">
+              <thead>
+                <tr>
+                  <th scope="col">Symbol</th>
+                  <th scope="col">Breaks On</th>
+                  {paytableClusterSizes.map((size) => (
+                    <th key={`paytable-head-${size}`} scope="col">
+                      {size}+
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {activeGameConfig.paytable.map((entry) => (
+                  <tr key={entry.symbol}>
+                    <th className="paytableSymbolCell" scope="row">
+                      <img
+                        alt=""
+                        aria-hidden="true"
+                        className="paytableSymbolIcon"
+                        src={symbolAssetSources[entry.symbol][0]}
+                      />
+                      <span>{symbolLabels[entry.symbol] ?? entry.symbol}</span>
+                    </th>
+                    <td>{activeGameConfig.clusterThreshold}+ connected</td>
+                    {paytableClusterSizes.map((size) => {
+                      const multiplier = entry.payouts[size];
+                      return (
+                        <td key={`${entry.symbol}-${size}`}>
+                          {typeof multiplier === "number" ? formatMoney(slot.bet * multiplier) : "—"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="modalSection menuSectionAnalytics">
           <p className="eyebrow">Session Analytics</p>
           <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
             {roundsLog.length > 0
@@ -567,7 +653,7 @@ export default function HomePage() {
           </button>
         </section>
 
-        <section className="modalSection">
+        <section className="modalSection menuSectionWakeLock">
           <p className="eyebrow">Screen Wake Lock</p>
           <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
             Keep the screen awake during gameplay on supported devices.
@@ -577,15 +663,40 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="modalSection">
-          <p className="eyebrow">Special Symbols</p>
-          <ul className="statsList">
-            <li>Seraphim Eye: adds wilds and can boost the bonus multiplier.</li>
-            <li>Samsara: fills the bonus meter. Reaching the target opens free spins.</li>
-            <li>Ouroboros: increases the sticky bonus multiplier.</li>
-            <li>Panepoptis Ophthalmos: converts part of a column into wilds.</li>
-            <li>Cascades continue only while a paying win remains, capped at 12 steps.</li>
-          </ul>
+        <section className="modalSection menuSectionSymbols">
+          <p className="eyebrow">Special Symbols & Bonus</p>
+          <div className="symbolRuleTable">
+            {specialSymbolRows.map((row) => (
+              <article className="symbolRuleRow" key={row.symbol}>
+                <div className="symbolRuleHeader">
+                  <img
+                    alt=""
+                    aria-hidden="true"
+                    className="symbolRuleIcon"
+                    src={symbolAssetSources[row.symbol][0]}
+                  />
+                  <strong>{symbolLabels[row.symbol] ?? row.symbol}</strong>
+                </div>
+                <p>{row.effect}</p>
+              </article>
+            ))}
+            <article className="symbolRuleRow bonusRuleRow">
+              <div className="symbolRuleHeader">
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="symbolRuleIcon"
+                  src={symbolAssetSources.samsara[0]}
+                />
+                <strong>Sky Opens Bonus</strong>
+              </div>
+              <p>
+                Triggering the meter awards {activeGameConfig.bonusSpinsAwarded} free spins. The collected Samsara pool becomes the
+                bonus budget, split across the bonus and spent per spin. Ouroboros and Panepoptis can raise the sticky bonus multiplier
+                up to x{activeGameConfig.maxBonusMultiplier}.
+              </p>
+            </article>
+          </div>
         </section>
       </OverlayModal>
 

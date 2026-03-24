@@ -122,6 +122,10 @@
     - `apps/player-web/app/page.tsx`
       - bonus visuals and free-spin shell state are now visually suppressed while `bonusAnnouncement` is visible, so the player sees the entry banner before the bonus shell turns on.
   - Verification target: on the exact spin that reaches `17` Samsara, the `Sky Opens` banner must appear before any visible bonus-mode shell transition.
+  - QA hotkey note:
+    - `F` was restored to its original held-fast-spin behavior for testing.
+    - a synchronous anti-reentry gate was rejected because it made `F` feel too slow for QA.
+    - known open issue: holding `F` hard in Next dev mode can still trigger runtime overlay/update-depth errors through the rapid spin + bet-validation path.
   - Intent: stop `Sky Opens` `BonusAnnouncement` from being skipped by unintended input paths while preserving the deliberate fast-key exception on `F`.
   - Hypothesis: the banner was not controlled by one owner; global keyboard handling, focused spin-button keyboard handling, and presentation dismiss callbacks were overlapping.
   - Code change:
