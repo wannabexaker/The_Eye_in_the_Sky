@@ -393,6 +393,7 @@
   }
 
   .floatingGameDock .spinCta {
+    --spin-cta-size: var(--portrait-spin-size);
     width: var(--portrait-spin-size);
     height: var(--portrait-spin-size);
     min-width: var(--portrait-spin-size);
@@ -419,23 +420,100 @@
 
   @media (max-width: 11in) {
     .slotViewport {
-      --portrait-spin-size: 118px;
+      --portrait-spin-size: 112px;
+      --portrait-dock-footprint: clamp(148px, 39vw, 178px);
     }
 
     .floatingGameDock {
-      bottom: calc(var(--portrait-bottom-safe) + 84px);
+      right: clamp(10px, 3vw, 16px);
+      bottom: calc(var(--portrait-bottom-safe) + 76px);
+    }
+
+    .floatingGameDockInner {
+      width: var(--portrait-dock-footprint);
+      min-width: var(--portrait-dock-footprint);
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
+      justify-items: center;
+      column-gap: 0;
+      row-gap: 8px;
+      padding: calc(var(--portrait-spin-size) * 0.42) 10px 14px;
+      border-radius: 18px;
+    }
+
+    .floatingGameDock .dockTopRow {
+      display: block;
+      width: 100%;
+    }
+
+    .floatingGameDock .dockSpinWrapper {
+      width: 100%;
+      min-width: 0;
+      height: 0;
+      min-height: 0;
+      justify-self: center;
+      transform: none;
+    }
+
+    .floatingGameDock .dockBottomRow {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .floatingGameDock .dockBetCluster,
+    .floatingGameDock .dockAutoCluster {
+      gap: 4px;
+      justify-content: center;
     }
 
     .floatingGameDock .spinCta {
-      transform: translate(-50%, calc(-50% - 38px));
+      top: 0;
+      overflow: visible;
+      transform: translate(-50%, calc(-50% - 8px));
     }
 
     .floatingGameDock .spinCta:hover {
-      transform: translate(-50%, calc(-50% - 38px)) scale(1.05);
+      transform: translate(-50%, calc(-50% - 8px)) scale(1.05);
     }
 
     .floatingGameDock .spinCta:active:not(:disabled) {
-      transform: translate(-50%, calc(-50% - 38px)) scale(0.97);
+      transform: translate(-50%, calc(-50% - 8px)) scale(0.97);
+    }
+
+    .floatingGameDock .dockSmallButton {
+      height: 32px;
+      min-height: 32px;
+      min-width: 32px;
+      padding: 4px 6px;
+      border-radius: 11px;
+    }
+
+    .floatingGameDock .dockSmallIcon {
+      width: 11px;
+      height: 11px;
+    }
+
+    .floatingGameDock .dockBetInput {
+      width: 42px;
+      height: 32px;
+      min-height: 32px;
+      font-size: 0.7rem;
+    }
+
+    .floatingGameDock .dockAutoInlineInput {
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      min-height: 32px;
+      bottom: calc(100% + 6px);
+      font-size: 0.64rem;
+    }
+
+    .floatingGameDock .dockMetaInfo {
+      display: none;
     }
   }
 
@@ -562,6 +640,7 @@
   }
 
   .floatingGameDock .spinCta {
+    --spin-cta-size: var(--portrait-spin-size);
     width: var(--portrait-spin-size);
     height: var(--portrait-spin-size);
     min-width: var(--portrait-spin-size);

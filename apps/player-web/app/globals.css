@@ -1273,11 +1273,12 @@ p {
 }
 
 .spinCta {
+  --spin-cta-size: 86px;
   position: relative;
   display: grid;
   place-items: center;
-  width: 86px;
-  height: 86px;
+  width: var(--spin-cta-size);
+  height: var(--spin-cta-size);
   border: none;
   border-radius: 999px;
   background:
@@ -1328,7 +1329,7 @@ p {
 
 .spinRipple {
   position: absolute;
-  inset: 16px;
+  inset: calc(var(--spin-cta-size) * 0.186);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   animation: rippleOut 0.72s ease-out;
@@ -1337,8 +1338,8 @@ p {
 .ouroborosRing {
   position: relative;
   z-index: 1;
-  width: 74px;
-  height: 74px;
+  width: calc(var(--spin-cta-size) * 0.86);
+  height: calc(var(--spin-cta-size) * 0.86);
   display: block;
   filter:
     drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26))
@@ -1348,23 +1349,23 @@ p {
 .ouroborosRing::before {
   content: "";
   position: absolute;
-  inset: 4px;
+  inset: calc(var(--spin-cta-size) * 0.046);
   border-radius: 999px;
   border: 1px solid rgba(255, 235, 184, 0.16);
   opacity: 0.34;
-  box-shadow: inset 0 0 8px rgba(226, 190, 112, 0.16);
+  box-shadow: inset 0 0 calc(var(--spin-cta-size) * 0.093) rgba(226, 190, 112, 0.16);
   animation: serpentHalo 3.1s linear infinite;
 }
 
 .ouroborosRing::after {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: calc(var(--spin-cta-size) * -0.046);
   border-radius: 999px;
   background:
     radial-gradient(circle at 62% 58%, rgba(96, 132, 86, 0.11), transparent 56%),
     radial-gradient(circle at 36% 36%, rgba(76, 108, 68, 0.08), transparent 52%);
-  filter: blur(4px);
+  filter: blur(calc(var(--spin-cta-size) * 0.046));
   opacity: 0.34;
   pointer-events: none;
 }
@@ -1373,7 +1374,7 @@ p {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  border: 7px solid transparent;
+  border: calc(var(--spin-cta-size) * 0.081) solid transparent;
   border-top-color: rgba(244, 217, 152, 0.98);
   border-right-color: rgba(215, 168, 84, 0.97);
   border-bottom-color: rgba(179, 126, 48, 0.97);
@@ -1392,20 +1393,20 @@ p {
 .ouroborosBody::after {
   content: "";
   position: absolute;
-  inset: 5px;
+  inset: calc(var(--spin-cta-size) * 0.058);
   border-radius: 999px;
-  border: 2px dashed rgba(84, 55, 19, 0.34);
+  border: calc(var(--spin-cta-size) * 0.023) dashed rgba(84, 55, 19, 0.34);
   opacity: 0.52;
   mix-blend-mode: multiply;
 }
 
 .ouroborosHead {
   position: absolute;
-  top: 15px;
-  right: -1px;
+  top: calc(var(--spin-cta-size) * 0.174);
+  right: calc(var(--spin-cta-size) * -0.012);
   z-index: 1;
-  width: 14px;
-  height: 14px;
+  width: calc(var(--spin-cta-size) * 0.163);
+  height: calc(var(--spin-cta-size) * 0.163);
   border-radius: 12px 12px 10px 10px;
   background: linear-gradient(180deg, #f4d894 0%, #b2762d 100%);
   transform: rotate(74deg);
@@ -1417,10 +1418,10 @@ p {
 .ouroborosHead::before {
   content: "";
   position: absolute;
-  right: -2px;
-  top: 4px;
-  width: 5px;
-  height: 5px;
+  right: calc(var(--spin-cta-size) * -0.023);
+  top: calc(var(--spin-cta-size) * 0.046);
+  width: calc(var(--spin-cta-size) * 0.058);
+  height: calc(var(--spin-cta-size) * 0.058);
   border-radius: 999px;
   background: #f7e2b1;
 }
@@ -1428,10 +1429,10 @@ p {
 .ouroborosHead::after {
   content: "";
   position: absolute;
-  top: 6px;
-  right: -6px;
-  width: 6px;
-  height: 1.6px;
+  top: calc(var(--spin-cta-size) * 0.07);
+  right: calc(var(--spin-cta-size) * -0.07);
+  width: calc(var(--spin-cta-size) * 0.07);
+  height: calc(var(--spin-cta-size) * 0.019);
   border-radius: 999px;
   background: linear-gradient(90deg, #f3c06e 0%, #ca3f3f 100%);
   transform-origin: left center;
@@ -1440,11 +1441,11 @@ p {
 
 .ouroborosEye {
   position: absolute;
-  top: 21px;
-  right: 6px;
+  top: calc(var(--spin-cta-size) * 0.244);
+  right: calc(var(--spin-cta-size) * 0.07);
   z-index: 2;
-  width: 2.6px;
-  height: 2.6px;
+  width: calc(var(--spin-cta-size) * 0.03);
+  height: calc(var(--spin-cta-size) * 0.03);
   border-radius: 999px;
   background: #2f0f0f;
   box-shadow:
@@ -1454,7 +1455,7 @@ p {
 
 .spinCore {
   position: absolute;
-  inset: 20px;
+  inset: calc(var(--spin-cta-size) * 0.233);
   z-index: 2;
   display: grid;
   place-items: center;
@@ -3624,15 +3625,17 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .floatingGameDock .spinCta {
+  --spin-cta-size: clamp(80px, 7.5vw, 115px);
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(calc(-50% - 20px), calc(-50% - 40px));
-  width: clamp(80px, 7.5vw, 115px);
-  height: clamp(80px, 7.5vw, 115px);
-  min-width: clamp(80px, 7.5vw, 115px);
-  min-height: clamp(80px, 7.5vw, 115px);
+  width: var(--spin-cta-size);
+  height: var(--spin-cta-size);
+  min-width: var(--spin-cta-size);
+  min-height: var(--spin-cta-size);
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .floatingGameDock .spinCta:hover {
@@ -3650,12 +3653,12 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .floatingGameDock .ouroborosRing {
-  width: clamp(70px, 6vw, 95px);
-  height: clamp(70px, 6vw, 95px);
+  width: calc(var(--spin-cta-size) * 0.86);
+  height: calc(var(--spin-cta-size) * 0.86);
 }
 
 .floatingGameDock .spinCore {
-  inset: clamp(19px, 2.7vw, 26px);
+  inset: calc(var(--spin-cta-size) * 0.233);
 }
 
 .dockStopButton {
