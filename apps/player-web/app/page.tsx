@@ -106,8 +106,13 @@ export default function HomePage() {
   const fullHistory = slot.history.slice(0, 10);
   const fullWalletHistory = walletTransactions.slice(0, 10);
   const latestRound = slot.lastResult;
-  const bonusModeActive = Boolean(slot.gameState.bonusState);
-  const bonusFrameActive = Boolean(slot.gameState.bonusState || slot.lastResult?.bonusTriggered);
+  const bonusAnnouncementVisible = Boolean(slot.bonusAnnouncement);
+  const bonusModeActive =
+    Boolean(slot.gameState.bonusState) &&
+    !slot.bonusEntryPending &&
+    !bonusAnnouncementVisible;
+  const visibleBonusSpins = bonusModeActive ? slot.activeBonusSpins : 0;
+  const bonusFrameActive = bonusModeActive;
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
 
   useEffect(() => {
@@ -196,6 +201,11 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (slot.bonusEntryPending) {
+        event.preventDefault();
+        return;
+      }
+
       const isSpaceHotkey = event.code === "Space" || event.key === " ";
       const isFastSpinHotkey = event.code === "KeyF" || event.key.toLowerCase() === "f";
 
@@ -311,6 +321,10 @@ export default function HomePage() {
   };
 
   const spinFromInputIntent = () => {
+    if (slot.bonusEntryPending) {
+      return;
+    }
+
     if (slot.bonusAnnouncementLocked) {
       return;
     }
@@ -354,13 +368,13 @@ export default function HomePage() {
 
       <section className="gameArea machineStage">
         <LeftSupportRail
-          activeBonusSpins={slot.activeBonusSpins}
+          activeBonusSpins={visibleBonusSpins}
           balance={formatBalanceRoundedEur(wallet.balance)}
           balanceExact={formatMoneyCompactEur(wallet.balance)}
-          bonusActive={Boolean(slot.gameState.bonusState)}
+          bonusActive={bonusModeActive}
           cascades={latestRound?.cascades.length ?? 0}
           currentBet={formatMoneyCompactEur(slot.bet)}
-          freeSpins={slot.activeBonusSpins}
+          freeSpins={visibleBonusSpins}
           history={slot.history}
           meterCollected={slot.samsaraCollectedBets}
           meterContributionLog={slot.samsaraContributionLog}
@@ -391,7 +405,7 @@ export default function HomePage() {
 
               <PixiTempleBoard
                 board={board}
-                bonusActive={Boolean(slot.gameState.bonusState)}
+                bonusActive={bonusModeActive}
                 phaseMessage={slot.phaseMessage}
                 result={slot.lastResult}
                 spinPhase={slot.spinPhase}
@@ -401,8 +415,8 @@ export default function HomePage() {
         </div>
 
         <RightOperatorRail
-          activeBonusSpins={slot.activeBonusSpins}
-          bonusActive={Boolean(slot.gameState.bonusState)}
+          activeBonusSpins={visibleBonusSpins}
+          bonusActive={bonusModeActive}
         />
       </section>
 

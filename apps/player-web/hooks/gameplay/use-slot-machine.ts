@@ -33,7 +33,7 @@ const QUICK_AUTOSPIN_OPTIONS = [10, 25, 50, 100];
 const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
 const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
-const BONUS_ENTRY_CINEMATIC_DELAY_MS = 1100;
+const BONUS_ENTRY_CINEMATIC_DELAY_MS = 0;
 const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 1400;
 const BONUS_SUMMARY_AUTO_DISMISS_MS = 1800;
 const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 1400;
@@ -412,6 +412,7 @@ export function useSlotMachine() {
   const [spinPhase, setSpinPhase] = useState<SpinPhase>("IDLE");
   const [phaseMessage, setPhaseMessage] = useState("Awaiting the next ritual.");
   const [spinPulseKey, setSpinPulseKey] = useState(0);
+  const [bonusEntryPending, setBonusEntryPending] = useState(false);
   const [bonusAnnouncement, setBonusAnnouncement] = useState<BonusAnnouncementEntry | null>(null);
   const [bonusAnnouncementLocked, setBonusAnnouncementLocked] = useState(false);
   const [bonusSummary, setBonusSummary] = useState<BonusSummaryEntry | null>(null);
@@ -695,6 +696,7 @@ const validateAutospinCount = useCallback(
     canAffordSpin &&
     !betValidationCheck.message &&
     spinPhase === "IDLE" &&
+    !bonusEntryPending &&
     !bonusAnnouncement &&
     !bonusSummary &&
     !winPresentation;
@@ -805,6 +807,8 @@ const validateAutospinCount = useCallback(
       const bonusPhaseHoldMs = shouldRunBonusEntryCue
         ? PRESENTATION_TIMINGS.bonusTrigger
         : 0;
+
+      setBonusEntryPending(bonusEntryTransition);
 
       // Extra time to keep phase schedule in sync with the board's per-cascade animation loop.
       // Board step = boardDrop + winHighlight + cascadeDrop + 110ms buffer.
@@ -1009,7 +1013,7 @@ const validateAutospinCount = useCallback(
   }, [applyRoundResult, availableBalance, scheduleRoundFeedback]);
 
   const spin = useCallback(() => {
-    if (bonusAnnouncement || bonusSummary) {
+    if (bonusEntryPending || bonusAnnouncement || bonusSummary) {
       return;
     }
 
@@ -1022,14 +1026,14 @@ const validateAutospinCount = useCallback(
     setAutoSpinRemaining(0);
     setBetValidationMessage("");
     void runSpin();
-  }, [applyManualBet, bonusAnnouncement, bonusSummary, runSpin]);
+  }, [applyManualBet, bonusAnnouncement, bonusEntryPending, bonusSummary, runSpin]);
 
   const startAutoSpin = useCallback(() => {
     if (!applyManualBet()) {
       return;
     }
 
-    if (spinPhase !== "IDLE" || bonusAnnouncement || bonusSummary || winPresentation) {
+    if (spinPhase !== "IDLE" || bonusEntryPending || bonusAnnouncement || bonusSummary || winPresentation) {
       if (bonusSummary) {
         setAutospinValidationMessage("Close the bonus summary before starting autospin.");
         return;
@@ -1054,6 +1058,7 @@ const validateAutospinCount = useCallback(
     applyManualBet,
     applyManualAutospinCount,
     bonusAnnouncement,
+    bonusEntryPending,
     bonusSummary,
     spinPhase,
     winPresentation
@@ -1064,7 +1069,7 @@ const validateAutospinCount = useCallback(
       return;
     }
 
-    if (spinPhase !== "IDLE" || bonusAnnouncement || bonusSummary || winPresentation) {
+    if (spinPhase !== "IDLE" || bonusEntryPending || bonusAnnouncement || bonusSummary || winPresentation) {
       if (bonusSummary) {
         setAutospinValidationMessage("Close the bonus summary before starting autospin.");
         return;
@@ -1079,7 +1084,7 @@ const validateAutospinCount = useCallback(
     setAutospinStopRequested(false);
     setAutoSpinRemaining(Number.POSITIVE_INFINITY);
     setAutospinValidationMessage("Autospin running until stop or insufficient balance.");
-  }, [applyManualBet, bonusAnnouncement, bonusSummary, spinPhase, winPresentation]);
+  }, [applyManualBet, bonusAnnouncement, bonusEntryPending, bonusSummary, spinPhase, winPresentation]);
 
   const stopAutoSpin = useCallback(() => {
     if (!isAutoSpinning) {
@@ -1102,6 +1107,7 @@ const validateAutospinCount = useCallback(
     if (
       !isAutoSpinning ||
       spinPhase !== "IDLE" ||
+      bonusEntryPending ||
       bonusAnnouncement ||
       bonusSummary ||
       winPresentation
@@ -1135,6 +1141,7 @@ const validateAutospinCount = useCallback(
     autoSpinRemaining,
     autospinStopRequested,
     bonusAnnouncement,
+    bonusEntryPending,
     bonusSummary,
     isAutoSpinning,
     runSpin,
@@ -1261,6 +1268,7 @@ const validateAutospinCount = useCallback(
 
     bonusAnnouncementShownAtRef.current = null;
     setBonusAnnouncementLocked(false);
+    setBonusEntryPending(false);
     setBonusAnnouncement(null);
   }, [bonusAnnouncement, bonusAnnouncementLocked]);
 
@@ -1325,6 +1333,7 @@ const validateAutospinCount = useCallback(
     setRequestedAutospinCount(DEFAULT_AUTOSPIN_COUNT);
     setAutospinCountInput(String(DEFAULT_AUTOSPIN_COUNT));
     setAutospinValidationMessage("");
+    setBonusEntryPending(false);
     setBonusAnnouncement(null);
     setBonusAnnouncementLocked(false);
     setBonusSummary(null);
@@ -1399,6 +1408,7 @@ const validateAutospinCount = useCallback(
     canStartAutospin:
       !validateAutospinCount(requestedAutospinCount) &&
       !areBetControlsLocked &&
+      !bonusEntryPending &&
       !bonusAnnouncement &&
       !bonusSummary &&
       !winPresentation &&
@@ -1437,6 +1447,7 @@ const validateAutospinCount = useCallback(
     phaseMessage: displayPhaseMessage,
     needsDepositPrompt,
     spinPulseKey,
+    bonusEntryPending,
     bonusAnnouncement,
     bonusAnnouncementLocked,
     dismissBonusAnnouncement,

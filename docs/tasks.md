@@ -110,6 +110,14 @@
   - Stabilized admin live analytics polling (`GameStatsViewer`): replaced overlapping interval fetches with single-flight timeout/backoff polling and improved offline/error handling to reduce load/fail flapping.
   - Added admin one-click `Sky Opens` QA preview card: button opens the bonus-entry window directly for deterministic visual/pacing checks.
   - Hardened `Sky Opens` announcement lock: enforced `1400ms` mandatory-visibility path with keyboard/spin-intent blocking and lock-layer interception while banner is locked.
+  - Rejected timing hypothesis corrected: the banner issue was not only input skip. The real flow bug was that the bonus announcement reveal delay was longer than the trigger-phase hold, so `ROUND_END/IDLE` and bonus-shell activation could happen before the banner was shown.
+  - Follow-up gating fix: added explicit `bonusEntryPending` ownership so the UI freezes from trigger resolution until the banner has been shown and closed, instead of letting bonus-mode visuals or controls become active in the gap before banner render.
+  - Code change:
+    - `apps/player-web/hooks/gameplay/use-slot-machine.ts`
+      - removed the extra bonus-entry cinematic reveal delay so the announcement fires at the trigger point.
+    - `apps/player-web/app/page.tsx`
+      - bonus visuals and free-spin shell state are now visually suppressed while `bonusAnnouncement` is visible, so the player sees the entry banner before the bonus shell turns on.
+  - Verification target: on the exact spin that reaches `17` Samsara, the `Sky Opens` banner must appear before any visible bonus-mode shell transition.
   - Intent: stop `Sky Opens` `BonusAnnouncement` from being skipped by unintended input paths while preserving the deliberate fast-key exception on `F`.
   - Hypothesis: the banner was not controlled by one owner; global keyboard handling, focused spin-button keyboard handling, and presentation dismiss callbacks were overlapping.
   - Code change:
