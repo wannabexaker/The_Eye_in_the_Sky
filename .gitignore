@@ -3,7 +3,9 @@ node_modules
 dist
 .turbo
 coverage
-assets/
+
+# Working assets (local development only, never commit)
+/assets/
 
 # TypeScript incremental/build artifacts
 *.tsbuildinfo
