@@ -1,6 +1,9 @@
 import type { GameConfig, GameState } from "./types";
 
-export type GameMathProfileId = "legacy_v1_3" | "math_base_v2_0";
+export type GameMathProfileId =
+  | "legacy_v1_3"
+  | "math_base_v2_0"
+  | "constellation_simple_v0_1";
 
 export type GameConfigProfile = {
   id: GameMathProfileId;
@@ -17,27 +20,34 @@ const cloneGameConfig = (config: GameConfig): GameConfig => ({
     payouts: { ...entry.payouts }
   })),
   cascadeMultiplierLadder: [...config.cascadeMultiplierLadder],
-  winMultiplierOptions: [...config.winMultiplierOptions]
+  scatterRewards: config.scatterRewards.map((entry) => ({ ...entry })),
+  winMultiplierOptions: [...config.winMultiplierOptions],
+  multiplierValueWeights: config.multiplierValueWeights.map((entry) => ({ ...entry }))
 });
 
 export const legacyGameConfig: GameConfig = {
   gameKey: "the-eye-in-the-sky",
   version: "eye-sky-math-v1.3",
+  variantId: "main_cluster",
   targetRtp: 0.955,
   volatility: "medium",
   rows: 5,
   cols: 6,
   visibleLines: 5,
   totalCells: 30,
+  evaluationMode: "cluster",
   clusterDirections: "orthogonal",
   gravity: "top-down",
   clusterThreshold: 4,
   maxCascadeSteps: 12,
   cascadeMultiplierLadder: [1, 1.25, 1.5, 2, 2.5],
+  bonusTriggerMode: "meter",
   bonusMeterTarget: 17,
   bonusSpinsAwarded: 7,
+  scatterRewards: [],
   winMultiplierOptions: [1, 2, 3],
   maxBonusMultiplier: 4,
+  multiplierValueWeights: [],
   symbolWeights: [
     { symbol: "ashen_sigil", weight: 14.5 },
     { symbol: "broken_halo", weight: 13.8 },
@@ -67,21 +77,26 @@ export const legacyGameConfig: GameConfig = {
 export const mathBaseV2GameConfig: GameConfig = {
   gameKey: "the-eye-in-the-sky",
   version: "eye-sky-math-v2.0",
+  variantId: "main_cluster",
   targetRtp: 0.954,
   volatility: "medium",
   rows: 5,
   cols: 6,
   visibleLines: 5,
   totalCells: 30,
+  evaluationMode: "cluster",
   clusterDirections: "orthogonal",
   gravity: "top-down",
   clusterThreshold: 4,
   maxCascadeSteps: 12,
   cascadeMultiplierLadder: [1, 1.2, 1.45, 1.9, 2.35],
+  bonusTriggerMode: "meter",
   bonusMeterTarget: 17,
   bonusSpinsAwarded: 7,
+  scatterRewards: [],
   winMultiplierOptions: [1, 2, 3],
   maxBonusMultiplier: 4,
+  multiplierValueWeights: [],
   symbolWeights: [
     { symbol: "ashen_sigil", weight: 14.8 },
     { symbol: "broken_halo", weight: 14.1 },
@@ -108,6 +123,80 @@ export const mathBaseV2GameConfig: GameConfig = {
   ]
 };
 
+export const constellationSimpleGameConfig: GameConfig = {
+  gameKey: "the-eye-in-the-sky",
+  version: "eye-sky-constellation-v0.1",
+  variantId: "constellation_simple",
+  targetRtp: 0.952,
+  volatility: "high",
+  rows: 5,
+  cols: 6,
+  visibleLines: 5,
+  totalCells: 30,
+  evaluationMode: "count_anywhere",
+  clusterDirections: "orthogonal",
+  gravity: "top-down",
+  clusterThreshold: 8,
+  maxCascadeSteps: 12,
+  cascadeMultiplierLadder: [1],
+  bonusTriggerMode: "scatter",
+  bonusMeterTarget: 17,
+  bonusSpinsAwarded: 7,
+  scatterRewards: [
+    { count: 4, payoutMultiplier: 1, freeSpinsAwarded: 7 },
+    { count: 5, payoutMultiplier: 4, freeSpinsAwarded: 10 },
+    { count: 6, payoutMultiplier: 20, freeSpinsAwarded: 15 }
+  ],
+  winMultiplierOptions: [1, 2, 3],
+  maxBonusMultiplier: 1,
+  multiplierValueWeights: [
+    { value: 2, weight: 24000 },
+    { value: 3, weight: 19000 },
+    { value: 4, weight: 15000 },
+    { value: 5, weight: 11000 },
+    { value: 6, weight: 7500 },
+    { value: 7, weight: 5500 },
+    { value: 8, weight: 4200 },
+    { value: 10, weight: 3300 },
+    { value: 12, weight: 2600 },
+    { value: 15, weight: 2000 },
+    { value: 20, weight: 1550 },
+    { value: 25, weight: 1150 },
+    { value: 30, weight: 850 },
+    { value: 40, weight: 550 },
+    { value: 50, weight: 350 },
+    { value: 75, weight: 180 },
+    { value: 100, weight: 100 },
+    { value: 150, weight: 55 },
+    { value: 200, weight: 28 },
+    { value: 300, weight: 12, bonusOnly: true },
+    { value: 500, weight: 4, bonusOnly: true },
+    { value: 1000, weight: 1, bonusOnly: true }
+  ],
+  symbolWeights: [
+    { symbol: "ashen_sigil", weight: 16 },
+    { symbol: "broken_halo", weight: 15.1 },
+    { symbol: "ritual_dagger", weight: 14.1 },
+    { symbol: "sealed_scroll", weight: 13.5 },
+    { symbol: "seraphim_feather", weight: 9.7 },
+    { symbol: "burning_crown", weight: 7.3 },
+    { symbol: "ophidian_relic", weight: 5.3 },
+    { symbol: "celestial_gate", weight: 3.8 },
+    { symbol: "seraphim_eye", weight: 0.9 },
+    { symbol: "samsara", weight: 1.6 }
+  ],
+  paytable: [
+    { symbol: "ashen_sigil", payouts: { 8: 0.2643, 10: 0.659, 12: 1.5723 } },
+    { symbol: "broken_halo", payouts: { 8: 0.3145, 10: 0.7861, 12: 1.8264 } },
+    { symbol: "ritual_dagger", payouts: { 8: 0.3947, 10: 0.94, 12: 2.2211 } },
+    { symbol: "sealed_scroll", payouts: { 8: 0.465, 10: 1.1005, 12: 2.609 } },
+    { symbol: "seraphim_feather", payouts: { 8: 0.7259, 10: 1.8264, 12: 4.7132 } },
+    { symbol: "burning_crown", payouts: { 8: 1.1005, 10: 2.7463, 12: 6.8107 } },
+    { symbol: "ophidian_relic", payouts: { 8: 1.6925, 10: 4.1812, 12: 10.4496 } },
+    { symbol: "celestial_gate", payouts: { 8: 2.482, 10: 6.2684, 12: 15.6711 } }
+  ]
+};
+
 const profileRegistry: Record<GameMathProfileId, GameConfigProfile> = {
   legacy_v1_3: {
     id: "legacy_v1_3",
@@ -120,6 +209,12 @@ const profileRegistry: Record<GameMathProfileId, GameConfigProfile> = {
     label: "Math Base v2.0",
     isLegacy: false,
     config: mathBaseV2GameConfig
+  },
+  constellation_simple_v0_1: {
+    id: "constellation_simple_v0_1",
+    label: "Constellation Simple v0.1",
+    isLegacy: false,
+    config: constellationSimpleGameConfig
   }
 };
 

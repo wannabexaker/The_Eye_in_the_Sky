@@ -22,7 +22,73 @@ const collectSymbolCells = (board: SymbolId[][], symbol: SymbolId): ClusterCell[
   return cells;
 };
 
-export const applyModifierSymbols = (
+const pickWeightedMultiplierValue = (
+  config: GameConfig,
+  mode: "base" | "bonus",
+  random: () => number
+): number => {
+  const options = config.multiplierValueWeights.filter(
+    (entry) => mode === "bonus" || !entry.bonusOnly
+  );
+
+  if (options.length === 0) {
+    return 1;
+  }
+
+  const totalWeight = options.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = random() * totalWeight;
+
+  for (const entry of options) {
+    roll -= entry.weight;
+    if (roll <= 0) {
+      return entry.value;
+    }
+  }
+
+  return options[options.length - 1]?.value ?? 1;
+};
+
+const resolveConstellationMultiplierValues = (
+  config: GameConfig,
+  mode: "base" | "bonus",
+  eyeCount: number,
+  random: () => number
+) => {
+  const values = Array.from({ length: eyeCount }, () =>
+    pickWeightedMultiplierValue(config, mode, random)
+  );
+
+  const extremeValue = values.find((value) => value >= 500);
+  if (extremeValue) {
+    return [extremeValue];
+  }
+
+  const highValues = values.filter((value) => value >= 100).sort((a, b) => b - a);
+  const lowValues = values.filter((value) => value < 100);
+  const normalizedValues =
+    highValues.length > 1 ? [highValues[0], ...lowValues] : values;
+
+  const cappedTotal = Math.min(
+    1000,
+    normalizedValues.reduce((sum, value) => sum + value, 0)
+  );
+
+  return [cappedTotal];
+};
+
+const getScatterReward = (config: GameConfig, scatterCount: number) => {
+  let matched = null as (typeof config.scatterRewards)[number] | null;
+
+  for (const reward of config.scatterRewards) {
+    if (scatterCount >= reward.count) {
+      matched = reward;
+    }
+  }
+
+  return matched;
+};
+
+const applyMainModifierSymbols = (
   board: SymbolId[][],
   config: GameConfig,
   state: GameState,
@@ -34,6 +100,7 @@ export const applyModifierSymbols = (
   board: SymbolId[][];
   state: GameState;
   events: ModifierEvent[];
+  settleWinMultiplier: number;
 } => {
   const nextBoard = cloneBoard(board);
   const nextState: GameState = {
@@ -90,7 +157,7 @@ export const applyModifierSymbols = (
       // and avoid awarding additional free-spin bundles from the same resolved spin.
       if (nextState.bonusState) {
         nextState.bonusMeter = config.bonusMeterTarget;
-        return { board: nextBoard, state: nextState, events };
+        return { board: nextBoard, state: nextState, events, settleWinMultiplier: 1 };
       }
 
       const bonusMeter = nextState.bonusMeter + samsaraCells.length;
@@ -172,5 +239,128 @@ export const applyModifierSymbols = (
     });
   }
 
-  return { board: nextBoard, state: nextState, events };
+  return { board: nextBoard, state: nextState, events, settleWinMultiplier: 1 };
+};
+
+const applyConstellationModifierSymbols = (
+  board: SymbolId[][],
+  config: GameConfig,
+  state: GameState,
+  bet: number,
+  mode: "base" | "bonus",
+  cascadeIndex: number,
+  random: () => number
+): {
+  board: SymbolId[][];
+  state: GameState;
+  events: ModifierEvent[];
+  settleWinMultiplier: number;
+} => {
+  const nextBoard = cloneBoard(board);
+  const nextState: GameState = {
+    ...state,
+    bonusState: state.bonusState ? { ...state.bonusState } : null
+  };
+  const events: ModifierEvent[] = [];
+
+  const seraphimEyeCells = collectSymbolCells(nextBoard, "seraphim_eye");
+  const multiplierValues = resolveConstellationMultiplierValues(
+    config,
+    mode,
+    seraphimEyeCells.length,
+    random
+  );
+  const settleWinMultiplier =
+    multiplierValues.length > 0
+      ? multiplierValues.reduce((sum, value) => sum + value, 0)
+      : 1;
+
+  if (seraphimEyeCells.length > 0) {
+    events.push({
+      type: "seraphim_eye_multiplier",
+      cascadeIndex,
+      source: "seraphim_eye",
+      awardedMultiplier: settleWinMultiplier,
+      cells: seraphimEyeCells
+    });
+  }
+
+  const samsaraCells = collectSymbolCells(nextBoard, "samsara");
+  const scatterReward = getScatterReward(config, samsaraCells.length);
+
+  if (scatterReward && samsaraCells.length >= scatterReward.count) {
+    const bonusBetPerSpin = Number(bet.toFixed(2));
+    const awardedBudget = Number((bonusBetPerSpin * scatterReward.freeSpinsAwarded).toFixed(2));
+    let awardedFreeSpins = 0;
+
+    if (mode === "base") {
+      if (!nextState.bonusState) {
+        nextState.bonusState = createBonusState(
+          {
+            ...config,
+            bonusSpinsAwarded: scatterReward.freeSpinsAwarded
+          },
+          bonusBetPerSpin,
+          awardedBudget,
+          bet
+        );
+        awardedFreeSpins = scatterReward.freeSpinsAwarded;
+      }
+    } else if (nextState.bonusState) {
+      nextState.bonusState.freeSpinsRemaining += scatterReward.freeSpinsAwarded;
+      nextState.bonusState.initialBonusBudget = Number(
+        (nextState.bonusState.initialBonusBudget + awardedBudget).toFixed(2)
+      );
+      nextState.bonusState.remainingBonusBudget = Number(
+        (nextState.bonusState.remainingBonusBudget + awardedBudget).toFixed(2)
+      );
+      nextState.bonusState.betPerSpin = Number(
+        (
+          nextState.bonusState.remainingBonusBudget /
+          Math.max(nextState.bonusState.freeSpinsRemaining, 1)
+        ).toFixed(2)
+      );
+      awardedFreeSpins = scatterReward.freeSpinsAwarded;
+    }
+
+    if (awardedFreeSpins > 0) {
+      events.push({
+        type: "samsara_bonus_trigger",
+        cascadeIndex,
+        source: "samsara",
+        freeSpinsAwarded: awardedFreeSpins,
+        collectedAmount: Number((bet * scatterReward.payoutMultiplier).toFixed(2)),
+        bonusBetPerSpin
+      });
+    }
+  }
+
+  return { board: nextBoard, state: nextState, events, settleWinMultiplier };
+};
+
+export const applyModifierSymbols = (
+  board: SymbolId[][],
+  config: GameConfig,
+  state: GameState,
+  bet: number,
+  mode: "base" | "bonus",
+  cascadeIndex: number,
+  random: () => number
+): {
+  board: SymbolId[][];
+  state: GameState;
+  events: ModifierEvent[];
+  settleWinMultiplier: number;
+} => {
+  return config.variantId === "constellation_simple"
+    ? applyConstellationModifierSymbols(
+        board,
+        config,
+        state,
+        bet,
+        mode,
+        cascadeIndex,
+        random
+      )
+    : applyMainModifierSymbols(board, config, state, bet, mode, cascadeIndex, random);
 };

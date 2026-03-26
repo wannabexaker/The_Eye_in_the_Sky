@@ -49,6 +49,12 @@ export type SpinResponseDto = {
   bonusStateAfter: BonusStateDto | null;
 };
 
+// Analytics Service
+export type {
+  AnalyticsQueryOptions,
+  AnalyticsService
+} from './analytics-service';
+
 export type GameMathProfileDto = {
   id: string;
   gameKey: string;

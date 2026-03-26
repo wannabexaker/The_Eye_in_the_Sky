@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-type GameMathProfileId = "legacy_v1_3" | "math_base_v2_0";
+type GameMathProfileId =
+  | "legacy_v1_3"
+  | "math_base_v2_0"
+  | "constellation_simple_v0_1";
 
 type GameConfig = {
   gameKey: string;
@@ -55,6 +58,21 @@ const PROFILE_REGISTRY: Record<
       cols: 6,
       bonusMeterTarget: 17,
       bonusSpinsAwarded: 8
+    }
+  },
+  constellation_simple_v0_1: {
+    id: "constellation_simple_v0_1",
+    label: "Constellation Simple v0.1",
+    isLegacy: false,
+    config: {
+      gameKey: "the-eye-in-the-sky",
+      version: "eye-sky-constellation-v0.1",
+      targetRtp: 0.952,
+      volatility: "high",
+      rows: 5,
+      cols: 6,
+      bonusMeterTarget: 17,
+      bonusSpinsAwarded: 7
     }
   }
 };

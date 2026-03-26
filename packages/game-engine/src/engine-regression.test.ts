@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { defaultGameConfig, initialGameState } from "./config";
+import {
+  defaultGameConfig,
+  getGameConfigProfile,
+  initialGameState
+} from "./config";
+import { resolveWins } from "./cluster-resolver";
 import { applyModifierSymbols } from "./modifier-engine";
 import { simulateSpins } from "./simulation";
 import { resolveSpin } from "./spin-resolver";
@@ -253,6 +258,61 @@ test("Samsara symbols collected during bonus are carried for the next bonus pool
 
   assert.equal(result.state.samsaraCollectedBets, 13);
   assert.equal(result.events.length, 0);
+});
+
+test("Constellation variant evaluates count-anywhere regular wins and scatter pay separately", () => {
+  const config = getGameConfigProfile("constellation_simple_v0_1").config;
+  const board = [
+    ["ashen_sigil", "ashen_sigil", "ashen_sigil", "ashen_sigil", "samsara", "samsara"],
+    ["ashen_sigil", "ashen_sigil", "ashen_sigil", "ashen_sigil", "samsara", "samsara"],
+    ["broken_halo", "broken_halo", "ritual_dagger", "ritual_dagger", "sealed_scroll", "sealed_scroll"],
+    ["seraphim_feather", "seraphim_feather", "burning_crown", "burning_crown", "ophidian_relic", "ophidian_relic"],
+    ["celestial_gate", "celestial_gate", "seraphim_eye", "ashen_sigil", "broken_halo", "ritual_dagger"]
+  ] as const;
+
+  const wins = resolveWins(board.map((row) => [...row]), config, 1);
+
+  assert.equal(wins.length, 2);
+  assert.deepEqual(
+    wins.map((win) => [win.symbol, win.size, win.payoutMultiplier]),
+    [
+      ["ashen_sigil", 9, 0.2643],
+      ["samsara", 4, 1]
+    ]
+  );
+});
+
+test("Constellation variant uses Samsara scatters to trigger bonus with the configured free-spin award", () => {
+  const config = getGameConfigProfile("constellation_simple_v0_1").config;
+  const board = Array.from({ length: config.rows }, (_, rowIndex) =>
+    Array.from({ length: config.cols }, (_, colIndex) => {
+      if (rowIndex === 0 && colIndex < 4) {
+        return "samsara" as const;
+      }
+
+      return "ashen_sigil" as const;
+    })
+  );
+
+  const state = initialGameState(1000);
+  const result = applyModifierSymbols(
+    board,
+    config,
+    state,
+    2,
+    "base",
+    1,
+    () => 0.5
+  );
+
+  assert.equal(result.events.length, 1);
+  const triggerEvent = result.events[0];
+  assert.equal(triggerEvent?.type, "samsara_bonus_trigger");
+  assert.ok(triggerEvent && triggerEvent.type === "samsara_bonus_trigger");
+  assert.equal(triggerEvent.freeSpinsAwarded, 7);
+  assert.ok(result.state.bonusState);
+  assert.equal(result.state.bonusState?.freeSpinsRemaining, 7);
+  assert.equal(result.state.bonusState?.betPerSpin, 2);
 });
 
 test("simulation output is deterministic, complete, and carries config version", () => {

@@ -1,4 +1,4 @@
-import { defaultGameConfig, initialGameState } from "./config";
+import { defaultGameConfig, initialGameState, resolveGameConfigProfile } from "./config";
 import { deriveSpinSeed } from "./rng";
 import { addSpinToAggregation, createEmptyAggregationState, finalizeMathReport } from "./math-report";
 import { resolveSpin } from "./spin-resolver";
@@ -60,13 +60,18 @@ export const runSimulationCli = () => {
   const bet = parseNumberArg("--bet", 20);
   const seed = parseNumberArg("--seed", 1337);
   const winMultiplier = parseNumberArg("--multiplier", 1);
+  const profileArgIndex = process.argv.indexOf("--profile");
+  const profileId = profileArgIndex === -1 ? undefined : process.argv[profileArgIndex + 1];
+  const selectedConfig = profileId
+    ? resolveGameConfigProfile(profileId).config
+    : defaultGameConfig;
 
   const report = simulateSpins({
     spins,
     bet,
     baseSeed: seed,
     winMultiplier
-  });
+  }, selectedConfig);
 
   console.log("The Eye in the Sky simulation");
   console.log(`Config version: ${report.configVersion}`);

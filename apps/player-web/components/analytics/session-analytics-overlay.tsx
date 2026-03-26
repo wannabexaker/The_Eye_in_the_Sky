@@ -8,7 +8,7 @@ SQL-ready: replace roundsLog prop with API fetch when server-side persistence is
 "use client";
 
 import type { RoundAnalyticsEntry } from "@eye/shared-types";
-import { useId, useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 
 const fmt2 = (n: number) => n.toFixed(2);
 const fmtPct = (n: number) => `${(n * 100).toFixed(2)}%`;
@@ -579,7 +579,32 @@ type Props = {
 };
 
 export function SessionAnalyticsOverlay({ rounds }: Props) {
-  const stats = useMemo(() => computeStats(rounds), [rounds]);
+  const [spinWindow, setSpinWindow] = useState<"all" | 1000 | 10000 | 50000 | 100000>("all");
+  const [timeWindow, setTimeWindow] = useState<"all" | "24h" | "7d" | "30d" | "90d">("all");
+
+  const filteredRounds = useMemo(() => {
+    let next = rounds;
+
+    if (timeWindow !== "all") {
+      const now = Date.now();
+      const msByWindow: Record<"24h" | "7d" | "30d" | "90d", number> = {
+        "24h": 24 * 60 * 60 * 1000,
+        "7d": 7 * 24 * 60 * 60 * 1000,
+        "30d": 30 * 24 * 60 * 60 * 1000,
+        "90d": 90 * 24 * 60 * 60 * 1000
+      };
+      const threshold = now - msByWindow[timeWindow];
+      next = next.filter((entry) => entry.timestamp >= threshold);
+    }
+
+    if (spinWindow !== "all") {
+      next = next.slice(-spinWindow);
+    }
+
+    return next;
+  }, [rounds, spinWindow, timeWindow]);
+
+  const stats = useMemo(() => computeStats(filteredRounds), [filteredRounds]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -600,6 +625,53 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
         </div>
       ) : (
         <>
+          <div>
+            <p className="eyebrow">Data Window</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
+              <label style={{ display: "grid", gap: 4 }}>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Spins</span>
+                <select
+                  className="controlSelect"
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "all") {
+                      setSpinWindow("all");
+                      return;
+                    }
+                    setSpinWindow(Number(value) as 1000 | 10000 | 50000 | 100000);
+                  }}
+                  value={spinWindow}
+                >
+                  <option value="all">All</option>
+                  <option value="1000">Last 1,000</option>
+                  <option value="10000">Last 10,000</option>
+                  <option value="50000">Last 50,000</option>
+                  <option value="100000">Last 100,000</option>
+                </select>
+              </label>
+
+              <label style={{ display: "grid", gap: 4 }}>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Time</span>
+                <select
+                  className="controlSelect"
+                  onChange={(event) => {
+                    setTimeWindow(event.target.value as "all" | "24h" | "7d" | "30d" | "90d");
+                  }}
+                  value={timeWindow}
+                >
+                  <option value="all">All time</option>
+                  <option value="24h">Last 24h</option>
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                </select>
+              </label>
+            </div>
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+              Showing {fmtNum(filteredRounds.length)} / {fmtNum(rounds.length)} tracked rounds.
+            </p>
+          </div>
+
           {/* Summary Cards */}
           {stats ? (
             <div>
@@ -678,9 +750,9 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
                 color: "rgba(255,255,255,0.3)"
               }}
             >
-              Cumulative RTP over last 500 rounds. Dashed = 95.5% target.
+              Cumulative RTP over the selected window (chart draws up to last 500 points). Dashed = 95.5% target.
             </p>
-            <RtpLineChart rounds={rounds} />
+            <RtpLineChart rounds={filteredRounds} />
           </div>
 
           {/* Win Tier Distribution */}
@@ -695,7 +767,7 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
             >
               BIG WIN: x5–x8 · HUGE WIN: x8–x14.9 · SUPER WIN: x14.9+
             </p>
-            <WinTierChart rounds={rounds} />
+            <WinTierChart rounds={filteredRounds} />
           </div>
 
           {/* Cascade Distribution */}
@@ -710,7 +782,7 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
             >
               How many cascade steps per spin (0 = no win).
             </p>
-            <CascadeHistogram rounds={rounds} />
+            <CascadeHistogram rounds={filteredRounds} />
           </div>
 
           {/* Balance History */}
@@ -723,9 +795,9 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
                 color: "rgba(255,255,255,0.3)"
               }}
             >
-              Last 500 rounds. Balance after each spin.
+              Selected window (chart draws up to last 500 points). Balance after each spin.
             </p>
-            <BalanceChart rounds={rounds} />
+            <BalanceChart rounds={filteredRounds} />
           </div>
 
           {/* CSV Export */}
@@ -739,15 +811,15 @@ export function SessionAnalyticsOverlay({ rounds }: Props) {
                 lineHeight: 1.5
               }}
             >
-              Download all {fmtNum(rounds.length)} rounds as CSV. Open in Excel
+              Download selected {fmtNum(filteredRounds.length)} rounds as CSV. Open in Excel
               for custom filtering, pivot tables, and distribution analysis.
             </p>
             <button
               className="welcomeButton compactPrimary"
-              onClick={() => exportToCsv(rounds)}
+              onClick={() => exportToCsv(filteredRounds)}
               type="button"
             >
-              Download CSV ({fmtNum(rounds.length)} rounds)
+              Download CSV ({fmtNum(filteredRounds.length)} rounds)
             </button>
           </div>
         </>

@@ -20,6 +20,9 @@ export type SpecialSymbolFamily =
   | "panepoptis_ophthalmos";
 
 export type VolatilityLabel = "low" | "medium" | "high";
+export type GameVariantId = "main_cluster" | "constellation_simple";
+export type WinEvaluationMode = "cluster" | "count_anywhere";
+export type BonusTriggerMode = "meter" | "scatter";
 
 export type RngFn = () => number;
 
@@ -41,15 +44,29 @@ export type PaytableEntry = {
   payouts: Record<number, number>;
 };
 
+export type ScatterReward = {
+  count: number;
+  payoutMultiplier: number;
+  freeSpinsAwarded: number;
+};
+
+export type MultiplierValueWeight = {
+  value: number;
+  weight: number;
+  bonusOnly?: boolean;
+};
+
 export type GameConfig = {
   gameKey: string;
   version: string;
+  variantId: GameVariantId;
   targetRtp: number;
   volatility: VolatilityLabel;
   rows: number;
   cols: number;
   visibleLines: number;
   totalCells: number;
+  evaluationMode: WinEvaluationMode;
   clusterDirections: "orthogonal";
   gravity: "top-down";
   symbolWeights: WeightedSymbol[];
@@ -57,10 +74,13 @@ export type GameConfig = {
   clusterThreshold: number;
   maxCascadeSteps: number;
   cascadeMultiplierLadder: number[];
+  bonusTriggerMode: BonusTriggerMode;
   bonusMeterTarget: number;
   bonusSpinsAwarded: number;
+  scatterRewards: ScatterReward[];
   winMultiplierOptions: number[];
   maxBonusMultiplier: number;
+  multiplierValueWeights: MultiplierValueWeight[];
 };
 
 export type BonusState = {
@@ -97,6 +117,13 @@ export type ModifierEvent =
       source: "seraphim_eye";
       transformedCells: ClusterCell[];
       multiplierBoost: number;
+    }
+  | {
+      type: "seraphim_eye_multiplier";
+      cascadeIndex: number;
+      source: "seraphim_eye";
+      awardedMultiplier: number;
+      cells: ClusterCell[];
     }
   | {
       type: "ouroboros";
@@ -153,6 +180,7 @@ export type CascadeStep = {
   modifierEvents: ModifierEvent[];
   cascadeMultiplier: number;
   stickyMultiplier: number;
+  settleWinMultiplier: number;
   appliedWinMultiplier: number;
   stepWin: number;
   boardAfter: SymbolId[][];

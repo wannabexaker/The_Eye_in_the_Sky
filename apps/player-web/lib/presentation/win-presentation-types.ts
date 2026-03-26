@@ -6,9 +6,14 @@ Uses: use-slot-machine.ts and overlay components
 
 export type BonusAnnouncementEntry = {
   title: string;
+  heading?: string;
+  lead?: string;
   freeSpins: number;
   entryWin: number;
   sourceLabel: string;
+  freeSpinsLabel?: string;
+  modeLabel?: string;
+  modeValue?: string;
   continueLabel?: string;
 };
 
@@ -16,6 +21,7 @@ export type BonusSummaryEntry = {
   title: string;
   subtitle: string;
   totalWin: number;
+  totalWinLabel?: string;
   continueLabel?: string;
 };
 

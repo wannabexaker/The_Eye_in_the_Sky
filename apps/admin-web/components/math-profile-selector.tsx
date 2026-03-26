@@ -40,6 +40,14 @@ const FALLBACK_PROFILES: GameConfigProfile[] = [
     isLegacy: false,
     targetRtp: 0.954,
     volatility: "medium"
+  },
+  {
+    id: "constellation_simple_v0_1",
+    label: "Constellation Simple v0.1",
+    version: "eye-sky-constellation-v0.1",
+    isLegacy: false,
+    targetRtp: 0.952,
+    volatility: "high"
   }
 ];
 
@@ -111,7 +119,8 @@ export function MathProfileSelector() {
             version: profile.version,
             targetRtp: profile.targetRtp,
             volatility: profile.volatility,
-            bonusMeterTarget: profile.id === "legacy_v1_3" ? 16 : 17
+            bonusMeterTarget: profile.id === "legacy_v1_3" ? 16 : 17,
+            bonusSpinsAwarded: profile.id === "constellation_simple_v0_1" ? 7 : 8
           }
         };
       });

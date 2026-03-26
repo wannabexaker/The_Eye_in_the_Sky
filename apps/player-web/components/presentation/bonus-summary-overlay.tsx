@@ -32,7 +32,7 @@ export function BonusSummaryOverlay({
       <section aria-label={summary.title} className="winPresentationCard is-ack is-bonus-summary">
         <span className="winPresentationLabel">{summary.title}</span>
         <p className="winPresentationSubtitle">{summary.subtitle}</p>
-        <span className="bonusSummaryCaption">TOTAL BONUS WIN</span>
+        <span className="bonusSummaryCaption">{summary.totalWinLabel ?? "TOTAL BONUS WIN"}</span>
         <strong className="winPresentationAmount">{formatMoney(summary.totalWin)}</strong>
 
         <button

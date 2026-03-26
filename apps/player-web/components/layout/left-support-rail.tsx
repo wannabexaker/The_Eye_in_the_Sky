@@ -19,12 +19,18 @@ type LeftSupportRailProps = {
   freeSpins: number;
   activeBonusSpins: number;
   bonusActive: boolean;
+  bonusTriggerMode: "meter" | "scatter";
   phaseMessage: string;
   meterRatio: number;
   meterCurrent: number;
   meterCollected: number;
   meterContributionLog: number[];
   meterTarget: number;
+  scatterRewards: Array<{
+    count: number;
+    payoutMultiplier: number;
+    freeSpinsAwarded: number;
+  }>;
   history: SpinResult[];
   soundEnabled: boolean;
   fullscreenEnabled: boolean;
@@ -59,12 +65,14 @@ export function LeftSupportRail({
   freeSpins,
   activeBonusSpins,
   bonusActive,
+  bonusTriggerMode,
   phaseMessage,
   meterRatio,
   meterCurrent,
   meterCollected,
   meterContributionLog,
   meterTarget,
+  scatterRewards,
   history,
   soundEnabled,
   fullscreenEnabled,
@@ -248,26 +256,58 @@ export function LeftSupportRail({
         </div>
       </section>
 
-      <section
-        className="compactPanel supportBlock supportMeterBlock"
-        title={
-          bonusActive
-            ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
-            : "Fill the Samsara meter to trigger Sky Opens bonus spins."
-        }
-      >
-        <div className="panelHeader">
-          <p className="eyebrow">Samsara</p>
-        </div>
-        <SamsaraMeter
-          bonusActive={bonusActive}
-          collectedBets={meterCollected}
-          contributionLog={meterContributionLog}
-          current={meterCurrent}
-          meterRatio={meterRatio}
-          target={meterTarget}
-        />
-      </section>
+      {bonusTriggerMode === "scatter" ? (
+        <section
+          className="compactPanel supportBlock supportMeterBlock"
+          title={
+            bonusActive
+              ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
+              : "Samsara scatters pay separately and trigger Sky Opens on 4 or more."
+          }
+        >
+          <div className="panelHeader">
+            <p className="eyebrow">Samsara Scatter</p>
+          </div>
+          <p className="supportNote" title="Scatter pays separately from regular-symbol wins and opens the bonus on 4 or more.">
+            Scatter pays separately and opens Sky Opens on 4+.
+          </p>
+          <div className="supportHistory">
+            {scatterRewards.map((reward) => (
+              <div
+                className="supportHistoryRow"
+                key={`scatter-reward-${reward.count}`}
+                title={`${reward.count}+ Samsara scatters pay x${reward.payoutMultiplier} and award ${reward.freeSpinsAwarded} free spins.`}
+              >
+                <strong>{reward.count}+ scatters</strong>
+                <span>
+                  x{reward.payoutMultiplier} | {reward.freeSpinsAwarded} spins
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section
+          className="compactPanel supportBlock supportMeterBlock"
+          title={
+            bonusActive
+              ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
+              : "Fill the Samsara meter to trigger Sky Opens bonus spins."
+          }
+        >
+          <div className="panelHeader">
+            <p className="eyebrow">Samsara</p>
+          </div>
+          <SamsaraMeter
+            bonusActive={bonusActive}
+            collectedBets={meterCollected}
+            contributionLog={meterContributionLog}
+            current={meterCurrent}
+            meterRatio={meterRatio}
+            target={meterTarget}
+          />
+        </section>
+      )}
 
       <section
         className="compactPanel supportBlock supportHistoryBlock"

@@ -32,8 +32,10 @@ export function BonusWinOverlay({
       <section aria-label={announcement.title} className="overlayModal bonusWinModal">
         <header className="bonusWinHeader">
           <span className="winPresentationLabel">{announcement.title}</span>
-          <h2 className="bonusWinHeading">Sky Opens</h2>
-          <p className="bonusWinLead">The temple vault is open. Bonus sequence is now active.</p>
+          <h2 className="bonusWinHeading">{announcement.heading ?? "Sky Opens"}</h2>
+          <p className="bonusWinLead">
+            {announcement.lead ?? "The temple vault is open. Bonus sequence is now active."}
+          </p>
         </header>
 
         <div className="bonusWinBody">
@@ -44,16 +46,16 @@ export function BonusWinOverlay({
 
           <div className="bonusWinInfoGrid">
             <div className="bonusWinInfoRow">
-              <span>Free Spins</span>
+              <span>{announcement.freeSpinsLabel ?? "Free Spins"}</span>
               <strong>{announcement.freeSpins}</strong>
             </div>
             <div className="bonusWinInfoRow">
-              <span>Bonus Entry Win</span>
+              <span>{announcement.sourceLabel}</span>
               <strong>+{formatMoney(announcement.entryWin)}</strong>
             </div>
             <div className="bonusWinInfoRow">
-              <span>Mode</span>
-              <strong>Sky Opens Active</strong>
+              <span>{announcement.modeLabel ?? "Mode"}</span>
+              <strong>{announcement.modeValue ?? "Sky Opens Active"}</strong>
             </div>
           </div>
 

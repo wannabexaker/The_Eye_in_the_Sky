@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-23`
+- Last updated: `2026-03-26`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -515,6 +515,14 @@ and not only on naive width breakpoints.
 - This benchmark is recorded as a quality reference, not a direct copy target.
 - A dedicated design brief for the simpler Eye sub-variant now exists at `docs/variant-simple.md`.
 - Recommended working name for the first simple variant: `The Eye in the Sky: Constellation`.
+- The `Constellation` brief now includes a first-pass locked math direction:
+  - target RTP `95.00% - 95.40%`
+  - target volatility `medium-high`
+  - `count-anywhere` regular wins using `8+ / 10+ / 12+`
+  - `Samsara` as scatter
+  - `Seraphim Eye` as the only multiplier special
+  - ultra-rare multiplier tail up to `x1000`
+  - explicit guardrail that the simple variant must be implemented as a new isolated profile, not as a mutation of the current live math variants
 
 ### Current Logical Next Steps
 1. Stabilize the `1920x1080` board footprint in `main-board.css`.
@@ -528,6 +536,59 @@ and not only on naive width breakpoints.
    - `9:16`
 
 ## Change Log
+- `2026-03-26`
+  - Added SQL-ready analytics storage architecture in player-web with explicit service abstraction so persistence can move from localStorage to PostgreSQL without UI contract changes.
+  - Locked migration path for analytics persistence:
+    - Phase 1: local in-app retention and filtering
+    - Phase 2: API-backed PostgreSQL persistence with the same query/store contract
+  - Fixed integration blocker after abstraction rollout: corrected player-web analytics service import path so `hooks/use-analytics-service.ts` resolves the local storage implementation from `lib/analytics` during Next build/runtime.
+  - Locked the first explicit balancing contract for the simple `Constellation` sub-variant in `docs/variant-simple.md`.
+  - Product/math direction for `Constellation` is now:
+    - same shell and brand family as the main game
+    - `count-anywhere` regular wins on a `6x5` board
+    - only `3` regular pay bands (`8+ / 10+ / 12+`)
+    - `Samsara` as scatter and bonus trigger
+    - `Seraphim Eye` as the only active multiplier special in first pass
+    - first-pass multiplier ladder extending from low values (`2x`) to an ultra-rare top tail (`1000x`)
+    - target RTP `95.00% - 95.40%` with `medium-high` volatility
+  - Locked product rule for future implementation: the simple variant must be added as a third isolated profile with a variant-aware resolver path, without mutating the current `legacy_v1_3` or `math_base_v2_0` runtime behavior.
+  - Implemented the first isolated engine foundation for `Constellation`:
+    - added third math profile `constellation_simple_v0_1`
+    - added variant-aware engine config and win-resolution branching so the current main game continues to use its existing cluster path untouched
+    - added first-pass simple special mapping (`Samsara` scatter trigger/pay, `Seraphim Eye` additive multiplier symbol)
+    - exposed the new profile in admin/API config selectors for future rollout and simulation work
+  - Regression verification for the new engine foundation passed in `@eye/game-engine`:
+    - lint
+    - full engine test suite
+  - First `Constellation` simulation checkpoint confirms that the initial structural baseline is not yet shippable:
+    - `100000` spins at bet `1`
+    - achieved RTP only `~26.84%`
+    - conclusion: architecture is in place, but paytable, symbol weights, multiplier distribution, and scatter cadence still need dedicated tuning before any rollout
+  - Completed the first dedicated `Constellation` tuning pass and brought the simple variant into its intended first-pass RTP band.
+  - Verified tuned checkpoint:
+    - profile: `constellation_simple_v0_1`
+    - simulation: `300000` spins at bet `1`
+    - achieved RTP: `95.2529%`
+    - hit rate: `46.3120%`
+    - bonus trigger rate: `0.5906%`
+    - average bonus payout: `6.54`
+  - Added first player-web variant-awareness for `Constellation` so the product shell no longer misdescribes the simple variant:
+    - menu rules/help now switch to count-anywhere + scatter wording
+    - paytable table now labels the simple variant as `anywhere` instead of `connected`
+    - left support rail replaces the live meter block with a static `Samsara Scatter` rules block in the simple variant
+    - hook-level debug/board rules are now variant-aware
+  - Completed the first `Constellation` signoff simulation pass on the tuned profile:
+    - command: `corepack pnpm --filter @eye/game-engine simulate --profile constellation_simple_v0_1 --spins 1000000 --bet 1 --seed 1337`
+    - achieved RTP: `95.2358%`
+    - confidence interval: `94.6464% - 95.8252%`
+    - hit rate: `46.3143%`
+    - bonus trigger rate: `0.5908%`
+    - average bonus payout: `6.76`
+    - result: first-pass signoff is inside the target `95.00% - 95.40%` band, so the profile is no longer just a structural prototype
+  - Extended player-web `Constellation` support into active presentation copy:
+    - bonus-entry overlay now describes a scatter-triggered `Constellation` bonus instead of the main game's meter/budget language
+    - bonus-complete overlay now reads as `Constellation` completion
+    - win-presentation copy now uses `BOARD WIN` / `TUMBLE TOTAL` wording and explicit `Seraphim Eye` settle-multiplier copy in the simple variant
 - `2026-03-24`
   - Bonus economy model upgraded from fixed bonus stake to managed budget pool: bonus state now carries `initialBonusBudget`, `remainingBonusBudget`, and `preBonusBet`; exiting bonus restores the exact pre-bonus base bet.
   - Bonus bet control updated: during bonus, player may set per-spin bet within remaining `Samsara` budget; default remains equal split, and final bonus spin forces all-in on remaining budget to avoid stranded value.

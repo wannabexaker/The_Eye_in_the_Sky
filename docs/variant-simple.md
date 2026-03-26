@@ -1,10 +1,10 @@
 # Simple Variant Design
 
 ## Status
-- Phase: `research / design only`
+- Phase: `implemented / tuned / first-pass signoff`
 - Scope: `sub-variant inside The Eye in the Sky`
 - Purpose: `define a simpler, faster, count-anywhere variant that reuses the main game shell`
-- Last updated: `2026-03-19`
+- Last updated: `2026-03-26`
 
 ## Role Inside The Product
 `The Eye in the Sky` remains the main slot game and the premium flagship experience.
@@ -340,3 +340,251 @@ If the goal is a simpler and more immediately satisfying Eye variant, the best v
 - whether scatter should pay on `4 / 5 / 6` or only trigger bonus
 - whether the multiplier symbol should appear in both base and bonus at the same strength
 - whether the simple variant should support one optional alternate special symbol after the first pass
+
+## First-Pass Math Contract
+This section locks the first professional balancing target for implementation.
+
+These numbers are a **design contract**, not yet a certified math result.
+
+Actual RTP must be validated by simulation after implementation.
+
+### Target Envelope
+- target RTP: `95.00%` to `95.40%`
+- target volatility: `medium-high`
+- target hit frequency: lower than the current main Eye game, but with clearer perceived spikes
+- target max exposure: `x1000`
+- design rule: the variant may allow dramatic wins, but it must remain distribution-driven and must never depend on player loss history
+
+### RTP Allocation Direction
+Recommended first-pass allocation:
+- base regular symbol wins: `52%` to `58%`
+- multiplier-symbol contribution: `18%` to `24%`
+- free spins feature contribution: `18%` to `24%`
+- extreme multiplier layer (`150x+`): `1.5%` to `3.0%`
+
+Interpretation:
+- most RTP should still come from normal board outcomes
+- multipliers should be exciting, not the only source of value
+- top-end spikes must exist, but occupy a tightly controlled share of total EV
+
+## First-Pass Multiplier Model
+### Multiplier Symbol Role
+`Seraphim Eye` is the only active multiplier special in the first simple pass.
+
+Recommended behavior:
+- it lands as a dedicated multiplier symbol
+- if the settle produces any regular-symbol or scatter win, all visible multiplier symbols are collected
+- their values add together
+- the total is applied once to the settle win
+- the multiplier resets before the next tumble unless explicitly changed later by design
+
+This keeps the rule readable:
+- `win first`
+- `add all Eye multipliers`
+- `apply total once`
+
+### Recommended Multiplier Ladder
+Use this discrete ladder:
+- `2x`
+- `3x`
+- `4x`
+- `5x`
+- `6x`
+- `7x`
+- `8x`
+- `10x`
+- `12x`
+- `15x`
+- `20x`
+- `25x`
+- `30x`
+- `40x`
+- `50x`
+- `75x`
+- `100x`
+- `150x`
+- `200x`
+- `300x`
+- `500x`
+- `1000x`
+
+This is intentionally discrete.
+
+Do not use every intermediate value.
+
+The sparse ladder is easier to balance, easier to communicate, and safer for RTP control.
+
+### Recommended Relative Weights
+Use these as first-pass normalized weights:
+- `2x`: `24000`
+- `3x`: `19000`
+- `4x`: `15000`
+- `5x`: `11000`
+- `6x`: `7500`
+- `7x`: `5500`
+- `8x`: `4200`
+- `10x`: `3300`
+- `12x`: `2600`
+- `15x`: `2000`
+- `20x`: `1550`
+- `25x`: `1150`
+- `30x`: `850`
+- `40x`: `550`
+- `50x`: `350`
+- `75x`: `180`
+- `100x`: `100`
+- `150x`: `55`
+- `200x`: `28`
+- `300x`: `12`
+- `500x`: `4`
+- `1000x`: `1`
+
+Interpretation:
+- most multiplier appearances should cluster in the `2x` to `10x` region
+- `25x+` should feel rare
+- `100x+` should feel exceptional
+- `500x` and `1000x` must exist mainly as ultra-rare event layers, not as routine bonus outcomes
+
+### Safety Guardrails
+To prevent RTP runaway:
+- `1000x` should be allowed only in bonus mode
+- `500x` and `1000x` should not be allowed to combine with another `100x+` multiplier in the same settle
+- base-game multiplier values should normally stop at `50x`, with `75x` and `100x` allowed only at very low frequency if later simulation proves safe
+- a multiplier should only matter on a settle that already has a winning outcome
+- dead boards must not receive value from standalone multiplier landings
+
+## First-Pass Regular Symbol Paytable
+The simple variant should keep only `3` regular-symbol count bands:
+- `8-9`
+- `10-11`
+- `12+`
+
+Implementation note:
+- for engine simplicity, store them as thresholds `8`, `10`, and `12`
+- any count above the threshold pays the same band
+
+### Recommended Value Hierarchy
+The spread should be visibly wider than the main game.
+
+Recommended first-pass total-bet multipliers:
+
+| Symbol | 8+ | 10+ | 12+ |
+| --- | ---: | ---: | ---: |
+| Ashen Sigil | `0.10` | `0.25` | `0.60` |
+| Broken Halo | `0.12` | `0.30` | `0.70` |
+| Ritual Dagger | `0.15` | `0.36` | `0.85` |
+| Sealed Scroll | `0.18` | `0.42` | `1.00` |
+| Seraphim Feather | `0.28` | `0.70` | `1.80` |
+| Burning Crown | `0.42` | `1.05` | `2.60` |
+| Ophidian Relic | `0.65` | `1.60` | `4.00` |
+| Celestial Gate | `0.95` | `2.40` | `6.00` |
+
+These are intentionally conservative in the base layer.
+
+The variant's emotional power should come from:
+- whole-board count wins
+- tumbles
+- multiplier overlays
+- bonus spikes
+
+not from oversized unmultiplied base payouts.
+
+## First-Pass Scatter / Bonus Contract
+### Scatter
+`Samsara` is the scatter.
+
+Recommended first-pass scatter behavior:
+- `4` scatters: trigger bonus
+- `5` scatters: trigger bonus with upgraded start package
+- `6` scatters: trigger bonus with premium start package
+
+Recommended first-pass scatter pays:
+- `4`: `1.0x`
+- `5`: `4.0x`
+- `6`: `20.0x`
+
+Scatter pays should be separate from the regular-symbol table.
+
+### Free Spins Start Package
+Recommended first-pass free-spin awards:
+- `4` scatters -> `7` free spins
+- `5` scatters -> `10` free spins
+- `6` scatters -> `15` free spins
+
+Recommended bonus tuning rules:
+- bonus should contain a materially higher chance of multiplier symbols
+- `150x+` values should be primarily bonus-facing
+- retriggers, if allowed in first pass, should stay flat and simple
+
+### Meter Rule
+Recommended first-pass decision:
+- do **not** use the current main-game meter in the simple variant
+- hide it entirely or repurpose it later only if a future version truly needs it
+
+Reason:
+- the simple variant must feel instantly readable
+- a scatter-only trigger is more compatible with the intended benchmark structure
+
+## High-Win Philosophy
+The simple variant should absolutely allow dramatic screenshots and emotionally large moments.
+
+But it must do so cleanly:
+- a player may receive a very large multiplier over a very small base win
+- this can still produce a satisfying but RTP-safe payout
+- example logic:
+  - small symbol win worth `0.01`
+  - multiplier stack reaches `1000x`
+  - final payout = `10.00`
+
+This is valid and desirable **as long as** it comes from fixed weights and simulation-verified math.
+
+Do not introduce:
+- player-history steering
+- loss-recovery logic
+- dynamic compensation logic
+- hidden balancing based on recent session losses
+
+All balancing must come from static probabilities and transparent engine rules.
+
+## Implementation Isolation Contract
+When engineering starts:
+- current `legacy_v1_3` and `math_base_v2_0` must remain untouched in behavior
+- add a new isolated config/profile for the simple variant
+- gate it behind a variant-aware resolver path
+- keep the same shell, same art family, and same frontend layout ownership
+- only change variant-aware:
+  - evaluation logic
+  - active specials
+  - paytable/help copy
+  - symbol highlighting behavior
+  - bonus trigger behavior
+
+This protects the live main game from accidental regressions while the simple variant is being built.
+
+## Current Implementation Checkpoint
+- profile id: `constellation_simple_v0_1`
+- implementation status: engine-isolated and player-shell-aware
+- current locked evaluation mode: `count-anywhere`
+- current locked bonus trigger: `Samsara` scatter (`4 / 5 / 6`)
+- current locked multiplier special: `Seraphim Eye`
+
+### Verified First-Pass Signoff
+Verified with:
+- `corepack pnpm --filter @eye/game-engine test`
+- `corepack pnpm --filter @eye/game-engine simulate --profile constellation_simple_v0_1 --spins 1000000 --bet 1 --seed 1337`
+
+Current verified result:
+- RTP: `95.2358%`
+- confidence interval: `94.6464% - 95.8252%`
+- hit rate: `46.3143%`
+- bonus trigger rate: `0.5908%`
+- average bonus payout: `6.76`
+- max observed win in signoff sample: `391.76x bet`
+
+### Current UI Copy Contract
+The shared player shell remains the same, but the variant now requires different wording in active presentation surfaces:
+- menu/help/paytable copy must say `count-anywhere` and `scatter`, not cluster/meter
+- left rail must show `Samsara Scatter` rules instead of the live meter
+- bonus-entry overlay must describe a scatter-triggered `Constellation` bonus flow
+- bonus-complete overlay must read as `Constellation` completion, not generic main-game meter flow
+- round-win presentation should prefer `BOARD WIN` / `TUMBLE TOTAL` wording over connected-cluster language

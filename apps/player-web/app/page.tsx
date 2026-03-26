@@ -64,59 +64,112 @@ const symbolLabels: Record<string, string> = {
   panepoptis_ophthalmos: "Panepoptis Ophthalmos"
 };
 
-const paytableClusterSizes = Array.from(
+const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
+const paytableThresholds = Array.from(
   new Set(activeGameConfig.paytable.flatMap((entry) => Object.keys(entry.payouts).map(Number)))
 ).sort((left, right) => left - right);
+const simpleScatterSummary =
+  activeGameConfig.scatterRewards.length > 0
+    ? activeGameConfig.scatterRewards
+        .map((reward) => `${reward.count}+ -> ${reward.freeSpinsAwarded} spins`)
+        .join(" | ")
+    : `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`;
 
-const bonusRuleRows = [
-  {
-    label: "Board",
-    value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
-  },
-  {
-    label: "How wins break",
-    value: `${activeGameConfig.clusterThreshold}+ orthogonal cluster`
-  },
-  {
-    label: "Gravity",
-    value: activeGameConfig.gravity === "top-down" ? "Top-down symbol drop" : activeGameConfig.gravity
-  },
-  {
-    label: "Cascades",
-    value: `Continue while a paying win remains, up to ${activeGameConfig.maxCascadeSteps} steps`
-  },
-  {
-    label: "Cascade ladder",
-    value: activeGameConfig.cascadeMultiplierLadder.map((value) => `x${value}`).join(" -> ")
-  },
-  {
-    label: "Bonus trigger",
-    value: `${activeGameConfig.bonusMeterTarget} Samsara symbols fill the meter`
-  },
-  {
-    label: "Bonus award",
-    value: `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`
-  }
-] as const;
+const bonusRuleRows = isConstellationVariant
+  ? ([
+      {
+        label: "Board",
+        value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
+      },
+      {
+        label: "How wins pay",
+        value: `${activeGameConfig.clusterThreshold}+ matching symbols anywhere on the board`
+      },
+      {
+        label: "Pay bands",
+        value: paytableThresholds.map((value) => `${value}+`).join(" / ")
+      },
+      {
+        label: "Gravity",
+        value:
+          activeGameConfig.gravity === "top-down" ? "Top-down tumble refill" : activeGameConfig.gravity
+      },
+      {
+        label: "Cascades",
+        value: `Continue while a paying settle remains, up to ${activeGameConfig.maxCascadeSteps} steps`
+      },
+      {
+        label: "Bonus trigger",
+        value: "Samsara scatters pay separately and trigger Sky Opens on 4+"
+      },
+      {
+        label: "Bonus award",
+        value: simpleScatterSummary
+      }
+    ] as const)
+  : ([
+      {
+        label: "Board",
+        value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
+      },
+      {
+        label: "How wins break",
+        value: `${activeGameConfig.clusterThreshold}+ orthogonal cluster`
+      },
+      {
+        label: "Gravity",
+        value:
+          activeGameConfig.gravity === "top-down" ? "Top-down symbol drop" : activeGameConfig.gravity
+      },
+      {
+        label: "Cascades",
+        value: `Continue while a paying win remains, up to ${activeGameConfig.maxCascadeSteps} steps`
+      },
+      {
+        label: "Cascade ladder",
+        value: activeGameConfig.cascadeMultiplierLadder.map((value) => `x${value}`).join(" -> ")
+      },
+      {
+        label: "Bonus trigger",
+        value: `${activeGameConfig.bonusMeterTarget} Samsara symbols fill the meter`
+      },
+      {
+        label: "Bonus award",
+        value: `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`
+      }
+    ] as const);
 
-const specialSymbolRows: Array<{ symbol: SymbolId; effect: string }> = [
-  {
-    symbol: "seraphim_eye",
-    effect: "Converts 1-2 regular symbols into wilds. During bonus it can also add +1 sticky multiplier."
-  },
-  {
-    symbol: "samsara",
-    effect: "Each symbol adds +1 to the meter and collects the current bet into the bonus budget pool. Reaching the target opens Sky Opens."
-  },
-  {
-    symbol: "ouroboros",
-    effect: "During bonus, each hit adds +1 sticky multiplier up to the configured cap."
-  },
-  {
-    symbol: "panepoptis_ophthalmos",
-    effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
-  }
-];
+const specialSymbolRows: Array<{ symbol: SymbolId; effect: string }> = isConstellationVariant
+  ? [
+      {
+        symbol: "seraphim_eye",
+        effect:
+          "Acts as the only active multiplier special. If a settle wins, all visible Eye values add together and apply once to that settle."
+      },
+      {
+        symbol: "samsara",
+        effect:
+          "Pays separately as scatter. 4+ scatters trigger Sky Opens, with larger scatter counts awarding stronger start packages."
+      }
+    ]
+  : [
+      {
+        symbol: "seraphim_eye",
+        effect: "Converts 1-2 regular symbols into wilds. During bonus it can also add +1 sticky multiplier."
+      },
+      {
+        symbol: "samsara",
+        effect: "Each symbol adds +1 to the meter and collects the current bet into the bonus budget pool. Reaching the target opens Sky Opens."
+      },
+      {
+        symbol: "ouroboros",
+        effect: "During bonus, each hit adds +1 sticky multiplier up to the configured cap."
+      },
+      {
+        symbol: "panepoptis_ophthalmos",
+        effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
+      }
+    ];
 
 export default function HomePage() {
   const shellRef = useRef<HTMLElement | null>(null);
@@ -434,6 +487,7 @@ export default function HomePage() {
           activeBonusSpins={visibleBonusSpins}
           balance={formatBalanceRoundedEur(wallet.balance)}
           balanceExact={formatMoneyCompactEur(wallet.balance)}
+          bonusTriggerMode={activeGameConfig.bonusTriggerMode}
           bonusActive={bonusModeActive}
           cascades={latestRound?.cascades.length ?? 0}
           currentBet={formatMoneyCompactEur(slot.bet)}
@@ -444,6 +498,7 @@ export default function HomePage() {
           meterCurrent={slot.gameState.bonusMeter}
           meterRatio={slot.meterRatio}
           meterTarget={activeGameConfig.bonusMeterTarget}
+          scatterRewards={activeGameConfig.scatterRewards}
           onDeposit={() => toggleModal("depositOpen")}
           onToggleFullscreen={toggleFullscreen}
           onToggleHistory={toggleHistory}
@@ -598,8 +653,8 @@ export default function HomePage() {
               <thead>
                 <tr>
                   <th scope="col">Symbol</th>
-                  <th scope="col">Breaks On</th>
-                  {paytableClusterSizes.map((size) => (
+                  <th scope="col">{isConstellationVariant ? "Pays On" : "Breaks On"}</th>
+                  {paytableThresholds.map((size) => (
                     <th key={`paytable-head-${size}`} scope="col">
                       {size}+
                     </th>
@@ -618,8 +673,12 @@ export default function HomePage() {
                       />
                       <span>{symbolLabels[entry.symbol] ?? entry.symbol}</span>
                     </th>
-                    <td>{activeGameConfig.clusterThreshold}+ connected</td>
-                    {paytableClusterSizes.map((size) => {
+                    <td>
+                      {isConstellationVariant
+                        ? `${activeGameConfig.clusterThreshold}+ anywhere`
+                        : `${activeGameConfig.clusterThreshold}+ connected`}
+                    </td>
+                    {paytableThresholds.map((size) => {
                       const multiplier = entry.payouts[size];
                       return (
                         <td key={`${entry.symbol}-${size}`}>
@@ -691,9 +750,9 @@ export default function HomePage() {
                 <strong>Sky Opens Bonus</strong>
               </div>
               <p>
-                Triggering the meter awards {activeGameConfig.bonusSpinsAwarded} free spins. The collected Samsara pool becomes the
-                bonus budget, split across the bonus and spent per spin. Ouroboros and Panepoptis can raise the sticky bonus multiplier
-                up to x{activeGameConfig.maxBonusMultiplier}.
+                {isConstellationVariant
+                  ? `Samsara scatters open Sky Opens on 4+, with ${simpleScatterSummary}. During Sky Opens, Seraphim Eye is the main value spike and can build rare high-total settle multipliers while keeping the same shell and board flow.`
+                  : `Triggering the meter awards ${activeGameConfig.bonusSpinsAwarded} free spins. The collected Samsara pool becomes the bonus budget, split across the bonus and spent per spin. Ouroboros and Panepoptis can raise the sticky bonus multiplier up to x${activeGameConfig.maxBonusMultiplier}.`}
               </p>
             </article>
           </div>

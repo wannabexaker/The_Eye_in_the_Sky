@@ -44,6 +44,7 @@ const BIG_WIN_THRESHOLD = 5;
 const HUGE_WIN_THRESHOLD = 8;
 const SUPER_WIN_THRESHOLD = 14.9;
 const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+const IS_CONSTELLATION_VARIANT = activeGameConfig.variantId === "constellation_simple";
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -218,7 +219,20 @@ const hasMultiplierEvent = (result: SpinResult) =>
     )
   );
 
+const getFreeSpinLabel = () =>
+  IS_CONSTELLATION_VARIANT ? "Constellation Spins" : "Free Spins";
+
 const getBonusSpinStartMessage = (result: SpinResult) => {
+  if (IS_CONSTELLATION_VARIANT) {
+    if (result.mode !== "bonus" || !result.bonusStateBefore) {
+      return "Sky Opens answers with a Constellation free spin.";
+    }
+
+    return result.bonusStateBefore.freeSpinsRemaining === 1
+      ? "Final Constellation spin underway."
+      : "Sky Opens answers with another Constellation free spin.";
+  }
+
   if (result.mode !== "bonus" || !result.bonusStateBefore) {
     return "Sky Opens answers with a free spin.";
   }
@@ -244,6 +258,10 @@ const getBonusIdleMessage = (result: SpinResult) => {
     return "Awaiting the next ritual.";
   }
 
+  if (IS_CONSTELLATION_VARIANT) {
+    return `${result.nextState.bonusState.freeSpinsRemaining} Constellation spins remain in Sky Opens.`;
+  }
+
   const remainingSpins = result.nextState.bonusState.freeSpinsRemaining;
   const remainingBudget = roundCurrency(result.nextState.bonusState.remainingBonusBudget);
 
@@ -255,6 +273,10 @@ const getBonusIdleMessage = (result: SpinResult) => {
 };
 
 const getRoundEndMessage = (result: SpinResult) => {
+  if (IS_CONSTELLATION_VARIANT && result.mode === "bonus" && result.bet <= 0 && result.totalWin <= 0) {
+    return "Round complete. No bonus stake remained for this reveal.";
+  }
+
   if (result.mode === "bonus" && result.bet <= 0 && result.totalWin <= 0) {
     return "Round complete. No budget left: 0.00 x 100 = 0.00.";
   }
@@ -273,7 +295,7 @@ const getCascadeDetailRows = (result: SpinResult) => {
 
   return result.cascades.map((cascade, index) => {
     runningTotal += cascade.stepWin;
-    return `Cascade ${index + 1}: +${formatMoney(cascade.stepWin)} | Total ${formatMoney(runningTotal)}`;
+    return `${IS_CONSTELLATION_VARIANT ? "Tumble" : "Cascade"} ${index + 1}: +${formatMoney(cascade.stepWin)} | Total ${formatMoney(runningTotal)}`;
   });
 };
 
@@ -291,6 +313,21 @@ const buildBonusAnnouncement = (
 ): BonusAnnouncementEntry => {
   const entryBudget = result.nextState.bonusState?.initialBonusBudget ?? result.totalWin;
 
+  if (IS_CONSTELLATION_VARIANT) {
+    return {
+      title: "BONUS TRIGGERED",
+      heading: "Sky Opens",
+      lead: "Samsara scatters broke the seal. Constellation free spins are ready.",
+      freeSpins,
+      entryWin: entryBudget,
+      sourceLabel: "FREE-SPIN BANK",
+      freeSpinsLabel: getFreeSpinLabel(),
+      modeLabel: "Mode",
+      modeValue: "Constellation Active",
+      continueLabel: "Enter Bonus"
+    };
+  }
+
   return {
     title: "BONUS TRIGGERED",
     freeSpins,
@@ -305,6 +342,16 @@ const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
 
   if (finalBonusTotal === null) {
     return null;
+  }
+
+  if (IS_CONSTELLATION_VARIANT) {
+    return {
+      title: "CONSTELLATION COMPLETE",
+      subtitle: "SCATTER FREE SPINS FINISHED",
+      totalWin: finalBonusTotal,
+      totalWinLabel: "TOTAL CONSTELLATION WIN",
+      continueLabel: "Return to Base Game"
+    };
   }
 
   return {
@@ -342,11 +389,19 @@ const buildWinPresentation = (
   const inBonus = result.mode === "bonus";
   const subtitleParts = [
     `x${winMultiple.toFixed(2)} total`,
-    hasMultiplierEvent(result) ? `x${result.appliedWinMultiplier} multiplier applied` : null,
+    hasMultiplierEvent(result)
+      ? IS_CONSTELLATION_VARIANT
+        ? `Seraphim Eye settle x${result.appliedWinMultiplier}`
+        : `x${result.appliedWinMultiplier} multiplier applied`
+      : null,
     inBonus && result.bonusStateAfter
       ? `Bonus total ${formatMoney(result.bonusStateAfter.totalBonusWin)}`
       : null,
-    result.bonusTriggered ? `${activeGameConfig.bonusSpinsAwarded} free spins awarded` : null
+    result.bonusTriggered
+      ? IS_CONSTELLATION_VARIANT
+        ? `${activeGameConfig.bonusSpinsAwarded} scatter spins awarded`
+        : `${activeGameConfig.bonusSpinsAwarded} free spins awarded`
+      : null
   ].filter(Boolean);
 
   return {
@@ -354,18 +409,22 @@ const buildWinPresentation = (
     title: superWin
       ? "SUPER WIN"
       : hugeWin
-      ? "HUGE WIN"
-      : bigWin
-        ? "BIG WIN"
-      : inBonus
-        ? "FREE SPIN WIN"
-        : result.cascades.length > 1
-          ? "CASCADE TOTAL"
-          : "WIN",
+        ? "HUGE WIN"
+        : bigWin
+          ? "BIG WIN"
+          : inBonus
+            ? "FREE SPIN WIN"
+            : result.cascades.length > 1
+              ? IS_CONSTELLATION_VARIANT
+                ? "TUMBLE TOTAL"
+                : "CASCADE TOTAL"
+              : IS_CONSTELLATION_VARIANT
+                ? "BOARD WIN"
+                : "WIN",
     amount: result.totalWin,
     winMultiple,
     glowLevel,
-    subtitle: subtitleParts.join(" • ") || undefined,
+    subtitle: subtitleParts.join(" | ") || undefined,
     detailRows: getCascadeDetailRows(result),
     requireAcknowledgement:
       !autoContinueNeverStop &&
@@ -1486,6 +1545,24 @@ const validateAutospinCount = useCallback(
     needsDepositPrompt && spinPhase === "IDLE"
       ? `Balance too low. Minimum bet is ${formatMoney(MIN_BET)}. Deposit to continue.`
       : phaseMessage;
+  const boardRules =
+    activeGameConfig.variantId === "constellation_simple"
+      ? [
+          `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
+          `${activeGameConfig.clusterThreshold}+ matching symbols pay anywhere on the board`,
+          `Pay bands: ${Object.keys(activeGameConfig.paytable[0]?.payouts ?? {})
+            .map((value) => `${value}+`)
+            .join(" / ")}`,
+          "Samsara scatters pay separately and trigger Sky Opens on 4+",
+          `Sky Opens uses ${activeGameConfig.bonusSpinsAwarded}+ free spins with additive Seraphim Eye multipliers`
+        ]
+      : [
+          `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
+          `${activeGameConfig.clusterThreshold}+ adjacent symbols required for a win`,
+          `Cascades resolve up to ${activeGameConfig.maxCascadeSteps} steps per spin`,
+          "Winning symbols dissolve before cascade drops",
+          `Bonus mode: ${activeGameConfig.bonusSpinsAwarded} free spins with persistent multiplier carry`
+        ];
 
   return {
     bet,
@@ -1560,13 +1637,11 @@ const validateAutospinCount = useCallback(
     activeBonusSpins,
     samsaraCollectedBets: gameState.samsaraCollectedBets,
     samsaraContributionLog: gameState.samsaraContributionLog,
-    meterRatio: gameState.bonusMeter / activeGameConfig.bonusMeterTarget,
-    boardRules: [
-      `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
-      `${activeGameConfig.clusterThreshold}+ adjacent symbols required for a win`,
-      `Cascades resolve up to ${activeGameConfig.maxCascadeSteps} steps per spin`,
-      "Winning symbols dissolve before cascade drops",
-      `Bonus mode: ${activeGameConfig.bonusSpinsAwarded} free spins with persistent multiplier carry`
-    ]
+    meterRatio:
+      activeGameConfig.bonusTriggerMode === "meter"
+        ? gameState.bonusMeter / activeGameConfig.bonusMeterTarget
+        : 0,
+    boardRules
   };
 }
+

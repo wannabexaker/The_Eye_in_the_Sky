@@ -1,7 +1,7 @@
 import { cloneBoard, createBoard } from "./board";
 import { defaultGameConfig } from "./config";
 import { collapseBoard, removeWinningCells } from "./cascade-resolver";
-import { resolveClusters } from "./cluster-resolver";
+import { resolveWins } from "./cluster-resolver";
 import { createRuntimeSeed, createSeededRandom } from "./rng";
 import { applyModifierSymbols } from "./modifier-engine";
 import { calculateStepWin } from "./payout-engine";
@@ -54,6 +54,26 @@ const uniqueWinningCells = (wins: CascadeWin[]) => {
   return [...map.values()];
 };
 
+const collectRemovedCells = (wins: CascadeWin[], modifierEvents: ModifierEvent[]) => {
+  const map = new Map<string, { row: number; col: number }>();
+
+  for (const cell of uniqueWinningCells(wins)) {
+    map.set(`${cell.row}:${cell.col}`, cell);
+  }
+
+  for (const event of modifierEvents) {
+    if (event.type !== "seraphim_eye_multiplier") {
+      continue;
+    }
+
+    for (const cell of event.cells) {
+      map.set(`${cell.row}:${cell.col}`, cell);
+    }
+  }
+
+  return [...map.values()];
+};
+
 const buildSummaryLabel = (
   totalWin: number,
   appliedWinMultiplier: number,
@@ -68,7 +88,8 @@ const collectMultiplierTriggers = (
   cascadeIndex: number,
   cascadeMultiplier: number,
   modifierEvents: ModifierEvent[],
-  stepWin: number
+  stepWin: number,
+  settleWinMultiplier: number
 ): MultiplierTrigger[] => {
   const triggers: MultiplierTrigger[] = [];
 
@@ -88,6 +109,16 @@ const collectMultiplierTriggers = (
       cascadeIndex,
       multiplier: cascadeMultiplier,
       scope: "cascade",
+      contributionAmount: stepWin
+    });
+  }
+
+  if (settleWinMultiplier > 1) {
+    triggers.push({
+      source: "seraphim_eye",
+      cascadeIndex,
+      multiplier: settleWinMultiplier,
+      scope: "modifier",
       contributionAmount: stepWin
     });
   }
@@ -189,7 +220,7 @@ export const resolveSpin = (
     board = modifierResult.board;
     state = modifierResult.state;
 
-    const wins = resolveClusters(board, config, effectiveBet);
+    const wins = resolveWins(board, config, effectiveBet);
     if (wins.length === 0) {
       modifiersTriggered.push(...modifierResult.events);
       break;
@@ -198,10 +229,12 @@ export const resolveSpin = (
     const ladderIndex = Math.min(cascadeIndex, config.cascadeMultiplierLadder.length - 1);
     const cascadeMultiplier = config.cascadeMultiplierLadder[ladderIndex];
     const stickyMultiplier = state.bonusState?.stickyMultiplier ?? 1;
+    const settleWinMultiplier = Math.max(1, modifierResult.settleWinMultiplier);
     const stepWin = calculateStepWin(
       wins,
       cascadeMultiplier,
       stickyMultiplier,
+      settleWinMultiplier,
       appliedWinMultiplier
     );
 
@@ -211,7 +244,13 @@ export const resolveSpin = (
       ...win,
       cascadeIndex: cascadeIndex + 1,
       totalContribution: Number(
-        (win.payout * cascadeMultiplier * stickyMultiplier * appliedWinMultiplier).toFixed(2)
+        (
+          win.payout *
+          cascadeMultiplier *
+          stickyMultiplier *
+          settleWinMultiplier *
+          appliedWinMultiplier
+        ).toFixed(2)
       )
     }));
 
@@ -223,11 +262,12 @@ export const resolveSpin = (
         cascadeIndex + 1,
         cascadeMultiplier,
         modifierResult.events,
-        stepWin
+        stepWin,
+        settleWinMultiplier
       )
     );
 
-    const winningCells = uniqueWinningCells(wins);
+    const winningCells = collectRemovedCells(wins, modifierResult.events);
     const removed = removeWinningCells(board, winningCells);
     const boardAfter = collapseBoard(removed, config, random);
 
@@ -238,6 +278,7 @@ export const resolveSpin = (
       modifierEvents: modifierResult.events,
       cascadeMultiplier,
       stickyMultiplier,
+      settleWinMultiplier,
       appliedWinMultiplier,
       stepWin,
       boardAfter
@@ -287,10 +328,12 @@ export const resolveSpin = (
   const meterProgress: MeterProgress = {
     before: meterBefore,
     added:
-      state.bonusMeter >= meterBefore
+      config.bonusTriggerMode === "scatter"
+        ? 0
+        : state.bonusMeter >= meterBefore
         ? state.bonusMeter - meterBefore
         : state.bonusMeter + config.bonusMeterTarget - meterBefore,
-    after: state.bonusMeter,
+    after: config.bonusTriggerMode === "scatter" ? 0 : state.bonusMeter,
     target: config.bonusMeterTarget
   };
   const bonusTriggered = modifiersTriggered.some(

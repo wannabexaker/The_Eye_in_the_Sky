@@ -8,9 +8,11 @@ import type { RoundAnalyticsEntry, RoundAnalyticsTier } from "@eye/shared-types"
 import type { GameState, SpinResult } from "@eye/game-engine";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
 
 const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
 const SAMSARA_PROGRESS_TTL_MS = 60 * 60 * 1000;
+const ANALYTICS_MAX_ROUNDS = 10000;
 
 export type Wallet = {
   balance: number;
@@ -526,8 +528,10 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             : "win";
 
           const analyticsEntry: RoundAnalyticsEntry = {
-            id: createTransactionId(),
-            timestamp: Date.now(),
+            id: result.roundSummary.roundId,
+            timestamp: Number.isFinite(Date.parse(result.roundSummary.timestamp))
+              ? Date.parse(result.roundSummary.timestamp)
+              : Date.now(),
             bet: result.bet,
             win: result.totalWin,
             net: Number((result.totalWin - result.debugMetadata.chargedBet).toFixed(2)),
@@ -540,6 +544,12 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balanceAfter: result.balanceAfter
           };
 
+          const previousEntry = state.roundsLog[state.roundsLog.length - 1];
+          const nextRoundsLog =
+            previousEntry?.id === analyticsEntry.id
+              ? state.roundsLog
+              : [...state.roundsLog, analyticsEntry];
+
           return {
             wallet: {
               ...state.wallet,
@@ -551,7 +561,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
                 : null,
             gameStateSnapshot: result.nextState,
             walletTransactions: nextTransactions.slice(0, 50),
-            roundsLog: [...state.roundsLog, analyticsEntry].slice(-1000)
+            roundsLog: nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS)
           };
         }),
       resetSession: () =>
@@ -582,7 +592,11 @@ export const usePlayerUiStore = create<PlayerUiState>()(
     {
       name: PLAYER_STORE_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
-      onRehydrateStorage: () => () => {
+      onRehydrateStorage: () => (state) => {
+        // Initialize analytics service with persisted rounds
+        if (state?.roundsLog) {
+          initializeAnalyticsService(state.roundsLog);
+        }
         usePlayerUiStore.setState({ hasHydrated: true });
       },
       merge: (persistedState, currentState) => {

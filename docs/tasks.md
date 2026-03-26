@@ -14,6 +14,16 @@
 - `in_progress` Produce painted production art pack from approved SVG first-pass assets
 - `in_progress` Clean the active `player-web` shell CSS into single authoritative selector blocks with variable-driven breakpoint overrides
 - `in_progress` Define the first simple `count-anywhere` Eye variant so it can reuse the main shell without becoming a separate product
+- `done` Add a third isolated engine profile for the simple `Constellation` variant without mutating `legacy_v1_3` or `math_base_v2_0`
+- `done` Build a variant-aware win resolver so `Constellation` can evaluate `count-anywhere 8 / 10 / 12` wins while the current game keeps adjacency clusters
+- `done` Build first-pass `Constellation` special-symbol mapping:
+  - `Samsara` as scatter trigger / scatter pay
+  - `Seraphim Eye` as the only active multiplier special
+  - `Ouroboros` and `Panepoptis` disabled in first pass
+- `done` Add first-pass `Constellation` multiplier ladder and weight table from `docs/variant-simple.md`
+- `done` Run dedicated simulation for the `Constellation` profile and tune it into the target `95.00% - 95.40%` RTP band before any UI rollout
+- `done` Run a longer `Constellation` signoff simulation (`1M+` spins) before treating the first-pass math as locked
+- `done` Make player-web presentation copy variant-aware so `Constellation` overlays/help do not describe the main game's meter/cluster rules
 - `in_progress` Re-expand the center board so the playable frame fills the intended center-stage area between the left and right rails
 - `in_progress` Keep the mini-stat strip as an overlay so it no longer permanently consumes center-board height
 - `in_progress` Keep the board visually above the footer overlay while pushing the playable frame down to the bottom of the center playfield
@@ -100,6 +110,70 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-03-26`
+  - Locked the first explicit math contract for the simple `Constellation` variant in `docs/variant-simple.md`.
+  - Recorded first-pass balancing target:
+    - RTP `95.00% - 95.40%`
+    - volatility `medium-high`
+    - max exposure `x1000`
+  - Recorded first-pass regular-symbol structure:
+    - `count-anywhere`
+    - `8+ / 10+ / 12+` pay bands
+    - widened high/mid/low pay spread
+  - Recorded first-pass simple-special structure:
+    - `Samsara` as scatter
+    - `Seraphim Eye` as the only multiplier special
+    - `Ouroboros` and `Panepoptis` disabled in first pass
+  - Recorded first-pass multiplier ladder and normalized weight direction, including ultra-rare `300x / 500x / 1000x` tail values with guardrails to prevent RTP runaway.
+  - Locked implementation-isolation rule for the simple variant:
+    - do not mutate current `legacy_v1_3` / `math_base_v2_0`
+    - add the simple game as a third isolated profile with a variant-aware resolver path
+  - Implemented the first isolated engine foundation for `Constellation`:
+    - added third profile `constellation_simple_v0_1`
+    - added variant-aware config fields (`variantId`, `evaluationMode`, `bonusTriggerMode`, `scatterRewards`, `multiplierValueWeights`)
+    - added count-anywhere win evaluation path while preserving the existing cluster resolver for the main game
+    - added first-pass simple special handling:
+      - `Samsara` scatter pays and scatter-trigger bonus path
+      - `Seraphim Eye` additive multiplier symbol path
+      - no first-pass `Ouroboros` / `Panepoptis` activity in the simple profile
+    - exposed the new profile in admin/API config registries
+  - Verification:
+    - `corepack pnpm --filter @eye/game-engine lint`
+    - `corepack pnpm --filter @eye/game-engine test`
+    - both passed after adding targeted `Constellation` regression coverage
+  - First simulation checkpoint for `constellation_simple_v0_1`:
+    - command: `corepack pnpm --filter @eye/game-engine simulate --profile constellation_simple_v0_1 --spins 100000 --bet 1 --seed 1337`
+    - result: first-pass math is drastically under target (`~26.84% RTP`)
+    - interpretation: the isolated engine path is working, but the first raw count-anywhere / scatter / multiplier weights are only a structural baseline and must be retuned before any rollout
+  - Completed focused `Constellation` tuning pass:
+    - adjusted regular-symbol paytable upward into a viable count-anywhere range
+    - retuned `Seraphim Eye` and `Samsara` symbol weights
+    - added simple guardrail normalization for extreme Eye multipliers so the additive total stays controlled
+  - Verified tuned `Constellation` profile with:
+    - `corepack pnpm --filter @eye/game-engine simulate --profile constellation_simple_v0_1 --spins 300000 --bet 1 --seed 1337`
+    - achieved RTP: `95.2529%`
+    - hit rate: `46.3120%`
+    - bonus trigger rate: `0.5906%`
+    - average bonus payout: `6.54`
+  - Added first player-web variant-awareness for `Constellation`:
+    - menu rules/paytable copy now switches from cluster/meter wording to count-anywhere/scatter wording
+    - left support rail now shows a `Samsara Scatter` rules block instead of the live meter block for the simple variant
+    - hook-level `boardRules` and meter ratio output are now variant-aware so debug/help surfaces stop describing the main game when the simple profile is active
+  - Locked `Constellation` first-pass signoff math with:
+    - `corepack pnpm --filter @eye/game-engine simulate --profile constellation_simple_v0_1 --spins 1000000 --bet 1 --seed 1337`
+    - achieved RTP: `95.2358%`
+    - confidence interval: `94.6464% - 95.8252%`
+    - hit rate: `46.3143%`
+    - bonus trigger rate: `0.5908%`
+    - average bonus payout: `6.76`
+  - Expanded player-web variant-awareness for `Constellation` into the presentation layer:
+    - bonus-entry overlay copy now describes the scatter-triggered `Constellation` flow instead of the main game's meter-driven wording
+    - bonus-complete overlay now reads as `Constellation` completion
+    - round-win presentation now uses `BOARD WIN` / `TUMBLE TOTAL` wording and `Seraphim Eye` multiplier copy in the simple variant
+  - Verification:
+    - `corepack pnpm --filter @eye/game-engine lint`
+    - `corepack pnpm --filter @eye/game-engine test`
+    - `corepack pnpm --filter player-web lint` (warnings only; no new hard errors)
 - `2026-03-24`
   - Rebuilt bonus economy contract in engine/player: bonus now tracks `initialBonusBudget`, `remainingBonusBudget`, `preBonusBet`; bonus exit restores the pre-bonus base bet deterministically.
   - Enabled user-managed bonus bet inside `Samsara` budget pool: default is equal split, but player can set any per-spin bonus bet up to remaining budget; final bonus spin auto-commits all leftover budget.
@@ -152,6 +226,39 @@
   - Accelerated global presentation speed to target ~`1000ms` total spin resolution on the single-cascade path while preserving smooth phase sequencing.
   - Reduced post-break safety buffer before win banner so the final result appears within the new fast timeline.
   - Retuned pre-break choreography for winning symbols: exactly `2` flashes before break, then immediate break, with faster cascade feel.
+- `2026-03-26`
+  - Architected SQL-ready analytics abstraction layer (`AnalyticsService` interface + implementations):
+    - `LocalStorageAnalyticsService` (Phase 1, current): in-memory with localStorage persistence, 10k round retention, dedupe by ID.
+    - `PostgresAnalyticsService` (Phase 2, stub): API-backed with server-side filtering and unlimited storage.
+  - Zero UI changes on Phase 1 ↔ Phase 2 swap: only need to replace one line in `use-analytics-service.ts` with PostgreSQL endpoint URL.
+  - Created shared types contract in `packages/shared-types/src/analytics-service.ts`:
+    - `AnalyticsService` interface: `storeRound`, `queryRounds`, `getAllRounds`, `clearRounds`, `getRoundCount`, `storeBatch`.
+    - `AnalyticsQueryOptions` for time/mode filtering.
+    - `RoundAnalyticsTier` and `RoundAnalyticsEntry` for round data model.
+  - Implemented `LocalStorageAnalyticsService` in `apps/player-web/lib/analytics/local-storage-service.ts`:
+    - in-memory array with Zustand localStorage persistence via standard middleware.
+    - dedupe on storeRound by ID (silently skip if exists).
+    - enforce 10k retention limit on both single and batch store operations.
+    - support queries with optional `limit`, `after`, `before`, `mode` filters.
+  - Implemented `PostgresAnalyticsService` stub in `apps/player-web/lib/analytics/postgres-service.ts`:
+    - full interface signature with all methods throwing "Phase 2 pending" errors.
+    - documented API contract in inline comments (POST/GET/DELETE endpoints, Prisma schema, sessionId scoping).
+  - Created singleton hook `useAnalyticsService()` in `apps/player-web/hooks/use-analytics-service.ts`:
+    - returns same instance throughout app lifetime.
+    - initialization point for swapping implementations (one-line change Phase 1 ↔ Phase 2).
+  - Hotfix after integration test:
+    - fixed `Module not found` runtime/build error by correcting analytics implementation import path in `use-analytics-service.ts` from local `./local-storage-service` to `../lib/analytics/local-storage-service`.
+    - verified by rerunning `player-web` tests (3/3 pass).
+  - Updated store hydration in `apps/player-web/lib/state/player-store.ts`:
+    - `onRehydrateStorage` now calls `initializeAnalyticsService(roundsLog)` to seed in-memory service from persisted data.
+    - ensures service state matches Zustand state on app startup.
+  - Updated `packages/shared-types/src/index.ts` to export analytics types:
+    - `AnalyticsQueryOptions`, `AnalyticsService` re-exported for use across packages.
+  - Created comprehensive documentation:
+    - `docs/sql-migration-guide.md`: step-by-step Phase 2 implementation walkthrough (NestJS endpoints, Prisma schema, service swap).
+    - `apps/player-web/lib/analytics/README.md`: architecture overview, usage examples, testing strategy, migration checklist.
+  - Verification: all player-web tests still pass (3/3), no TypeScript errors, no new dependencies added.
+  - Next phase (Phase 2): implement NestJS `/analytics/*` endpoints with Prisma persistence, then swap service in `use-analytics-service.ts` (minimal diff).
   - Reduced `winHighlight` timing for faster per-cascade resolution while preserving spin-phase sequencing.
   - Updated cascade break timing to `1.0s` per cascade (shared `winHighlight` timing) for more readable symbol-break stage.
   - Moved win banner scheduling to always appear after the final cascade break sequence with an explicit post-break safety buffer.
