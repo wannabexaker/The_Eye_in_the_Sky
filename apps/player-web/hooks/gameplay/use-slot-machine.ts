@@ -9,11 +9,11 @@ Uses: game-engine resolveSpin, sound-manager.ts, and player-store.ts
 import {
   initialGameState,
   resolveSpin,
+  type GameConfig,
   type GameState,
   type SpinResult
 } from "@eye/game-engine";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { activeGameConfig } from "@/lib/game-config";
 import { soundManager } from "@/lib/audio/sound-manager";
 import {
   PRESENTATION_TIMINGS,
@@ -44,7 +44,10 @@ const BIG_WIN_THRESHOLD = 5;
 const HUGE_WIN_THRESHOLD = 8;
 const SUPER_WIN_THRESHOLD = 14.9;
 const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
-const IS_CONSTELLATION_VARIANT = activeGameConfig.variantId === "constellation_simple";
+const ANALYTICS_INGEST_RETRY_DELAY_MS = 60_000;
+
+let analyticsIngestBlockedUntil = 0;
+let analyticsIngestWarnedOffline = false;
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -77,6 +80,10 @@ const pushRoundAnalytics = async (result: SpinResult) => {
     return;
   }
 
+  if (Date.now() < analyticsIngestBlockedUntil) {
+    return;
+  }
+
   const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
   const payload = {
     entries: [
@@ -97,13 +104,29 @@ const pushRoundAnalytics = async (result: SpinResult) => {
     ]
   };
 
-  await fetch(`${ANALYTICS_API_BASE}/analytics/ingest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  try {
+    const response = await fetch(`${ANALYTICS_API_BASE}/analytics/ingest`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Analytics ingest failed with status ${response.status}`);
+    }
+
+    analyticsIngestWarnedOffline = false;
+  } catch {
+    analyticsIngestBlockedUntil = Date.now() + ANALYTICS_INGEST_RETRY_DELAY_MS;
+    if (!analyticsIngestWarnedOffline) {
+      analyticsIngestWarnedOffline = true;
+      console.warn(
+        "Analytics ingest API is unreachable. Telemetry upload is paused for 60s; gameplay is unaffected."
+      );
+    }
+  }
 };
 
 const roundCurrency = (value: number) => Number(value.toFixed(2));
@@ -219,11 +242,14 @@ const hasMultiplierEvent = (result: SpinResult) =>
     )
   );
 
-const getFreeSpinLabel = () =>
-  IS_CONSTELLATION_VARIANT ? "Constellation Spins" : "Free Spins";
+const isConstellationVariant = (gameConfig: GameConfig) =>
+  gameConfig.variantId === "constellation_simple";
 
-const getBonusSpinStartMessage = (result: SpinResult) => {
-  if (IS_CONSTELLATION_VARIANT) {
+const getFreeSpinLabel = (gameConfig: GameConfig) =>
+  isConstellationVariant(gameConfig) ? "Constellation Spins" : "Free Spins";
+
+const getBonusSpinStartMessage = (result: SpinResult, gameConfig: GameConfig) => {
+  if (isConstellationVariant(gameConfig)) {
     if (result.mode !== "bonus" || !result.bonusStateBefore) {
       return "Sky Opens answers with a Constellation free spin.";
     }
@@ -253,12 +279,12 @@ const getBonusSpinStartMessage = (result: SpinResult) => {
   return "Sky Opens answers with a free spin.";
 };
 
-const getBonusIdleMessage = (result: SpinResult) => {
+const getBonusIdleMessage = (result: SpinResult, gameConfig: GameConfig) => {
   if (!result.nextState.bonusState) {
     return "Awaiting the next ritual.";
   }
 
-  if (IS_CONSTELLATION_VARIANT) {
+  if (isConstellationVariant(gameConfig)) {
     return `${result.nextState.bonusState.freeSpinsRemaining} Constellation spins remain in Sky Opens.`;
   }
 
@@ -272,8 +298,13 @@ const getBonusIdleMessage = (result: SpinResult) => {
   return `${remainingSpins} bonus spins remain in Sky Opens.`;
 };
 
-const getRoundEndMessage = (result: SpinResult) => {
-  if (IS_CONSTELLATION_VARIANT && result.mode === "bonus" && result.bet <= 0 && result.totalWin <= 0) {
+const getRoundEndMessage = (result: SpinResult, gameConfig: GameConfig) => {
+  if (
+    isConstellationVariant(gameConfig) &&
+    result.mode === "bonus" &&
+    result.bet <= 0 &&
+    result.totalWin <= 0
+  ) {
     return "Round complete. No bonus stake remained for this reveal.";
   }
 
@@ -286,7 +317,7 @@ const getRoundEndMessage = (result: SpinResult) => {
     : "Round complete. The Eye remains watchful.";
 };
 
-const getCascadeDetailRows = (result: SpinResult) => {
+const getCascadeDetailRows = (result: SpinResult, gameConfig: GameConfig) => {
   if (result.cascades.length <= 1) {
     return undefined;
   }
@@ -295,7 +326,7 @@ const getCascadeDetailRows = (result: SpinResult) => {
 
   return result.cascades.map((cascade, index) => {
     runningTotal += cascade.stepWin;
-    return `${IS_CONSTELLATION_VARIANT ? "Tumble" : "Cascade"} ${index + 1}: +${formatMoney(cascade.stepWin)} | Total ${formatMoney(runningTotal)}`;
+    return `${isConstellationVariant(gameConfig) ? "Tumble" : "Cascade"} ${index + 1}: +${formatMoney(cascade.stepWin)} | Total ${formatMoney(runningTotal)}`;
   });
 };
 
@@ -309,19 +340,21 @@ const getFinalBonusTotal = (result: SpinResult) => {
 
 const buildBonusAnnouncement = (
   result: SpinResult,
-  freeSpins: number
+  freeSpins: number,
+  gameConfig: GameConfig
 ): BonusAnnouncementEntry => {
   const entryBudget = result.nextState.bonusState?.initialBonusBudget ?? result.totalWin;
 
-  if (IS_CONSTELLATION_VARIANT) {
+  if (isConstellationVariant(gameConfig)) {
     return {
+      variantTheme: "constellation",
       title: "BONUS TRIGGERED",
       heading: "Sky Opens",
       lead: "Samsara scatters broke the seal. Constellation free spins are ready.",
       freeSpins,
       entryWin: entryBudget,
       sourceLabel: "FREE-SPIN BANK",
-      freeSpinsLabel: getFreeSpinLabel(),
+      freeSpinsLabel: getFreeSpinLabel(gameConfig),
       modeLabel: "Mode",
       modeValue: "Constellation Active",
       continueLabel: "Enter Bonus"
@@ -329,6 +362,7 @@ const buildBonusAnnouncement = (
   }
 
   return {
+    variantTheme: "default",
     title: "BONUS TRIGGERED",
     freeSpins,
     entryWin: entryBudget,
@@ -337,15 +371,16 @@ const buildBonusAnnouncement = (
   };
 };
 
-const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
+const buildBonusSummary = (result: SpinResult, gameConfig: GameConfig): BonusSummaryEntry | null => {
   const finalBonusTotal = getFinalBonusTotal(result);
 
   if (finalBonusTotal === null) {
     return null;
   }
 
-  if (IS_CONSTELLATION_VARIANT) {
+  if (isConstellationVariant(gameConfig)) {
     return {
+      variantTheme: "constellation",
       title: "CONSTELLATION COMPLETE",
       subtitle: "SCATTER FREE SPINS FINISHED",
       totalWin: finalBonusTotal,
@@ -355,6 +390,7 @@ const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
   }
 
   return {
+    variantTheme: "default",
     title: "SKY OPENS BONUS COMPLETE",
     subtitle: "FREE SPINS FINISHED",
     totalWin: finalBonusTotal,
@@ -364,9 +400,10 @@ const buildBonusSummary = (result: SpinResult): BonusSummaryEntry | null => {
 
 const buildWinPresentation = (
   result: SpinResult,
-  autoContinueNeverStop: boolean
+  autoContinueNeverStop: boolean,
+  gameConfig: GameConfig
 ): WinPresentationEntry | null => {
-  if (buildBonusSummary(result)) {
+  if (buildBonusSummary(result, gameConfig)) {
     return null;
   }
 
@@ -390,7 +427,7 @@ const buildWinPresentation = (
   const subtitleParts = [
     `x${winMultiple.toFixed(2)} total`,
     hasMultiplierEvent(result)
-      ? IS_CONSTELLATION_VARIANT
+      ? isConstellationVariant(gameConfig)
         ? `Seraphim Eye settle x${result.appliedWinMultiplier}`
         : `x${result.appliedWinMultiplier} multiplier applied`
       : null,
@@ -398,9 +435,9 @@ const buildWinPresentation = (
       ? `Bonus total ${formatMoney(result.bonusStateAfter.totalBonusWin)}`
       : null,
     result.bonusTriggered
-      ? IS_CONSTELLATION_VARIANT
-        ? `${activeGameConfig.bonusSpinsAwarded} scatter spins awarded`
-        : `${activeGameConfig.bonusSpinsAwarded} free spins awarded`
+      ? isConstellationVariant(gameConfig)
+        ? `${gameConfig.bonusSpinsAwarded} scatter spins awarded`
+        : `${gameConfig.bonusSpinsAwarded} free spins awarded`
       : null
   ].filter(Boolean);
 
@@ -415,17 +452,17 @@ const buildWinPresentation = (
           : inBonus
             ? "FREE SPIN WIN"
             : result.cascades.length > 1
-              ? IS_CONSTELLATION_VARIANT
+              ? isConstellationVariant(gameConfig)
                 ? "TUMBLE TOTAL"
                 : "CASCADE TOTAL"
-              : IS_CONSTELLATION_VARIANT
+              : isConstellationVariant(gameConfig)
                 ? "BOARD WIN"
                 : "WIN",
     amount: result.totalWin,
     winMultiple,
     glowLevel,
     subtitle: subtitleParts.join(" | ") || undefined,
-    detailRows: getCascadeDetailRows(result),
+    detailRows: getCascadeDetailRows(result, gameConfig),
     requireAcknowledgement:
       !autoContinueNeverStop &&
       (bigWin || hugeWin || superWin || result.cascades.length >= 3 || result.bonusTriggered),
@@ -439,7 +476,7 @@ const buildWinPresentation = (
   };
 };
 
-export function useSlotMachine() {
+export function useSlotMachine(gameConfig: GameConfig) {
   const {
     soundEnabled,
     autoContinueNeverStop,
@@ -488,6 +525,7 @@ export function useSlotMachine() {
   const bonusSummaryShownAtRef = useRef<number | null>(null);
   const gameStateRef = useRef(gameState);
   const previousBonusStateRef = useRef<GameState["bonusState"]>(gameState.bonusState);
+  const previousConfigVersionRef = useRef(gameConfig.version);
   const betRef = useRef(bet);
   const winMultiplierRef = useRef(winMultiplier);
 
@@ -502,6 +540,73 @@ export function useSlotMachine() {
   );
   const bonusModeActive = Boolean(gameState.bonusState);
   const areBetControlsLocked = isAutoSpinning || autospinStopRequested;
+
+  useEffect(() => {
+    if (previousConfigVersionRef.current === gameConfig.version) {
+      return;
+    }
+
+    previousConfigVersionRef.current = gameConfig.version;
+    phaseTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    phaseTimersRef.current = [];
+
+    if (presentationTimerRef.current) {
+      window.clearTimeout(presentationTimerRef.current);
+      presentationTimerRef.current = null;
+    }
+    if (bonusAnnouncementLockTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+      bonusAnnouncementLockTimerRef.current = null;
+    }
+    if (bonusAnnouncementFastContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementFastContinueTimerRef.current);
+      bonusAnnouncementFastContinueTimerRef.current = null;
+    }
+    if (bonusAnnouncementAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+      bonusAnnouncementAutoContinueTimerRef.current = null;
+    }
+    if (bonusSummaryLockTimerRef.current) {
+      window.clearTimeout(bonusSummaryLockTimerRef.current);
+      bonusSummaryLockTimerRef.current = null;
+    }
+    if (bonusSummaryAutoContinueTimerRef.current) {
+      window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+      bonusSummaryAutoContinueTimerRef.current = null;
+    }
+
+    const resetState = initialGameState(wallet.balance);
+    gameStateRef.current = resetState;
+    previousBonusStateRef.current = resetState.bonusState;
+    betRef.current = MIN_BET;
+    winMultiplierRef.current = gameConfig.winMultiplierOptions[0] ?? 1;
+
+    setGameState(resetState);
+    setLastResult(null);
+    setHistory([]);
+    setBet(MIN_BET);
+    setBetInput(String(MIN_BET));
+    setBetValidationMessage("");
+    setBetValidationTooltip("");
+    setBetRiskMessage("");
+    setBetRiskTooltip("");
+    setWinMultiplier(gameConfig.winMultiplierOptions[0] ?? 1);
+    setRequestedAutospinCount(DEFAULT_AUTOSPIN_COUNT);
+    setAutospinCountInput(String(DEFAULT_AUTOSPIN_COUNT));
+    setAutospinValidationMessage("");
+    setAutoSpinRemaining(0);
+    setIsAutoSpinning(false);
+    setAutospinStopRequested(false);
+    setSpinPhase("IDLE");
+    setPhaseMessage("Awaiting the next ritual.");
+    setSpinPulseKey((current) => current + 1);
+    setBonusEntryPending(false);
+    setBonusAnnouncement(null);
+    setBonusAnnouncementLocked(false);
+    setBonusSummary(null);
+    setBonusSummaryLocked(false);
+    setWinPresentation(null);
+  }, [gameConfig.version, gameConfig.winMultiplierOptions, wallet.balance]);
 
   useEffect(() => {
     const previousBonusState = previousBonusStateRef.current;
@@ -689,14 +794,25 @@ const validateAutospinCount = useCallback(
     };
   }, []);
 
-  // Only sync gameState back to the store AFTER hydration is complete.
-  // Without this guard, the initialGameState() on mount overwrites the persisted Samsara meter.
+  // Sync gameState to the store only for changes that bypass applyRoundResult
+  // (e.g. balance reconciliation, config reset). Normal spin results are already
+  // persisted by applyRoundResult → gameStateSnapshot. Throttling to the next
+  // microtask prevents redundant localStorage writes on every React re-render.
+  const pendingSyncRef = useRef(false);
   useEffect(() => {
     if (!hasHydrated) {
       return;
     }
 
-    syncGameState(gameState);
+    if (pendingSyncRef.current) {
+      return;
+    }
+
+    pendingSyncRef.current = true;
+    queueMicrotask(() => {
+      pendingSyncRef.current = false;
+      syncGameState(gameStateRef.current);
+    });
   }, [gameState, syncGameState, hasHydrated]);
 
   useEffect(() => {
@@ -909,7 +1025,7 @@ const validateAutospinCount = useCallback(
       setSpinPhase("SPIN_START");
       setPhaseMessage(
         result.mode === "bonus"
-          ? getBonusSpinStartMessage(result)
+          ? getBonusSpinStartMessage(result, gameConfig)
           : "The Eye begins its descent."
       );
       soundManager.play("spin", soundEnabled);
@@ -988,7 +1104,8 @@ const validateAutospinCount = useCallback(
               setBonusAnnouncement(
                 buildBonusAnnouncement(
                   result,
-                  result.nextState.bonusState.freeSpinsRemaining
+                  result.nextState.bonusState.freeSpinsRemaining,
+                  gameConfig
                 )
               );
 
@@ -1021,14 +1138,14 @@ const validateAutospinCount = useCallback(
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("ROUND_END");
-          setPhaseMessage(getRoundEndMessage(result));
+          setPhaseMessage(getRoundEndMessage(result, gameConfig));
         }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusPhaseHoldMs)
       );
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
-          const summary = buildBonusSummary(result);
-          const presentation = summary ? null : buildWinPresentation(result, autoContinueNeverStop);
+          const summary = buildBonusSummary(result, gameConfig);
+          const presentation = summary ? null : buildWinPresentation(result, autoContinueNeverStop, gameConfig);
 
           if (summary) {
             bonusSummaryShownAtRef.current = Date.now();
@@ -1065,7 +1182,7 @@ const validateAutospinCount = useCallback(
           }
 
           setSpinPhase("IDLE");
-          setPhaseMessage(getBonusIdleMessage(result));
+          setPhaseMessage(getBonusIdleMessage(result, gameConfig));
         },
           totalCascadeTimelineMs +
             PRESENTATION_TIMINGS.modifierFlash +
@@ -1074,7 +1191,7 @@ const validateAutospinCount = useCallback(
             postBreakSafetyBufferMs)
       );
     },
-    [autoContinueNeverStop, clearTimers, soundEnabled]
+    [autoContinueNeverStop, clearTimers, gameConfig, soundEnabled]
   );
 
   const runSpin = useCallback(() => {
@@ -1107,7 +1224,7 @@ const validateAutospinCount = useCallback(
       bet: currentBet,
       state: currentState,
       winMultiplier: currentWinMultiplier
-    }, activeGameConfig);
+    }, gameConfig);
 
     gameStateRef.current = result.nextState;
     setGameState(result.nextState);
@@ -1115,11 +1232,9 @@ const validateAutospinCount = useCallback(
     setLastResult(result);
     setHistory((current) => [result, ...current].slice(0, 10));
     scheduleRoundFeedback(result);
-    void pushRoundAnalytics(result).catch(() => {
-      // Analytics in Phase 1 are best-effort only and must never block gameplay.
-    });
+    void pushRoundAnalytics(result);
     return result;
-  }, [applyRoundResult, availableBalance, scheduleRoundFeedback]);
+  }, [applyRoundResult, availableBalance, gameConfig, scheduleRoundFeedback]);
 
   const spin = useCallback(() => {
     if (bonusEntryPending || bonusAnnouncement || bonusSummary) {
@@ -1546,22 +1661,22 @@ const validateAutospinCount = useCallback(
       ? `Balance too low. Minimum bet is ${formatMoney(MIN_BET)}. Deposit to continue.`
       : phaseMessage;
   const boardRules =
-    activeGameConfig.variantId === "constellation_simple"
+    gameConfig.variantId === "constellation_simple"
       ? [
-          `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
-          `${activeGameConfig.clusterThreshold}+ matching symbols pay anywhere on the board`,
-          `Pay bands: ${Object.keys(activeGameConfig.paytable[0]?.payouts ?? {})
+          `${gameConfig.cols} columns x ${gameConfig.rows} rows`,
+          `${gameConfig.clusterThreshold}+ matching symbols pay anywhere on the board`,
+          `Pay bands: ${Object.keys(gameConfig.paytable[0]?.payouts ?? {})
             .map((value) => `${value}+`)
             .join(" / ")}`,
           "Samsara scatters pay separately and trigger Sky Opens on 4+",
-          `Sky Opens uses ${activeGameConfig.bonusSpinsAwarded}+ free spins with additive Seraphim Eye multipliers`
+          `Sky Opens uses ${gameConfig.bonusSpinsAwarded}+ free spins with additive Seraphim Eye multipliers`
         ]
       : [
-          `${activeGameConfig.cols} columns x ${activeGameConfig.rows} rows`,
-          `${activeGameConfig.clusterThreshold}+ adjacent symbols required for a win`,
-          `Cascades resolve up to ${activeGameConfig.maxCascadeSteps} steps per spin`,
+          `${gameConfig.cols} columns x ${gameConfig.rows} rows`,
+          `${gameConfig.clusterThreshold}+ adjacent symbols required for a win`,
+          `Cascades resolve up to ${gameConfig.maxCascadeSteps} steps per spin`,
           "Winning symbols dissolve before cascade drops",
-          `Bonus mode: ${activeGameConfig.bonusSpinsAwarded} free spins with persistent multiplier carry`
+          `Bonus mode: ${gameConfig.bonusSpinsAwarded} free spins with persistent multiplier carry`
         ];
 
   return {
@@ -1595,7 +1710,7 @@ const validateAutospinCount = useCallback(
     autospinStopRequested,
     autoContinueNeverStop,
     winMultiplier,
-    winMultiplierOptions: activeGameConfig.winMultiplierOptions,
+    winMultiplierOptions: gameConfig.winMultiplierOptions,
     spin,
     startAutoSpin,
     startAutoSpinInfinite,
@@ -1638,8 +1753,8 @@ const validateAutospinCount = useCallback(
     samsaraCollectedBets: gameState.samsaraCollectedBets,
     samsaraContributionLog: gameState.samsaraContributionLog,
     meterRatio:
-      activeGameConfig.bonusTriggerMode === "meter"
-        ? gameState.bonusMeter / activeGameConfig.bonusMeterTarget
+      gameConfig.bonusTriggerMode === "meter"
+        ? gameState.bonusMeter / gameConfig.bonusMeterTarget
         : 0,
     boardRules
   };

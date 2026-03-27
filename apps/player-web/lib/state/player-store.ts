@@ -11,8 +11,42 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
 
 const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
+const ANALYTICS_LOG_PERSIST_KEY = "eye-in-the-sky-rounds-log";
 const SAMSARA_PROGRESS_TTL_MS = 60 * 60 * 1000;
 const ANALYTICS_MAX_ROUNDS = 10000;
+
+// Rounds log is persisted in a separate localStorage key to avoid serializing
+// potentially thousands of entries on every spin, which blocks the main thread.
+const loadRoundsLogFromStorage = (): RoundAnalyticsEntry[] => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const raw = window.localStorage.getItem(ANALYTICS_LOG_PERSIST_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as RoundAnalyticsEntry[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+let roundsLogFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const scheduleRoundsLogFlush = (entries: RoundAnalyticsEntry[]) => {
+  if (roundsLogFlushTimer !== null) {
+    clearTimeout(roundsLogFlushTimer);
+  }
+  roundsLogFlushTimer = setTimeout(() => {
+    roundsLogFlushTimer = null;
+    try {
+      window.localStorage.setItem(ANALYTICS_LOG_PERSIST_KEY, JSON.stringify(entries));
+    } catch {
+      // localStorage full or unavailable — non-critical
+    }
+  }, 2000);
+};
 
 export type Wallet = {
   balance: number;
@@ -549,6 +583,10 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             previousEntry?.id === analyticsEntry.id
               ? state.roundsLog
               : [...state.roundsLog, analyticsEntry];
+          const trimmedRoundsLog = nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS);
+
+          // Write rounds log asynchronously in its own key — never blocks the spin
+          scheduleRoundsLogFlush(trimmedRoundsLog);
 
           return {
             wallet: {
@@ -561,7 +599,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
                 : null,
             gameStateSnapshot: result.nextState,
             walletTransactions: nextTransactions.slice(0, 50),
-            roundsLog: nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS)
+            roundsLog: trimmedRoundsLog
           };
         }),
       resetSession: () =>
@@ -593,11 +631,11 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       name: PLAYER_STORE_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
-        // Initialize analytics service with persisted rounds
-        if (state?.roundsLog) {
-          initializeAnalyticsService(state.roundsLog);
-        }
-        usePlayerUiStore.setState({ hasHydrated: true });
+        // Load rounds log from its own key (not bundled with main persist payload)
+        const persistedRoundsLog = loadRoundsLogFromStorage();
+        const roundsLog = persistedRoundsLog.length > 0 ? persistedRoundsLog : (state?.roundsLog ?? []);
+        initializeAnalyticsService(roundsLog);
+        usePlayerUiStore.setState({ hasHydrated: true, roundsLog });
       },
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<PlayerUiState>;
@@ -623,6 +661,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           paymentMethods,
           samsaraExpiryAt: mergedSamsaraExpiryAt,
           gameStateSnapshot: mergedGameStateSnapshot,
+          // roundsLog is loaded from its own localStorage key in onRehydrateStorage
           roundsLog: Array.isArray(persisted.roundsLog) ? persisted.roundsLog : [],
           withdrawalDraft: {
             amount: withdrawalAmount,
@@ -647,8 +686,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         samsaraExpiryAt: state.samsaraExpiryAt,
         walletTransactions: state.walletTransactions,
         paymentMethods: state.paymentMethods,
-        gameStateSnapshot: state.gameStateSnapshot,
-        roundsLog: state.roundsLog
+        gameStateSnapshot: state.gameStateSnapshot
+        // roundsLog is persisted separately in ANALYTICS_LOG_PERSIST_KEY
       })
     }
   )

@@ -9,6 +9,7 @@ Uses: wallet actions, status state, and samsara meter
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
 import { SamsaraMeter } from "@/components/board/samsara-meter";
+import { symbolAssetSources } from "@/lib/assets/asset-manifest";
 
 type LeftSupportRailProps = {
   balance: string;
@@ -49,6 +50,9 @@ const formatWin = (result: SpinResult) =>
         maximumFractionDigits: 2
       }).format(result.totalWin)}`
     : "LOSS";
+
+const formatScatterMultiplier = (value: number) =>
+  Number.isInteger(value) ? String(value) : value.toFixed(2);
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
 const DESKTOP_VISIBLE_ENTRIES = 5;
@@ -258,32 +262,54 @@ export function LeftSupportRail({
 
       {bonusTriggerMode === "scatter" ? (
         <section
-          className="compactPanel supportBlock supportMeterBlock"
+          className="compactPanel supportBlock supportMeterBlock supportScatterBlock"
           title={
             bonusActive
               ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
               : "Samsara scatters pay separately and trigger Sky Opens on 4 or more."
           }
         >
-          <div className="panelHeader">
-            <p className="eyebrow">Samsara Scatter</p>
+          <div className="panelHeader supportScatterHeader">
+            <div className="supportScatterTitle">
+              <img
+                alt="Samsara"
+                className="supportScatterIcon"
+                src={symbolAssetSources.samsara[0]}
+              />
+              <div>
+                <p className="eyebrow">Constellation Trigger</p>
+                <strong>Samsara Scatters</strong>
+              </div>
+            </div>
+            <span className={`supportScatterBadge ${bonusActive ? "is-live" : ""}`}>
+              {bonusActive ? `${activeBonusSpins} live` : "4+ opens"}
+            </span>
           </div>
-          <p className="supportNote" title="Scatter pays separately from regular-symbol wins and opens the bonus on 4 or more.">
-            Scatter pays separately and opens Sky Opens on 4+.
+          <p
+            className="supportNote supportScatterLead"
+            title="Samsara scatters pay separately from regular wins. Four or more open Constellation free spins."
+          >
+            Pays separately from regular symbols and opens Sky Opens on 4 or more scatters.
           </p>
-          <div className="supportHistory">
+          <div className="supportScatterRewards">
             {scatterRewards.map((reward) => (
               <div
-                className="supportHistoryRow"
+                className="supportScatterRow"
                 key={`scatter-reward-${reward.count}`}
                 title={`${reward.count}+ Samsara scatters pay x${reward.payoutMultiplier} and award ${reward.freeSpinsAwarded} free spins.`}
               >
-                <strong>{reward.count}+ scatters</strong>
-                <span>
-                  x{reward.payoutMultiplier} | {reward.freeSpinsAwarded} spins
+                <div className="supportScatterRowMain">
+                  <strong>{reward.count}+ Scatters</strong>
+                  <span>x{formatScatterMultiplier(reward.payoutMultiplier)} pay</span>
+                </div>
+                <span className="supportScatterRewardValue">
+                  {reward.freeSpinsAwarded} spins
                 </span>
               </div>
             ))}
+          </div>
+          <div className="supportScatterFooter">
+            <span>{bonusActive ? "Constellation spins are active now." : "No meter build-up in this variant."}</span>
           </div>
         </section>
       ) : (

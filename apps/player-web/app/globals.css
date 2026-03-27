@@ -1877,6 +1877,64 @@ p {
     rgba(255, 255, 255, 0.025);
 }
 
+.menuVariantHero {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(160, 127, 224, 0.24);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(22, 20, 33, 0.96), rgba(11, 11, 17, 0.96)),
+    radial-gradient(circle at top left, rgba(160, 127, 224, 0.16), transparent 44%);
+}
+
+.menuVariantHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menuVariantIcon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32));
+}
+
+.menuVariantHeader strong {
+  display: block;
+  color: rgba(244, 239, 230, 0.96);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.menuVariantHeader span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(224, 216, 241, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.menuVariantPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.menuVariantPills span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(160, 127, 224, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(235, 228, 247, 0.82);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .modalFeedback {
   display: grid;
   gap: 4px;
@@ -2344,16 +2402,20 @@ p {
   order: 3;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionRules {
+.overlayModal[aria-label="Menu"] .menuSectionVariant {
   order: 4;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionSymbols {
+.overlayModal[aria-label="Menu"] .menuSectionRules {
   order: 5;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+.overlayModal[aria-label="Menu"] .menuSectionSymbols {
   order: 6;
+}
+
+.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+  order: 7;
 }
 
 .compactModalPanel {
@@ -2614,6 +2676,19 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.winPresentationCard.is-bonus-summary.is-constellation {
+  background:
+    linear-gradient(180deg, rgba(15, 14, 23, 0.985), rgba(8, 8, 14, 0.985)),
+    radial-gradient(circle at top, rgba(160, 127, 224, 0.18), transparent 40%);
+  border-color: rgba(160, 127, 224, 0.24);
+}
+
+.winPresentationCard.is-bonus-summary.is-constellation .winPresentationLabel,
+.winPresentationCard.is-bonus-summary.is-constellation .winPresentationSubtitle,
+.winPresentationCard.is-bonus-summary.is-constellation .bonusSummaryCaption {
+  color: rgba(224, 216, 241, 0.84);
+}
+
 .bonusRunningAmount,
 .bonusWinAmount {
   color: var(--gold-bright);
@@ -2660,6 +2735,13 @@ button:disabled {
     radial-gradient(circle at top, rgba(226, 190, 112, 0.12), transparent 34%);
 }
 
+.bonusWinModal.is-constellation {
+  background:
+    linear-gradient(180deg, rgba(16, 16, 24, 0.985), rgba(9, 9, 14, 0.985)),
+    radial-gradient(circle at top, rgba(160, 127, 224, 0.22), transparent 38%),
+    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.08), transparent 46%);
+}
+
 .bonusWinHeader {
   display: grid;
   justify-items: center;
@@ -2681,6 +2763,16 @@ button:disabled {
   color: rgba(244, 239, 230, 0.76);
   font-size: var(--font-sm);
   line-height: 1.35;
+}
+
+.bonusWinModal.is-constellation .bonusWinHeading {
+  color: rgba(233, 223, 255, 0.96);
+  text-shadow: 0 0 18px rgba(160, 127, 224, 0.24);
+}
+
+.bonusWinModal.is-constellation .bonusWinLead,
+.bonusWinModal.is-constellation .bonusWinInfoRow span {
+  color: rgba(224, 216, 241, 0.78);
 }
 
 .bonusWinBody {
@@ -2719,6 +2811,12 @@ button:disabled {
   border-radius: 10px;
   padding: 8px 10px;
   background: rgba(255, 255, 255, 0.02);
+}
+
+.bonusWinModal.is-constellation .bonusWinCard,
+.bonusWinModal.is-constellation .bonusWinInfoRow {
+  border-color: rgba(160, 127, 224, 0.2);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .bonusWinInfoRow span {
@@ -3083,6 +3181,117 @@ Current shell calibration:
   font-size: var(--font-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.supportScatterBlock {
+  gap: 10px;
+}
+
+.supportScatterHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.supportScatterTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.supportScatterTitle strong {
+  display: block;
+  color: rgba(244, 239, 230, 0.94);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.96rem;
+  line-height: 1.05;
+}
+
+.supportScatterIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.42));
+}
+
+.supportScatterBadge {
+  align-self: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 239, 230, 0.78);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.supportScatterBadge.is-live {
+  border-color: rgba(226, 190, 112, 0.34);
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.16), rgba(255, 255, 255, 0.05));
+  color: rgba(255, 248, 226, 0.96);
+}
+
+.supportScatterLead {
+  margin-top: -2px;
+}
+
+.supportScatterRewards {
+  display: grid;
+  gap: 6px;
+}
+
+.supportScatterRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(28, 23, 34, 0.92), rgba(13, 12, 19, 0.92)),
+    radial-gradient(circle at left, rgba(210, 166, 255, 0.12), transparent 45%);
+}
+
+.supportScatterRowMain {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.supportScatterRowMain strong {
+  color: rgba(244, 239, 230, 0.94);
+  font-size: var(--font-sm);
+  line-height: 1.1;
+}
+
+.supportScatterRowMain span {
+  color: rgba(206, 191, 230, 0.72);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.supportScatterRewardValue {
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.supportScatterFooter {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.supportScatterFooter span {
+  color: rgba(206, 191, 230, 0.72);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
 }
 
 .supportBlock ::selection,

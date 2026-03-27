@@ -1,10 +1,6 @@
+import type { GameMathProfileId } from "@eye/game-engine";
 import { Controller, Get, Post, Body, BadRequestException } from "@nestjs/common";
 import { GameConfigService, type GameConfigStateDto } from "./game-config.service";
-
-type GameMathProfileId =
-  | "legacy_v1_3"
-  | "math_base_v2_0"
-  | "constellation_simple_v0_1";
 
 @Controller("game-config")
 export class GameConfigController {

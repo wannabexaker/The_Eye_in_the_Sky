@@ -22,9 +22,9 @@ import { WithdrawModal } from "@/components/modals/withdraw-modal";
 import { WinPresentationController } from "@/components/presentation/win-presentation-controller";
 import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytics-overlay";
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
+import { useRuntimeGameConfig } from "@/hooks/use-runtime-game-config";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
 import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
-import { activeGameConfig } from "@/lib/game-config";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
@@ -64,113 +64,6 @@ const symbolLabels: Record<string, string> = {
   panepoptis_ophthalmos: "Panepoptis Ophthalmos"
 };
 
-const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
-const paytableThresholds = Array.from(
-  new Set(activeGameConfig.paytable.flatMap((entry) => Object.keys(entry.payouts).map(Number)))
-).sort((left, right) => left - right);
-const simpleScatterSummary =
-  activeGameConfig.scatterRewards.length > 0
-    ? activeGameConfig.scatterRewards
-        .map((reward) => `${reward.count}+ -> ${reward.freeSpinsAwarded} spins`)
-        .join(" | ")
-    : `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`;
-
-const bonusRuleRows = isConstellationVariant
-  ? ([
-      {
-        label: "Board",
-        value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
-      },
-      {
-        label: "How wins pay",
-        value: `${activeGameConfig.clusterThreshold}+ matching symbols anywhere on the board`
-      },
-      {
-        label: "Pay bands",
-        value: paytableThresholds.map((value) => `${value}+`).join(" / ")
-      },
-      {
-        label: "Gravity",
-        value:
-          activeGameConfig.gravity === "top-down" ? "Top-down tumble refill" : activeGameConfig.gravity
-      },
-      {
-        label: "Cascades",
-        value: `Continue while a paying settle remains, up to ${activeGameConfig.maxCascadeSteps} steps`
-      },
-      {
-        label: "Bonus trigger",
-        value: "Samsara scatters pay separately and trigger Sky Opens on 4+"
-      },
-      {
-        label: "Bonus award",
-        value: simpleScatterSummary
-      }
-    ] as const)
-  : ([
-      {
-        label: "Board",
-        value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
-      },
-      {
-        label: "How wins break",
-        value: `${activeGameConfig.clusterThreshold}+ orthogonal cluster`
-      },
-      {
-        label: "Gravity",
-        value:
-          activeGameConfig.gravity === "top-down" ? "Top-down symbol drop" : activeGameConfig.gravity
-      },
-      {
-        label: "Cascades",
-        value: `Continue while a paying win remains, up to ${activeGameConfig.maxCascadeSteps} steps`
-      },
-      {
-        label: "Cascade ladder",
-        value: activeGameConfig.cascadeMultiplierLadder.map((value) => `x${value}`).join(" -> ")
-      },
-      {
-        label: "Bonus trigger",
-        value: `${activeGameConfig.bonusMeterTarget} Samsara symbols fill the meter`
-      },
-      {
-        label: "Bonus award",
-        value: `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`
-      }
-    ] as const);
-
-const specialSymbolRows: Array<{ symbol: SymbolId; effect: string }> = isConstellationVariant
-  ? [
-      {
-        symbol: "seraphim_eye",
-        effect:
-          "Acts as the only active multiplier special. If a settle wins, all visible Eye values add together and apply once to that settle."
-      },
-      {
-        symbol: "samsara",
-        effect:
-          "Pays separately as scatter. 4+ scatters trigger Sky Opens, with larger scatter counts awarding stronger start packages."
-      }
-    ]
-  : [
-      {
-        symbol: "seraphim_eye",
-        effect: "Converts 1-2 regular symbols into wilds. During bonus it can also add +1 sticky multiplier."
-      },
-      {
-        symbol: "samsara",
-        effect: "Each symbol adds +1 to the meter and collects the current bet into the bonus budget pool. Reaching the target opens Sky Opens."
-      },
-      {
-        symbol: "ouroboros",
-        effect: "During bonus, each hit adds +1 sticky multiplier up to the configured cap."
-      },
-      {
-        symbol: "panepoptis_ophthalmos",
-        effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
-      }
-    ];
-
 export default function HomePage() {
   const shellRef = useRef<HTMLElement | null>(null);
   const depositPromptShownRef = useRef(false);
@@ -209,7 +102,113 @@ export default function HomePage() {
     toggleModal,
     setAutoContinueNeverStop
   } = usePlayerUiStore();
-  const slot = useSlotMachine();
+  const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
+  const slot = useSlotMachine(activeGameConfig);
+
+  const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
+  const paytableThresholds = Array.from(
+    new Set(activeGameConfig.paytable.flatMap((entry) => Object.keys(entry.payouts).map(Number)))
+  ).sort((left, right) => left - right);
+  const simpleScatterSummary =
+    activeGameConfig.scatterRewards.length > 0
+      ? activeGameConfig.scatterRewards
+          .map((reward) => `${reward.count}+ -> ${reward.freeSpinsAwarded} spins`)
+          .join(" | ")
+      : `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`;
+  const bonusRuleRows = isConstellationVariant
+    ? ([
+        {
+          label: "Board",
+          value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
+        },
+        {
+          label: "How wins pay",
+          value: `${activeGameConfig.clusterThreshold}+ matching symbols anywhere on the board`
+        },
+        {
+          label: "Pay bands",
+          value: paytableThresholds.map((value) => `${value}+`).join(" / ")
+        },
+        {
+          label: "Gravity",
+          value:
+            activeGameConfig.gravity === "top-down" ? "Top-down tumble refill" : activeGameConfig.gravity
+        },
+        {
+          label: "Cascades",
+          value: `Continue while a paying settle remains, up to ${activeGameConfig.maxCascadeSteps} steps`
+        },
+        {
+          label: "Bonus trigger",
+          value: "Samsara scatters pay separately and trigger Sky Opens on 4+"
+        },
+        {
+          label: "Bonus award",
+          value: simpleScatterSummary
+        }
+      ] as const)
+    : ([
+        {
+          label: "Board",
+          value: `${activeGameConfig.rows} rows x ${activeGameConfig.cols} cols`
+        },
+        {
+          label: "How wins break",
+          value: `${activeGameConfig.clusterThreshold}+ orthogonal cluster`
+        },
+        {
+          label: "Gravity",
+          value:
+            activeGameConfig.gravity === "top-down" ? "Top-down symbol drop" : activeGameConfig.gravity
+        },
+        {
+          label: "Cascades",
+          value: `Continue while a paying win remains, up to ${activeGameConfig.maxCascadeSteps} steps`
+        },
+        {
+          label: "Cascade ladder",
+          value: activeGameConfig.cascadeMultiplierLadder.map((value) => `x${value}`).join(" -> ")
+        },
+        {
+          label: "Bonus trigger",
+          value: `${activeGameConfig.bonusMeterTarget} Samsara symbols fill the meter`
+        },
+        {
+          label: "Bonus award",
+          value: `${activeGameConfig.bonusSpinsAwarded} Sky Opens free spins`
+        }
+      ] as const);
+  const specialSymbolRows: Array<{ symbol: SymbolId; effect: string }> = isConstellationVariant
+    ? [
+        {
+          symbol: "seraphim_eye",
+          effect:
+            "Acts as the only active multiplier special. If a settle wins, all visible Eye values add together and apply once to that settle."
+        },
+        {
+          symbol: "samsara",
+          effect:
+            "Pays separately as scatter. 4+ scatters trigger Sky Opens, with larger scatter counts awarding stronger start packages."
+        }
+      ]
+    : [
+        {
+          symbol: "seraphim_eye",
+          effect: "Converts 1-2 regular symbols into wilds. During bonus it can also add +1 sticky multiplier."
+        },
+        {
+          symbol: "samsara",
+          effect: "Each symbol adds +1 to the meter and collects the current bet into the bonus budget pool. Reaching the target opens Sky Opens."
+        },
+        {
+          symbol: "ouroboros",
+          effect: "During bonus, each hit adds +1 sticky multiplier up to the configured cap."
+        },
+        {
+          symbol: "panepoptis_ophthalmos",
+          effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
+        }
+      ];
 
   const board = slot.lastResult?.board ?? Array.from({ length: activeGameConfig.rows }, () =>
     Array.from({ length: activeGameConfig.cols }, () => "ashen_sigil")
@@ -463,6 +462,8 @@ export default function HomePage() {
   return (
     <main
       className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""}`}
+      data-config-source={usingRemoteConfig ? "api" : "env"}
+      data-math-profile={activeGameConfigProfile.profileId}
       ref={shellRef}
     >
       <div
@@ -535,6 +536,7 @@ export default function HomePage() {
         <RightOperatorRail
           activeBonusSpins={visibleBonusSpins}
           bonusActive={bonusModeActive}
+          variantId={activeGameConfig.variantId}
         />
       </section>
 
@@ -635,7 +637,7 @@ export default function HomePage() {
         </section>
 
         <section className="modalSection menuSectionRules">
-          <p className="eyebrow">Game Rules</p>
+          <p className="eyebrow">{isConstellationVariant ? "Constellation Rules" : "Game Rules"}</p>
           <div className="menuRuleTable">
             {bonusRuleRows.map((row) => (
               <div className="menuRuleRow" key={row.label}>
@@ -647,7 +649,7 @@ export default function HomePage() {
         </section>
 
         <section className="modalSection menuSectionPaytable">
-          <p className="eyebrow">Paytable</p>
+          <p className="eyebrow">{isConstellationVariant ? "Constellation Paytable" : "Paytable"}</p>
           <div className="paytableTableWrap">
             <table className="paytableTable">
               <thead>
@@ -722,8 +724,35 @@ export default function HomePage() {
           </div>
         </section>
 
+        {isConstellationVariant ? (
+          <section className="modalSection menuSectionVariant">
+            <p className="eyebrow">Active Variant</p>
+            <div className="menuVariantHero">
+              <div className="menuVariantHeader">
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="menuVariantIcon"
+                  src={symbolAssetSources.samsara[0]}
+                />
+                <div>
+                  <strong>Constellation Simple</strong>
+                  <span>Count-anywhere pays with scatter-led Sky Opens.</span>
+                </div>
+              </div>
+              <div className="menuVariantPills">
+                <span>Scatter Trigger</span>
+                <span>Anywhere Pays</span>
+                <span>Seraphim Eye Multipliers</span>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <section className="modalSection menuSectionSymbols">
-          <p className="eyebrow">Special Symbols & Bonus</p>
+          <p className="eyebrow">
+            {isConstellationVariant ? "Constellation Symbols & Bonus" : "Special Symbols & Bonus"}
+          </p>
           <div className="symbolRuleTable">
             {specialSymbolRows.map((row) => (
               <article className="symbolRuleRow" key={row.symbol}>

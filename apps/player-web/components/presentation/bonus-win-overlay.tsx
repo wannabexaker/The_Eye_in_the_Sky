@@ -29,7 +29,10 @@ export function BonusWinOverlay({
 
   return (
     <div className="overlayBackdrop bonusBackdrop bonusWinBackdrop" role="presentation">
-      <section aria-label={announcement.title} className="overlayModal bonusWinModal">
+      <section
+        aria-label={announcement.title}
+        className={`overlayModal bonusWinModal ${announcement.variantTheme === "constellation" ? "is-constellation" : ""}`}
+      >
         <header className="bonusWinHeader">
           <span className="winPresentationLabel">{announcement.title}</span>
           <h2 className="bonusWinHeading">{announcement.heading ?? "Sky Opens"}</h2>

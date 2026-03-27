@@ -11,12 +11,15 @@ import { shellAssetSources, shellAssets } from "@/lib/assets/asset-manifest";
 type RightOperatorRailProps = {
   bonusActive: boolean;
   activeBonusSpins: number;
+  variantId?: "main_cluster" | "constellation_simple";
 };
 
 export function RightOperatorRail({
   bonusActive,
-  activeBonusSpins
+  activeBonusSpins,
+  variantId = "main_cluster"
 }: RightOperatorRailProps) {
+  const isConstellationVariant = variantId === "constellation_simple";
   const sceneSources = bonusActive
     ? shellAssetSources.bonusOverlay
     : shellAssetSources.mainBackground;
@@ -37,7 +40,11 @@ export function RightOperatorRail({
           className="brandLogo"
           style={{ backgroundImage: `url(${shellAssets.logo})` }}
         />
-        <p className="brandTagline">Sacred surveillance from beyond the temple gates.</p>
+        <p className="brandTagline">
+          {isConstellationVariant
+            ? "Scatter-led omens traced across the open constellation."
+            : "Sacred surveillance from beyond the temple gates."}
+        </p>
       </section>
 
       <section
@@ -62,8 +69,20 @@ export function RightOperatorRail({
           />
         </div>
         <div className="brandSceneCopy">
-          <span className="eyebrow">{bonusActive ? "Sky Opens" : "Temple Watch"}</span>
-          <strong>{bonusActive ? `${activeBonusSpins} free spins in motion` : "The Eye remains fixed above the ritual."}</strong>
+          <span className="eyebrow">
+            {bonusActive
+              ? isConstellationVariant
+                ? "Constellation"
+                : "Sky Opens"
+              : "Temple Watch"}
+          </span>
+          <strong>
+            {bonusActive
+              ? isConstellationVariant
+                ? `${activeBonusSpins} constellation spins in motion`
+                : `${activeBonusSpins} free spins in motion`
+              : "The Eye remains fixed above the ritual."}
+          </strong>
         </div>
       </section>
     </aside>

@@ -726,3 +726,13 @@ and not only on naive width breakpoints.
   - isolate one layer at a time
   - restore the previous layer before testing the next one
   - keep code comments on board-layer ownership so shell debugging does not restart from zero
+
+- `2026-03-27`
+  - Wired live math-profile activation end to end so the admin-selected profile now drives `player-web` at runtime through the API instead of remaining an env-only/static choice
+  - Added a dedicated runtime config client hook in `player-web` that fetches `/game-config` on mount, refreshes again when the player tab becomes visible, and performs light visible-only polling so admin changes propagate without restoring static config ownership; env config remains the fallback path if the API is unavailable
+  - Replaced duplicated API-side profile metadata with direct `@eye/game-engine` profile registry usage so admin, API, and engine all read from one authoritative config source
+  - Refactored `use-slot-machine` to accept the active `GameConfig` as an input instead of reading a module-level static config, making variant-specific labels, paytable/help rows, bonus copy, and spin resolution all runtime-aware
+  - Added a guarded gameplay reset when the active config version changes so profile switches do not leave mixed board state, bet state, or bonus presentation state from the previous math model
+  - Verification passed for this runtime-switch wiring with `api` typecheck and `player-web` production build; remaining warnings are pre-existing lint warnings unrelated to the profile-switch flow
+  - Started identity-layer separation for `Constellation`: the left support rail now renders a dedicated `Samsara Scatters / Constellation Trigger` block instead of a meter-looking block, and the entry/complete bonus overlays now carry their own constellation styling so the variant no longer reads like the base game with only different math underneath
+  - Continued the `Constellation` identity pass inside the live shell: the Menu now surfaces an explicit active-variant hero with count-anywhere/scatter cues, section headings rename themselves for the variant, and the right branding rail uses constellation-aware live bonus wording instead of default free-spin copy

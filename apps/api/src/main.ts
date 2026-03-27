@@ -24,7 +24,13 @@ async function bootstrap() {
   SwaggerModule.setup("swagger", app, document);
 
   const port = Number(process.env.PORT ?? 3200);
-  await app.listen(Number.isFinite(port) ? port : 3200);
+  const safePort = Number.isFinite(port) ? port : 3200;
+  await app.listen(safePort);
+
+  const baseUrl = `http://localhost:${safePort}`;
+  console.log(`[api] running on ${baseUrl}`);
+  console.log(`[api] docs: ${baseUrl}/swagger`);
+  console.log(`[api] health: ${baseUrl}/health`);
 }
 
 void bootstrap();

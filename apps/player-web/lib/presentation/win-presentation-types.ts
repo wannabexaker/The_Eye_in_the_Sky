@@ -5,6 +5,7 @@ Uses: use-slot-machine.ts and overlay components
 */
 
 export type BonusAnnouncementEntry = {
+  variantTheme?: "default" | "constellation";
   title: string;
   heading?: string;
   lead?: string;
@@ -18,6 +19,7 @@ export type BonusAnnouncementEntry = {
 };
 
 export type BonusSummaryEntry = {
+  variantTheme?: "default" | "constellation";
   title: string;
   subtitle: string;
   totalWin: number;

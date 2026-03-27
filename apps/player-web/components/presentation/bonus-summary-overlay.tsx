@@ -29,7 +29,10 @@ export function BonusSummaryOverlay({
 
   return (
     <div className="winPresentationLayer is-bonus-summary" role="presentation">
-      <section aria-label={summary.title} className="winPresentationCard is-ack is-bonus-summary">
+      <section
+        aria-label={summary.title}
+        className={`winPresentationCard is-ack is-bonus-summary ${summary.variantTheme === "constellation" ? "is-constellation" : ""}`}
+      >
         <span className="winPresentationLabel">{summary.title}</span>
         <p className="winPresentationSubtitle">{summary.subtitle}</p>
         <span className="bonusSummaryCaption">{summary.totalWinLabel ?? "TOTAL BONUS WIN"}</span>

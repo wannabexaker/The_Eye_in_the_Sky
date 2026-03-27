@@ -397,3 +397,29 @@
 
 - Support balance block unified into a single panel: removed nested inner stat frames and replaced them with a single vertical divider between Balance and Bet.
 
+- `2026-03-27`
+  - Completed the admin-to-player math-profile runtime wiring:
+    - API now returns the full active engine config from the shared engine registry
+    - `player-web` now fetches active profile/config from `/game-config`
+    - env config remains only as fallback
+  - Completed the player runtime refactor:
+    - `page.tsx` now consumes the runtime config hook
+    - `use-slot-machine` now resolves spins from injected `GameConfig` instead of static module config
+    - rules/help/paytable copy now follows the active profile at runtime
+  - Completed the profile-switch safety reset:
+    - when config version changes, reset local game state, presentation state, bet/autospin state, and bonus state so profile changes cannot leave mixed runtime state
+  - Verification completed:
+    - `corepack pnpm --filter api lint`
+    - `corepack pnpm --filter player-web lint`
+    - `corepack pnpm --filter player-web build`
+  - Follow-up behavior note:
+    - player picks up admin profile changes on load, when the player tab regains focus, and through light visible-only polling while the tab stays open
+    - if true instant switching is required later, prefer push-based invalidation over bringing back static config ownership
+  - Completed the first `Constellation` identity pass:
+    - replaced the meter-like support block with a dedicated scatter trigger ladder block in the left rail
+    - added variant-themed entry/complete bonus overlay styling so the simple variant reads differently where its mechanics truly differ
+  - Completed the second `Constellation` identity pass:
+    - added an active-variant hero block inside the Menu
+    - renamed variant-sensitive Menu sections for the simple profile
+    - updated right-rail live bonus copy so `Constellation` no longer reads like generic free-spin mode
+
