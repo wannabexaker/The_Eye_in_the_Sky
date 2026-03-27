@@ -16,5 +16,8 @@ coverage
 !.env.example
 !.env*.example
 
+# Local API runtime helper output
+apps/api/.runtime-api*.log
+
 # Local editor-only settings
 .vscode/settings.json

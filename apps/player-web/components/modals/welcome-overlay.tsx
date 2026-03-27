@@ -8,10 +8,11 @@ import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type WelcomeOverlayProps = {
   open: boolean;
-  onStart: () => void;
+  onStart: () => void | Promise<void>;
+  busy?: boolean;
 };
 
-export function WelcomeOverlay({ open, onStart }: WelcomeOverlayProps) {
+export function WelcomeOverlay({ open, onStart, busy = false }: WelcomeOverlayProps) {
   if (!open) {
     return null;
   }
@@ -44,8 +45,8 @@ export function WelcomeOverlay({ open, onStart }: WelcomeOverlayProps) {
             <strong>+500 Credits</strong>
           </div>
 
-          <button className="welcomeButton" onClick={onStart} type="button">
-            Start Playing
+          <button className="welcomeButton" disabled={busy} onClick={() => void onStart()} type="button">
+            {busy ? "Applying..." : "Start Playing"}
           </button>
         </div>
       </section>

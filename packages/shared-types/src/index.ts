@@ -1,5 +1,7 @@
 export type BonusModeName = "sky_opens";
 
+export type UserRole = "player" | "admin";
+
 export type WalletEntryReason = "bet" | "win" | "reset_balance" | "bonus_adjustment";
 
 export type LedgerEntry = {
@@ -47,6 +49,55 @@ export type SpinResponseDto = {
   summary: RoundSummaryDto;
   balanceAfter: number;
   bonusStateAfter: BonusStateDto | null;
+};
+
+export type AuthUserDto = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+};
+
+export type AuthSessionDto = {
+  authenticated: boolean;
+  user: AuthUserDto | null;
+};
+
+export type WalletTransactionDto = {
+  id: string;
+  timestamp: string;
+  type: "deposit" | "withdrawal" | "bet" | "win" | "welcome_bonus";
+  amount: number;
+  balanceAfter: number;
+  method?: string;
+  label: string;
+};
+
+export type PaymentMethodDto = {
+  id: string;
+  type: "card" | "bank" | "crypto";
+  label: string;
+  last4?: string;
+};
+
+export type PlayerSnapshotDto = {
+  user: AuthUserDto;
+  wallet: {
+    balance: number;
+    currency: "EUR";
+  };
+  totalDeposited: number;
+  totalWithdrawn: number;
+  welcomeClaimed: boolean;
+  walletTransactions: WalletTransactionDto[];
+  gameStateSnapshot: unknown | null;
+  sessionId: string | null;
+  paymentMethods: PaymentMethodDto[];
+};
+
+export type WalletMutationRequestDto = {
+  amount: number;
+  methodLabel?: string;
 };
 
 // Analytics Service

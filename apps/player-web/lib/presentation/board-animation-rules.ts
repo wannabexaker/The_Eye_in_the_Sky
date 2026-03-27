@@ -1,8 +1,21 @@
 import type { SymbolId } from "@eye/game-engine";
-import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
+import {
+  DEFAULT_SPIN_ANIMATION_SPEED,
+  getSpinPresentationProfile,
+  type SpinAnimationSpeed,
+  type SpinPhase
+} from "@/lib/presentation/spin-state-machine";
 
-export const FLOATING_TEXT_HOLD_MS = 700;
-export const FLOATING_TEXT_FADE_MS = 1200;
+export const getFloatingTextTimings = (speed: SpinAnimationSpeed = DEFAULT_SPIN_ANIMATION_SPEED) => {
+  const profile = getSpinPresentationProfile(speed);
+  return {
+    holdMs: profile.floatingTextHoldMs,
+    fadeMs: profile.floatingTextFadeMs
+  };
+};
+
+export const FLOATING_TEXT_HOLD_MS = getFloatingTextTimings().holdMs;
+export const FLOATING_TEXT_FADE_MS = getFloatingTextTimings().fadeMs;
 
 export const isDefaultAshenBoard = (board: SymbolId[][]) =>
   board.every((row) => row.every((symbol) => symbol === "ashen_sigil"));

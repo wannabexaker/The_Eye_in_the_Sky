@@ -22,13 +22,17 @@ const formatMoneyCompactEur = (value: number) =>
     maximumFractionDigits: 2
   }).format(value);
 
-export function DepositModal() {
+type DepositModalProps = {
+  onConfirmDeposit: (amount: number) => Promise<void>;
+};
+
+export function DepositModal({ onConfirmDeposit }: DepositModalProps) {
   const {
     depositDraft,
     setDepositAmount,
     setDepositField,
     startDepositProcessing,
-    completeDeposit
+    finishDepositProcessing
   } = usePlayerUiStore();
   const [localMessage, setLocalMessage] = useState("");
   const [amountInput, setAmountInput] = useState(String(depositDraft.amount));
@@ -51,8 +55,15 @@ export function DepositModal() {
     startDepositProcessing();
 
     window.setTimeout(() => {
-      completeDeposit();
-      setLocalMessage(`Deposit successful: ${formatMoneyCompactEur(parsedAmount)}`);
+      void onConfirmDeposit(parsedAmount)
+        .then(() => {
+          finishDepositProcessing(`Deposit successful +${parsedAmount}`);
+          setLocalMessage(`Deposit successful: ${formatMoneyCompactEur(parsedAmount)}`);
+        })
+        .catch((error) => {
+          finishDepositProcessing("");
+          setLocalMessage(error instanceof Error ? error.message : "Deposit failed.");
+        });
     }, 900);
   };
 

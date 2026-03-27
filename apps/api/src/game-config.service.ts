@@ -5,6 +5,8 @@ import {
   type GameMathProfileId
 } from "@eye/game-engine";
 import { Injectable } from "@nestjs/common";
+import { ACTIVE_PROFILE_SETTING_KEY } from "./bootstrap-data";
+import { PrismaService } from "./prisma.service";
 
 export interface GameConfigStateDto {
   activeProfileId: GameMathProfileId;
@@ -15,10 +17,27 @@ export interface GameConfigStateDto {
 
 @Injectable()
 export class GameConfigService {
-  private activeProfileId: GameMathProfileId = "math_base_v2_0";
+  constructor(private readonly prisma: PrismaService) {}
 
-  getActiveConfig(): GameConfigStateDto {
-    const profile = getGameConfigProfile(this.activeProfileId);
+  private async getStoredProfileId(): Promise<GameMathProfileId> {
+    const setting = await this.prisma.appSetting.findUnique({
+      where: { key: ACTIVE_PROFILE_SETTING_KEY }
+    });
+
+    const candidate = setting?.value;
+    if (
+      candidate === "legacy_v1_3" ||
+      candidate === "math_base_v2_0" ||
+      candidate === "constellation_simple_v0_1"
+    ) {
+      return candidate;
+    }
+
+    return "math_base_v2_0";
+  }
+
+  async getActiveConfig(): Promise<GameConfigStateDto> {
+    const profile = getGameConfigProfile(await this.getStoredProfileId());
     return {
       activeProfileId: profile.id,
       activeProfileLabel: profile.label,
@@ -27,8 +46,35 @@ export class GameConfigService {
     };
   }
 
-  setActiveProfile(profileId: GameMathProfileId): GameConfigStateDto {
-    this.activeProfileId = profileId;
+  async setActiveProfile(
+    profileId: GameMathProfileId,
+    actorUserId?: string
+  ): Promise<GameConfigStateDto> {
+    await this.prisma.appSetting.upsert({
+      where: { key: ACTIVE_PROFILE_SETTING_KEY },
+      update: { value: profileId },
+      create: { key: ACTIVE_PROFILE_SETTING_KEY, value: profileId }
+    });
+
+    if (actorUserId) {
+      await this.prisma.adminAction.create({
+        data: {
+          userId: actorUserId,
+          actionType: "game_config.profile_select",
+          payload: JSON.stringify({ profileId })
+        }
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          entityType: "game_config",
+          entityId: ACTIVE_PROFILE_SETTING_KEY,
+          eventType: "profile_select",
+          payload: JSON.stringify({ profileId, actorUserId })
+        }
+      });
+    }
+
     return this.getActiveConfig();
   }
 

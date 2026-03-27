@@ -4,8 +4,17 @@ Layer: frontend (player-web)
 Uses: use-slot-machine.ts and wallet modal components
 */
 
-import type { RoundAnalyticsEntry, RoundAnalyticsTier } from "@eye/shared-types";
+import type {
+  PaymentMethodDto,
+  PlayerSnapshotDto,
+  RoundAnalyticsEntry,
+  RoundAnalyticsTier
+} from "@eye/shared-types";
 import type { GameState, SpinResult } from "@eye/game-engine";
+import {
+  DEFAULT_SPIN_ANIMATION_SPEED,
+  type SpinAnimationSpeed
+} from "@/lib/presentation/spin-state-machine";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
@@ -70,6 +79,8 @@ export type PaymentMethod = {
   last4?: string;
 };
 
+export type PlayerRuntimeMode = "authenticated" | "simulator";
+
 type ModalKey =
   | "debugPanelOpen"
   | "settingsOpen"
@@ -104,8 +115,10 @@ type PaymentMethodDraft = {
 };
 
 type PlayerUiState = {
+  runtimeMode: PlayerRuntimeMode;
   hasHydrated: boolean;
   soundEnabled: boolean;
+  spinAnimationSpeed: SpinAnimationSpeed;
   autoContinueNeverStop: boolean;
   debugPanelOpen: boolean;
   settingsOpen: boolean;
@@ -125,10 +138,15 @@ type PlayerUiState = {
   roundsLog: RoundAnalyticsEntry[];
   walletTransactions: WalletTransaction[];
   paymentMethods: PaymentMethod[];
+  simulatorWallet: Wallet;
+  simulatorTotalDeposited: number;
+  simulatorTotalWithdrawn: number;
+  simulatorWelcomeClaimed: boolean;
   depositDraft: DepositDraft;
   withdrawalDraft: WithdrawalDraft;
   paymentMethodDraft: PaymentMethodDraft;
   toggleSound: () => void;
+  setSpinAnimationSpeed: (speed: SpinAnimationSpeed) => void;
   setAutoContinueNeverStop: (value: boolean) => void;
   toggleModal: (key: ModalKey) => void;
   setModal: (key: ModalKey, open: boolean) => void;
@@ -141,15 +159,20 @@ type PlayerUiState = {
   setDepositField: (field: keyof Omit<DepositDraft, "amount" | "processing" | "successMessage">, value: string) => void;
   startDepositProcessing: () => void;
   completeDeposit: () => void;
+  finishDepositProcessing: (successMessage: string) => void;
   setWithdrawalAmount: (amount: number) => void;
   setWithdrawalMethod: (methodId: string) => void;
   startWithdrawalProcessing: () => void;
   completeWithdrawal: () => { ok: boolean; reason?: string };
+  finishWithdrawalProcessing: (successMessage: string) => void;
   setPaymentMethodDraftField: (field: keyof PaymentMethodDraft, value: string) => void;
   addPaymentMethod: () => void;
   removePaymentMethod: (methodId: string) => void;
   syncGameState: (gameState: GameState) => void;
   applyRoundResult: (result: SpinResult) => void;
+  applyServerSnapshot: (snapshot: PlayerSnapshotDto) => void;
+  enterSimulatorMode: () => void;
+  exitSimulatorMode: () => void;
   resetSession: () => void;
 };
 
@@ -165,6 +188,18 @@ const createTransactionId = () =>
   `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const nowIso = () => new Date().toISOString();
+
+const clearRoundsLogStorage = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(ANALYTICS_LOG_PERSIST_KEY);
+  } catch {
+    // localStorage unavailable — non-critical
+  }
+};
 
 const baseDepositDraft = (): DepositDraft => ({
   amount: 100,
@@ -200,6 +235,13 @@ const ensureDefaultPaymentMethod = (
     ? normalized
     : [...normalized, defaultPaymentMethod];
 };
+
+const mapPaymentMethodDto = (method: PaymentMethodDto): PaymentMethod => ({
+  id: method.id,
+  type: method.type,
+  label: method.label,
+  last4: method.last4
+});
 
 const appendTransaction = (
   transactions: WalletTransaction[],
@@ -274,8 +316,10 @@ const sanitizeSamsaraSnapshot = (
 export const usePlayerUiStore = create<PlayerUiState>()(
   persist(
     (set, get) => ({
+      runtimeMode: "authenticated",
       soundEnabled: false,
       hasHydrated: false,
+      spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
       autoContinueNeverStop: false,
       debugPanelOpen: false,
       settingsOpen: false,
@@ -298,10 +342,18 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       roundsLog: [],
       walletTransactions: [],
       paymentMethods: basePaymentMethods(),
+      simulatorWallet: {
+        balance: 0,
+        currency: "EUR"
+      },
+      simulatorTotalDeposited: 0,
+      simulatorTotalWithdrawn: 0,
+      simulatorWelcomeClaimed: false,
       depositDraft: baseDepositDraft(),
       withdrawalDraft: baseWithdrawalDraft(),
       paymentMethodDraft: basePaymentMethodDraft(),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setSpinAnimationSpeed: (speed) => set({ spinAnimationSpeed: speed }),
       setAutoContinueNeverStop: (value) => set({ autoContinueNeverStop: value }),
       toggleModal: (key) => set((state) => ({ [key]: !state[key] }) as Pick<PlayerUiState, ModalKey>),
       setModal: (key, open) => set({ [key]: open } as Pick<PlayerUiState, ModalKey>),
@@ -344,6 +396,15 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             ...state.wallet,
             balance: balanceAfter
           },
+          simulatorWallet:
+            state.runtimeMode === "simulator"
+              ? {
+                  ...state.simulatorWallet,
+                  balance: balanceAfter
+                }
+              : state.simulatorWallet,
+          simulatorWelcomeClaimed:
+            state.runtimeMode === "simulator" ? true : state.simulatorWelcomeClaimed,
           walletTransactions: appendTransaction(state.walletTransactions, transaction)
         }));
 
@@ -392,6 +453,17 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balance: balanceAfter
           },
           totalDeposited: Number((state.totalDeposited + draft.amount).toFixed(2)),
+          simulatorWallet:
+            state.runtimeMode === "simulator"
+              ? {
+                  ...state.simulatorWallet,
+                  balance: balanceAfter
+                }
+              : state.simulatorWallet,
+          simulatorTotalDeposited:
+            state.runtimeMode === "simulator"
+              ? Number((state.simulatorTotalDeposited + draft.amount).toFixed(2))
+              : state.simulatorTotalDeposited,
           depositDraft: {
             ...state.depositDraft,
             processing: false,
@@ -400,6 +472,14 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           walletTransactions: appendTransaction(state.walletTransactions, transaction)
         }));
       },
+      finishDepositProcessing: (successMessage) =>
+        set((state) => ({
+          depositDraft: {
+            ...state.depositDraft,
+            processing: false,
+            successMessage
+          }
+        })),
       setWithdrawalAmount: (amount) =>
         set((state) => ({
           withdrawalDraft: {
@@ -467,6 +547,17 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balance: balanceAfter
           },
           totalWithdrawn: Number((state.totalWithdrawn + withdrawalDraft.amount).toFixed(2)),
+          simulatorWallet:
+            state.runtimeMode === "simulator"
+              ? {
+                  ...state.simulatorWallet,
+                  balance: balanceAfter
+                }
+              : state.simulatorWallet,
+          simulatorTotalWithdrawn:
+            state.runtimeMode === "simulator"
+              ? Number((state.simulatorTotalWithdrawn + withdrawalDraft.amount).toFixed(2))
+              : state.simulatorTotalWithdrawn,
           withdrawalDraft: {
             ...state.withdrawalDraft,
             processing: false,
@@ -477,6 +568,14 @@ export const usePlayerUiStore = create<PlayerUiState>()(
 
         return { ok: true };
       },
+      finishWithdrawalProcessing: (successMessage) =>
+        set((state) => ({
+          withdrawalDraft: {
+            ...state.withdrawalDraft,
+            processing: false,
+            successMessage
+          }
+        })),
       setPaymentMethodDraftField: (field, value) =>
         set((state) => ({
           paymentMethodDraft: {
@@ -578,38 +677,138 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balanceAfter: result.balanceAfter
           };
 
+          const shouldTrackAnalytics = state.runtimeMode !== "simulator";
           const previousEntry = state.roundsLog[state.roundsLog.length - 1];
           const nextRoundsLog =
-            previousEntry?.id === analyticsEntry.id
-              ? state.roundsLog
-              : [...state.roundsLog, analyticsEntry];
-          const trimmedRoundsLog = nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS);
+            shouldTrackAnalytics && previousEntry?.id !== analyticsEntry.id
+              ? [...state.roundsLog, analyticsEntry]
+              : state.roundsLog;
+          const trimmedRoundsLog = shouldTrackAnalytics
+            ? nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS)
+            : [];
 
           // Write rounds log asynchronously in its own key — never blocks the spin
-          scheduleRoundsLogFlush(trimmedRoundsLog);
+          if (shouldTrackAnalytics) {
+            scheduleRoundsLogFlush(trimmedRoundsLog);
+          }
 
           return {
             wallet: {
               ...state.wallet,
               balance: result.balanceAfter
             },
+            simulatorWallet:
+              state.runtimeMode === "simulator"
+                ? {
+                    ...state.simulatorWallet,
+                    balance: result.balanceAfter
+                  }
+                : state.simulatorWallet,
             samsaraExpiryAt:
-              result.nextState.bonusMeter > 0 || result.nextState.bonusState
-                ? Date.now() + SAMSARA_PROGRESS_TTL_MS
-                : null,
-            gameStateSnapshot: result.nextState,
+              state.runtimeMode === "simulator"
+                ? null
+                : result.nextState.bonusMeter > 0 || result.nextState.bonusState
+                  ? Date.now() + SAMSARA_PROGRESS_TTL_MS
+                  : null,
+            gameStateSnapshot: state.runtimeMode === "simulator" ? null : result.nextState,
             walletTransactions: nextTransactions.slice(0, 50),
             roundsLog: trimmedRoundsLog
           };
         }),
-      resetSession: () =>
+      applyServerSnapshot: (snapshot) =>
+        set((state) => {
+          const serverPaymentMethods =
+            Array.isArray(snapshot.paymentMethods) && snapshot.paymentMethods.length > 0
+              ? snapshot.paymentMethods.map(mapPaymentMethodDto)
+              : state.paymentMethods;
+          const paymentMethods = ensureDefaultPaymentMethod([
+            ...serverPaymentMethods,
+            ...state.paymentMethods.filter(
+              (method) => !serverPaymentMethods.some((serverMethod) => serverMethod.id === method.id)
+            )
+          ]);
+          const fallbackMethodId = paymentMethods[0]?.id ?? defaultPaymentMethod.id;
+          const sanitizedGameState = sanitizeSamsaraSnapshot(
+            snapshot.gameStateSnapshot as GameState | null,
+            snapshot.gameStateSnapshot &&
+              typeof snapshot.gameStateSnapshot === "object" &&
+              snapshot.gameStateSnapshot !== null &&
+              (((snapshot.gameStateSnapshot as GameState).bonusMeter ?? 0) > 0 ||
+                Boolean((snapshot.gameStateSnapshot as GameState).bonusState))
+              ? Date.now() + SAMSARA_PROGRESS_TTL_MS
+              : null
+          );
+
+          return {
+            wallet: {
+              balance: snapshot.wallet.balance,
+              currency: snapshot.wallet.currency
+            },
+            totalDeposited: snapshot.totalDeposited,
+            totalWithdrawn: snapshot.totalWithdrawn,
+            welcomeClaimed: snapshot.welcomeClaimed,
+            welcomeOpen: !snapshot.welcomeClaimed,
+            samsaraExpiryAt:
+              sanitizedGameState &&
+              (sanitizedGameState.bonusMeter > 0 || Boolean(sanitizedGameState.bonusState))
+                ? Date.now() + SAMSARA_PROGRESS_TTL_MS
+                : null,
+            gameStateSnapshot: sanitizedGameState,
+            walletTransactions: snapshot.walletTransactions,
+            paymentMethods,
+            withdrawalDraft: {
+              ...state.withdrawalDraft,
+              methodId:
+                paymentMethods.some((entry) => entry.id === state.withdrawalDraft.methodId)
+                  ? state.withdrawalDraft.methodId
+                  : fallbackMethodId,
+              processing: false
+            },
+            depositDraft: {
+              ...state.depositDraft,
+              processing: false
+            }
+          };
+        }),
+      enterSimulatorMode: () =>
+        set((state) => {
+          clearRoundsLogStorage();
+          initializeAnalyticsService([]);
+
+          return {
+            runtimeMode: "simulator",
+            wallet: state.simulatorWallet,
+            totalDeposited: state.simulatorTotalDeposited,
+            totalWithdrawn: state.simulatorTotalWithdrawn,
+            welcomeClaimed: state.simulatorWelcomeClaimed,
+            welcomeOpen: !state.simulatorWelcomeClaimed,
+            samsaraExpiryAt: null,
+            gameStateSnapshot: null,
+            roundsLog: [],
+            walletTransactions: [],
+            paymentMethods: basePaymentMethods(),
+            depositDraft: baseDepositDraft(),
+            withdrawalDraft: baseWithdrawalDraft(),
+            paymentMethodDraft: basePaymentMethodDraft(),
+            depositOpen: false,
+            withdrawOpen: false,
+            paymentMethodsOpen: false,
+            walletHistoryOpen: false,
+            analyticsOpen: false,
+            historyOpen: false
+          };
+        }),
+      exitSimulatorMode: () =>
         set({
+          runtimeMode: "authenticated",
           wallet: {
             balance: 0,
             currency: "EUR"
           },
           totalDeposited: 0,
           totalWithdrawn: 0,
+          welcomeClaimed: false,
+          welcomeOpen: true,
           samsaraExpiryAt: null,
           gameStateSnapshot: null,
           roundsLog: [],
@@ -618,22 +817,58 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           depositDraft: baseDepositDraft(),
           withdrawalDraft: baseWithdrawalDraft(),
           paymentMethodDraft: basePaymentMethodDraft(),
-          welcomeOpen: true,
-          welcomeClaimed: false,
+          depositOpen: false,
+          withdrawOpen: false,
+          paymentMethodsOpen: false,
+          walletHistoryOpen: false,
+          analyticsOpen: false,
+          historyOpen: false
+        }),
+      resetSession: () =>
+        set((state) => ({
+          wallet:
+            state.runtimeMode === "simulator"
+              ? state.simulatorWallet
+              : {
+                  balance: 0,
+                  currency: "EUR"
+                },
+          totalDeposited:
+            state.runtimeMode === "simulator" ? state.simulatorTotalDeposited : 0,
+          totalWithdrawn:
+            state.runtimeMode === "simulator" ? state.simulatorTotalWithdrawn : 0,
+          samsaraExpiryAt: null,
+          gameStateSnapshot: null,
+          roundsLog: [],
+          walletTransactions: [],
+          paymentMethods: basePaymentMethods(),
+          depositDraft: baseDepositDraft(),
+          withdrawalDraft: baseWithdrawalDraft(),
+          paymentMethodDraft: basePaymentMethodDraft(),
+          welcomeOpen:
+            state.runtimeMode === "simulator" ? !state.simulatorWelcomeClaimed : true,
+          welcomeClaimed:
+            state.runtimeMode === "simulator" ? state.simulatorWelcomeClaimed : false,
           depositOpen: false,
           withdrawOpen: false,
           paymentMethodsOpen: false,
           walletHistoryOpen: false,
           analyticsOpen: false
-        })
+        }))
     }),
     {
       name: PLAYER_STORE_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
-        // Load rounds log from its own key (not bundled with main persist payload)
-        const persistedRoundsLog = loadRoundsLogFromStorage();
-        const roundsLog = persistedRoundsLog.length > 0 ? persistedRoundsLog : (state?.roundsLog ?? []);
+        const runtimeMode = state?.runtimeMode ?? "authenticated";
+        const persistedRoundsLog =
+          runtimeMode === "simulator" ? [] : loadRoundsLogFromStorage();
+        const roundsLog =
+          runtimeMode === "simulator"
+            ? []
+            : persistedRoundsLog.length > 0
+              ? persistedRoundsLog
+              : (state?.roundsLog ?? []);
         initializeAnalyticsService(roundsLog);
         usePlayerUiStore.setState({ hasHydrated: true, roundsLog });
       },
@@ -654,15 +889,33 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         const samsaraStillValid =
           persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
         const mergedSamsaraExpiryAt = samsaraStillValid ? persistedSamsaraExpiryAt : null;
+        const runtimeMode = persisted.runtimeMode === "simulator" ? "simulator" : "authenticated";
+        const simulatorWallet = persisted.simulatorWallet ?? {
+          balance: 0,
+          currency: "EUR"
+        };
+        const simulatorWelcomeClaimed = persisted.simulatorWelcomeClaimed ?? false;
+        const simulatorTotalDeposited = persisted.simulatorTotalDeposited ?? 0;
+        const simulatorTotalWithdrawn = persisted.simulatorTotalWithdrawn ?? 0;
 
         return {
           ...currentState,
           ...persisted,
+          runtimeMode,
+          simulatorWallet,
+          simulatorWelcomeClaimed,
+          simulatorTotalDeposited,
+          simulatorTotalWithdrawn,
           paymentMethods,
-          samsaraExpiryAt: mergedSamsaraExpiryAt,
-          gameStateSnapshot: mergedGameStateSnapshot,
+          samsaraExpiryAt: runtimeMode === "simulator" ? null : mergedSamsaraExpiryAt,
+          gameStateSnapshot: runtimeMode === "simulator" ? null : mergedGameStateSnapshot,
           // roundsLog is loaded from its own localStorage key in onRehydrateStorage
-          roundsLog: Array.isArray(persisted.roundsLog) ? persisted.roundsLog : [],
+          roundsLog:
+            runtimeMode === "simulator"
+              ? []
+              : Array.isArray(persisted.roundsLog)
+                ? persisted.roundsLog
+                : [],
           withdrawalDraft: {
             amount: withdrawalAmount,
             methodId:
@@ -676,17 +929,33 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         };
       },
       partialize: (state) => ({
+        runtimeMode: state.runtimeMode,
         soundEnabled: state.soundEnabled,
+        spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,
-        welcomeOpen: state.welcomeOpen,
-        welcomeClaimed: state.welcomeClaimed,
-        wallet: state.wallet,
-        totalDeposited: state.totalDeposited,
-        totalWithdrawn: state.totalWithdrawn,
-        samsaraExpiryAt: state.samsaraExpiryAt,
-        walletTransactions: state.walletTransactions,
-        paymentMethods: state.paymentMethods,
-        gameStateSnapshot: state.gameStateSnapshot
+        simulatorWallet: state.simulatorWallet,
+        simulatorTotalDeposited: state.simulatorTotalDeposited,
+        simulatorTotalWithdrawn: state.simulatorTotalWithdrawn,
+        simulatorWelcomeClaimed: state.simulatorWelcomeClaimed,
+        ...(state.runtimeMode === "simulator"
+          ? {
+              welcomeOpen: state.welcomeOpen,
+              welcomeClaimed: state.welcomeClaimed,
+              wallet: state.wallet,
+              totalDeposited: state.totalDeposited,
+              totalWithdrawn: state.totalWithdrawn
+            }
+          : {
+              welcomeOpen: state.welcomeOpen,
+              welcomeClaimed: state.welcomeClaimed,
+              wallet: state.wallet,
+              totalDeposited: state.totalDeposited,
+              totalWithdrawn: state.totalWithdrawn,
+              samsaraExpiryAt: state.samsaraExpiryAt,
+              walletTransactions: state.walletTransactions,
+              paymentMethods: state.paymentMethods,
+              gameStateSnapshot: state.gameStateSnapshot
+            })
         // roundsLog is persisted separately in ANALYTICS_LOG_PERSIST_KEY
       })
     }

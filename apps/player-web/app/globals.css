@@ -2303,6 +2303,67 @@ p {
   padding: 12px 24px 32px;
 }
 
+.authModal {
+  width: min(680px, 100%);
+}
+
+.authBody {
+  align-content: start;
+}
+
+.authToggleRow {
+  display: flex;
+  gap: 10px;
+}
+
+.authFormGrid {
+  display: grid;
+  gap: 12px;
+  width: min(420px, 100%);
+}
+
+.authFeedback {
+  max-width: 420px;
+  text-align: center;
+}
+
+.authSecondaryAction {
+  align-self: center;
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  border-radius: 999px;
+  background: rgba(12, 13, 18, 0.62);
+  color: rgba(244, 239, 230, 0.86);
+  font-size: var(--font-sm);
+  letter-spacing: 0.06em;
+  padding: 8px 16px;
+  text-transform: uppercase;
+}
+
+.authSecondaryAction:disabled {
+  opacity: 0.58;
+}
+
+.runtimeModeBadge {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: calc(var(--z-overlay) + 1);
+  display: grid;
+  gap: 6px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 190, 112, 0.22);
+  border-radius: 18px;
+  background: rgba(10, 11, 16, 0.82);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(8px);
+}
+
+.runtimeModeBadge strong {
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+}
+
 .bonusEntryModal {
   overflow: hidden;
 }
@@ -2375,6 +2436,11 @@ p {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.welcomeButton:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .compactPrimary {
@@ -3954,9 +4020,9 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: relative;
   display: grid;
   grid-template-columns: max-content max-content;
-  column-gap: clamp(8px, 1.2vw, 14px);
-  row-gap: clamp(5px, 0.6vh, 8px);
-  padding: clamp(8px, 0.8vh, 10px) clamp(10px, 0.8vw, 12px) clamp(22px, 2.4vh, 26px);
+  column-gap: clamp(4px, 0.6vw, 8px);
+  row-gap: clamp(2px, 0.35vh, 4px);
+  padding: clamp(5px, 0.5vh, 7px) clamp(5px, 0.45vw, 7px) clamp(14px, 1.4vh, 17px);
   border-radius: 16px;
   border: 1px solid rgba(226, 190, 112, 0.12);
   background:
@@ -4073,7 +4139,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 .dockAutoCluster {
   display: flex;
   align-items: center;
-  gap: clamp(2px, 0.3vw, 4px);
+  gap: clamp(1px, 0.2vw, 3px);
   flex-wrap: nowrap;
 }
 
@@ -4083,6 +4149,54 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 .dockAutoCluster {
   justify-self: center;
   align-self: center;
+}
+
+.dockSpeedCycleButton {
+  position: relative;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  flex: 0 0 44px;
+  padding-inline: clamp(4px, 0.4vw, 6px);
+  justify-content: center;
+}
+
+.dockSpeedCycleValue {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.46rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: rgba(244, 239, 230, 0.94);
+}
+
+.dockSpeedCycleButton::after {
+  content: attr(data-speed-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border: 1px solid rgba(226, 190, 112, 0.24);
+  border-radius: 6px;
+  background: rgba(9, 8, 11, 0.94);
+  color: rgba(248, 237, 217, 0.96);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dockSpeedCycleButton:hover::after,
+.dockSpeedCycleButton:focus-visible::after {
+  opacity: 1;
 }
 
 .dockSmallButton {
@@ -4180,7 +4294,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 .dockBetInput {
   height: clamp(24px, 2vw, 30px);
   min-height: clamp(24px, 2vw, 30px);
-  width: clamp(28px, 3.2vw, 36px);
+  width: clamp(24px, 2.8vw, 32px);
   padding: clamp(2px, 0.2vw, 4px) clamp(4px, 0.3vw, 6px);
   border: 1px solid rgba(226, 190, 112, 0.12);
   border-radius: 10px;
@@ -4337,18 +4451,18 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: absolute;
   left: 0;
   right: 0;
-  bottom: clamp(6px, 0.7vh, 9px);
+  bottom: clamp(3px, 0.35vh, 5px);
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 3px;
-  min-height: 12px;
+  gap: 2px;
+  min-height: 10px;
   margin-top: 0;
-  padding: 0 clamp(6px, 0.6vw, 10px);
+  padding: 0 clamp(4px, 0.45vw, 7px);
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   line-height: 1;
   white-space: nowrap;
   text-overflow: ellipsis;

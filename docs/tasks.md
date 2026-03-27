@@ -422,4 +422,35 @@
     - added an active-variant hero block inside the Menu
     - renamed variant-sensitive Menu sections for the simple profile
     - updated right-rail live bonus copy so `Constellation` no longer reads like generic free-spin mode
+  - Completed the first admin-panel cleanup pass:
+    - replaced the old inline-style admin page shell with a structured CSS-module layout
+    - rebuilt the math profile selector into operator cards with mechanic summaries and a clearer active runtime summary
+    - verified `admin-web` with lint and production build
+  - Completed the first SQL/auth integration pass:
+    - SQL Server Docker compose file added and validated with `docker compose config`
+    - Prisma schema switched to `sqlserver` and now includes `AuthSession`, `AppSetting`, expanded `User`, and resumable `GameSession` persistence
+    - API bootstrap now seeds the game/profile registry plus an optional admin user from env
+    - auth endpoints and role-aware guards are in place
+    - player bootstrap/deposit/withdraw/welcome-bonus/round persistence endpoints are in place
+    - `player-web` now gates gameplay behind login/register and restores authoritative wallet/session state from the API
+    - `admin-web` now requires authenticated admin login for operator access
+  - Completed live SQL/auth validation:
+    - Docker Desktop booted and local SQL Server container reached `healthy`
+    - live `TheEyeInTheSky` DB was created
+    - live Prisma migration applied successfully
+    - seed completed successfully with game/profile registry + admin bootstrap
+    - manual HTTP smoke passed for player register/login/bootstrap/welcome-bonus/deposit/withdraw/round persistence
+    - admin auth/profile-switch smoke passed and non-admin profile-switch attempts were rejected
+  - Added auth/persistence hardening:
+    - duplicate `/player/rounds` submissions are now idempotent by `roundId`
+    - added repeatable SQL/auth smoke script at `scripts/sql-auth-smoke.ps1`
+  - Added dev-only simulator mode in `player-web`:
+    - `Skip Login` now unlocks a local-only simulator flow
+    - simulator keeps only local wallet money continuity
+    - simulator no longer persists rounds, analytics, resumable game state, or any server-backed player data
+  - Remaining follow-up after the live auth/persistence rollout:
+    - decide whether payment methods stay local-only or move to server persistence
+    - migrate analytics from file-based storage to DB-backed aggregation once auth/persistence is stable
+    - decide later whether round persistence remains client-resolved or moves to server-authoritative spin resolution
+    - clean up the API runtime path so local smoke no longer needs the `corepack pnpm --filter api exec node --import tsx dist/apps/api/src/main.js` workspace-loader workaround
 

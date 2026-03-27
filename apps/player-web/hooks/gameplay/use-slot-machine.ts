@@ -16,8 +16,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { soundManager } from "@/lib/audio/sound-manager";
 import {
-  PRESENTATION_TIMINGS,
-  WIN_PRESENTATION_AUTO_DISMISS_MS,
+  SPIN_ANIMATION_SPEEDS,
+  getSpinPresentationProfile,
+  type SpinAnimationSpeed,
   type SpinPhase
 } from "@/lib/presentation/spin-state-machine";
 import type {
@@ -34,11 +35,6 @@ const BET_STEP_OPTIONS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 100
 const MAX_PRESET_BET = BET_STEP_OPTIONS[BET_STEP_OPTIONS.length - 1];
 const CUSTOM_BET_STEP = 1000;
 const BONUS_ENTRY_CINEMATIC_DELAY_MS = 0;
-const BONUS_ANNOUNCEMENT_INPUT_LOCK_MS = 1400;
-const BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS = 1400;
-const BONUS_NONSTOP_AUTO_CONTINUE_MS = 2000;
-const BONUS_SUMMARY_MIN_VISIBLE_MS = 750;
-const BIG_WIN_AUTO_DISMISS_MS = 2200;
 const WIN_GLOW_START_MULTIPLE = 2;
 const BIG_WIN_THRESHOLD = 5;
 const HUGE_WIN_THRESHOLD = 8;
@@ -401,7 +397,11 @@ const buildBonusSummary = (result: SpinResult, gameConfig: GameConfig): BonusSum
 const buildWinPresentation = (
   result: SpinResult,
   autoContinueNeverStop: boolean,
-  gameConfig: GameConfig
+  gameConfig: GameConfig,
+  autoDismissTimings: {
+    bigWinAutoDismissMs: number;
+    winPresentationAutoDismissMs: number;
+  }
 ): WinPresentationEntry | null => {
   if (buildBonusSummary(result, gameConfig)) {
     return null;
@@ -469,16 +469,18 @@ const buildWinPresentation = (
     continueLabel: result.bonusTriggered ? "Enter Bonus" : "Continue",
     autoDismissMs:
       autoContinueNeverStop && (bigWin || hugeWin || superWin)
-        ? BIG_WIN_AUTO_DISMISS_MS
+        ? autoDismissTimings.bigWinAutoDismissMs
         : bigWin || hugeWin || superWin
           ? undefined
-          : WIN_PRESENTATION_AUTO_DISMISS_MS
+          : autoDismissTimings.winPresentationAutoDismissMs
   };
 };
 
 export function useSlotMachine(gameConfig: GameConfig) {
   const {
     soundEnabled,
+    spinAnimationSpeed,
+    setSpinAnimationSpeed,
     autoContinueNeverStop,
     wallet,
     gameStateSnapshot,
@@ -530,6 +532,11 @@ export function useSlotMachine(gameConfig: GameConfig) {
   const winMultiplierRef = useRef(winMultiplier);
 
   const availableBalance = roundCurrency(wallet.balance);
+  const presentationProfile = useMemo(
+    () => getSpinPresentationProfile(spinAnimationSpeed),
+    [spinAnimationSpeed]
+  );
+  const presentationTimings = presentationProfile.timings;
   const rawMaxBet = availableBalance;
   const recommendedRiskThreshold = getRecommendedRiskThreshold(availableBalance);
   const activeBonusSpins = gameState.bonusState?.freeSpinsRemaining ?? 0;
@@ -997,7 +1004,7 @@ const validateAutospinCount = useCallback(
         ? BONUS_ENTRY_CINEMATIC_DELAY_MS
         : 0;
       const bonusPhaseHoldMs = shouldRunBonusEntryCue
-        ? PRESENTATION_TIMINGS.bonusTrigger
+        ? presentationTimings.bonusTrigger
         : 0;
 
       setBonusEntryPending(bonusEntryTransition);
@@ -1007,17 +1014,17 @@ const validateAutospinCount = useCallback(
       // For N cascades the board runs N × stepMs; the fixed schedule only covers 1 step,
       // so each additional cascade needs another stepMs added to all post-CASCADE timers.
       const cascadeStepMs =
-        PRESENTATION_TIMINGS.boardDrop +
-        PRESENTATION_TIMINGS.winHighlight +
-        PRESENTATION_TIMINGS.cascadeDrop +
+        presentationTimings.boardDrop +
+        presentationTimings.winHighlight +
+        presentationTimings.cascadeDrop +
         110;
       const extraCascadeMs =
         result.cascades.length > 1 ? (result.cascades.length - 1) * cascadeStepMs : 0;
       const totalCascadeTimelineMs =
-        PRESENTATION_TIMINGS.spinStart +
-        PRESENTATION_TIMINGS.boardDrop +
-        PRESENTATION_TIMINGS.winHighlight +
-        PRESENTATION_TIMINGS.cascadeDrop +
+        presentationTimings.spinStart +
+        presentationTimings.boardDrop +
+        presentationTimings.winHighlight +
+        presentationTimings.cascadeDrop +
         extraCascadeMs;
       const postBreakSafetyBufferMs = 40;
 
@@ -1035,7 +1042,7 @@ const validateAutospinCount = useCallback(
           setSpinPhase("BOARD_DROP");
           setPhaseMessage("Symbols descend through the forbidden temple.");
           soundManager.play("drop", soundEnabled);
-        }, PRESENTATION_TIMINGS.spinStart)
+        }, presentationTimings.spinStart)
       );
 
       phaseTimersRef.current.push(
@@ -1059,7 +1066,7 @@ const validateAutospinCount = useCallback(
           } else {
             soundManager.play("loss", soundEnabled);
           }
-        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop)
+        }, presentationTimings.spinStart + presentationTimings.boardDrop)
       );
 
       phaseTimersRef.current.push(
@@ -1074,7 +1081,10 @@ const validateAutospinCount = useCallback(
           if (result.cascades.length > 0) {
             soundManager.play("cascade", soundEnabled);
           }
-        }, PRESENTATION_TIMINGS.spinStart + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight)
+        },
+          presentationTimings.spinStart +
+            presentationTimings.boardDrop +
+            presentationTimings.winHighlight)
       );
 
       phaseTimersRef.current.push(
@@ -1123,15 +1133,15 @@ const validateAutospinCount = useCallback(
                   setBonusAnnouncementLocked(false);
                   setBonusEntryPending(false);
                   setBonusAnnouncement(null);
-                }, BONUS_NONSTOP_AUTO_CONTINUE_MS);
+                }, presentationProfile.bonusNonstopAutoContinueMs);
               } else {
                 bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
                   setBonusAnnouncementLocked(false);
                   bonusAnnouncementLockTimerRef.current = null;
-                }, BONUS_ANNOUNCEMENT_INPUT_LOCK_MS);
+                }, presentationProfile.bonusAnnouncementInputLockMs);
               }
             }
-          }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusEntryRevealOffsetMs)
+          }, totalCascadeTimelineMs + presentationTimings.modifierFlash + bonusEntryRevealOffsetMs)
         );
       }
 
@@ -1139,13 +1149,18 @@ const validateAutospinCount = useCallback(
         window.setTimeout(() => {
           setSpinPhase("ROUND_END");
           setPhaseMessage(getRoundEndMessage(result, gameConfig));
-        }, totalCascadeTimelineMs + PRESENTATION_TIMINGS.modifierFlash + bonusPhaseHoldMs)
+        }, totalCascadeTimelineMs + presentationTimings.modifierFlash + bonusPhaseHoldMs)
       );
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           const summary = buildBonusSummary(result, gameConfig);
-          const presentation = summary ? null : buildWinPresentation(result, autoContinueNeverStop, gameConfig);
+          const presentation = summary
+            ? null
+            : buildWinPresentation(result, autoContinueNeverStop, gameConfig, {
+                bigWinAutoDismissMs: presentationProfile.bigWinAutoDismissMs,
+                winPresentationAutoDismissMs: presentationProfile.winPresentationAutoDismissMs
+              });
 
           if (summary) {
             bonusSummaryShownAtRef.current = Date.now();
@@ -1163,7 +1178,7 @@ const validateAutospinCount = useCallback(
                 bonusSummaryShownAtRef.current = null;
                 setBonusSummaryLocked(false);
                 setBonusSummary(null);
-              }, BONUS_NONSTOP_AUTO_CONTINUE_MS);
+              }, presentationProfile.bonusNonstopAutoContinueMs);
             } else {
               setBonusSummaryLocked(false);
             }
@@ -1185,13 +1200,20 @@ const validateAutospinCount = useCallback(
           setPhaseMessage(getBonusIdleMessage(result, gameConfig));
         },
           totalCascadeTimelineMs +
-            PRESENTATION_TIMINGS.modifierFlash +
+            presentationTimings.modifierFlash +
             bonusPhaseHoldMs +
-            PRESENTATION_TIMINGS.roundEnd +
+            presentationTimings.roundEnd +
             postBreakSafetyBufferMs)
       );
     },
-    [autoContinueNeverStop, clearTimers, gameConfig, soundEnabled]
+    [
+      autoContinueNeverStop,
+      clearTimers,
+      gameConfig,
+      presentationProfile,
+      presentationTimings,
+      soundEnabled
+    ]
   );
 
   const runSpin = useCallback(() => {
@@ -1358,7 +1380,7 @@ const validateAutospinCount = useCallback(
       if (result) {
         setAutoSpinRemaining((current) => (Number.isFinite(current) ? current - 1 : current));
       }
-    }, 180);
+    }, presentationProfile.autoSpinCadenceMs);
 
     return () => window.clearTimeout(timer);
   }, [
@@ -1368,6 +1390,7 @@ const validateAutospinCount = useCallback(
     bonusEntryPending,
     bonusSummary,
     isAutoSpinning,
+    presentationProfile.autoSpinCadenceMs,
     runSpin,
     spinPhase,
     winPresentation
@@ -1485,7 +1508,7 @@ const validateAutospinCount = useCallback(
       }
 
       const shownAt = bonusAnnouncementShownAtRef.current;
-      if (shownAt !== null && Date.now() - shownAt < BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS) {
+      if (shownAt !== null && Date.now() - shownAt < presentationProfile.bonusAnnouncementMinVisibleMs) {
         return;
       }
     }
@@ -1515,8 +1538,8 @@ const validateAutospinCount = useCallback(
     }
 
     const shownAt = bonusAnnouncementShownAtRef.current;
-    const elapsedMs = shownAt === null ? BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS : Date.now() - shownAt;
-    const remainingMs = Math.max(0, BONUS_ANNOUNCEMENT_MIN_VISIBLE_MS - elapsedMs);
+    const elapsedMs = shownAt === null ? presentationProfile.bonusAnnouncementMinVisibleMs : Date.now() - shownAt;
+    const remainingMs = Math.max(0, presentationProfile.bonusAnnouncementMinVisibleMs - elapsedMs);
 
     if (remainingMs === 0 && !bonusAnnouncementLocked) {
       dismissBonusAnnouncement();
@@ -1531,7 +1554,7 @@ const validateAutospinCount = useCallback(
       bonusAnnouncementFastContinueTimerRef.current = null;
       dismissBonusAnnouncement();
     }, remainingMs);
-  }, [bonusAnnouncement, bonusAnnouncementLocked, dismissBonusAnnouncement]);
+  }, [bonusAnnouncement, bonusAnnouncementLocked, dismissBonusAnnouncement, presentationProfile.bonusAnnouncementMinVisibleMs]);
 
   const dismissBonusSummary = useCallback(() => {
     if (bonusSummary) {
@@ -1540,7 +1563,7 @@ const validateAutospinCount = useCallback(
       }
 
       const shownAt = bonusSummaryShownAtRef.current;
-      if (shownAt !== null && Date.now() - shownAt < BONUS_SUMMARY_MIN_VISIBLE_MS) {
+      if (shownAt !== null && Date.now() - shownAt < presentationProfile.bonusSummaryMinVisibleMs) {
         return;
       }
     }
@@ -1557,7 +1580,7 @@ const validateAutospinCount = useCallback(
     bonusSummaryShownAtRef.current = null;
     setBonusSummaryLocked(false);
     setBonusSummary(null);
-  }, [bonusSummary, bonusSummaryLocked]);
+  }, [bonusSummary, bonusSummaryLocked, presentationProfile.bonusSummaryMinVisibleMs]);
 
   const dismissWinPresentation = useCallback(() => {
     if (presentationTimerRef.current) {
@@ -1709,6 +1732,8 @@ const validateAutospinCount = useCallback(
     isAutospinActive: isAutoSpinning,
     autospinStopRequested,
     autoContinueNeverStop,
+    spinAnimationSpeed,
+    spinSpeedOptions: SPIN_ANIMATION_SPEEDS,
     winMultiplier,
     winMultiplierOptions: gameConfig.winMultiplierOptions,
     spin,
@@ -1731,6 +1756,10 @@ const validateAutospinCount = useCallback(
     },
     applyManualAutospinCount,
     setWinMultiplier,
+    setSpinAnimationSpeed,
+    presentationTimings,
+    floatingTextHoldMs: presentationProfile.floatingTextHoldMs,
+    floatingTextFadeMs: presentationProfile.floatingTextFadeMs,
     gameState,
     lastResult,
     history,

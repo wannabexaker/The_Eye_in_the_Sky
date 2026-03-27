@@ -172,7 +172,8 @@ export function GameStatsViewer() {
 
         const response = await fetch(`${apiBase}/analytics/dashboard?limit=2000`, {
           signal: controller.signal,
-          cache: "no-store"
+          cache: "no-store",
+          credentials: "include"
         });
         if (!response.ok) {
           throw new Error(`dashboard fetch failed (${response.status})`);

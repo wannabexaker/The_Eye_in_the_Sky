@@ -22,7 +22,11 @@ const formatMoneyCompactEur = (value: number) =>
     maximumFractionDigits: 2
   }).format(value);
 
-export function WithdrawModal() {
+type WithdrawModalProps = {
+  onRequestWithdrawal: (amount: number, methodLabel?: string) => Promise<void>;
+};
+
+export function WithdrawModal({ onRequestWithdrawal }: WithdrawModalProps) {
   const {
     wallet,
     paymentMethods,
@@ -30,7 +34,7 @@ export function WithdrawModal() {
     setWithdrawalAmount,
     setWithdrawalMethod,
     startWithdrawalProcessing,
-    completeWithdrawal
+    finishWithdrawalProcessing
   } = usePlayerUiStore();
   const [localMessage, setLocalMessage] = useState("");
   const [amountInput, setAmountInput] = useState(String(withdrawalDraft.amount));
@@ -53,12 +57,16 @@ export function WithdrawModal() {
     startWithdrawalProcessing();
 
     window.setTimeout(() => {
-      const result = completeWithdrawal();
-      setLocalMessage(
-        result.ok
-          ? `Withdrawal requested: ${formatMoneyCompactEur(parsedAmount)} (simulation).`
-          : result.reason ?? "Withdrawal failed."
-      );
+      const method = paymentMethods.find((entry) => entry.id === withdrawalDraft.methodId);
+      void onRequestWithdrawal(parsedAmount, method?.label)
+        .then(() => {
+          finishWithdrawalProcessing(`Withdrawal requested ${parsedAmount}`);
+          setLocalMessage(`Withdrawal requested: ${formatMoneyCompactEur(parsedAmount)}`);
+        })
+        .catch((error) => {
+          finishWithdrawalProcessing("");
+          setLocalMessage(error instanceof Error ? error.message : "Withdrawal failed.");
+        });
     }, 900);
   };
 

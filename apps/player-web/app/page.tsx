@@ -6,8 +6,9 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SymbolId } from "@eye/game-engine";
+import { AuthOverlay } from "@/components/auth/auth-overlay";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
 import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
@@ -24,6 +25,16 @@ import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytic
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { useRuntimeGameConfig } from "@/hooks/use-runtime-game-config";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
+import {
+  claimPlayerWelcomeBonus,
+  depositPlayerWallet,
+  fetchAuthSession,
+  fetchPlayerBootstrap,
+  loginPlayer,
+  persistPlayerRound,
+  registerPlayer,
+  withdrawPlayerWallet
+} from "@/lib/api/player-api";
 import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
@@ -65,14 +76,20 @@ const symbolLabels: Record<string, string> = {
 };
 
 export default function HomePage() {
+  const allowSkipLogin = process.env.NODE_ENV !== "production";
   const shellRef = useRef<HTMLElement | null>(null);
   const depositPromptShownRef = useRef(false);
   const previousBonusModeRef = useRef(false);
   const bonusEnterTimerRef = useRef<number | null>(null);
   const bonusExitTimerRef = useRef<number | null>(null);
+  const persistedRoundIdRef = useRef<string | null>(null);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
   const [bonusEnterCinematic, setBonusEnterCinematic] = useState(false);
   const [bonusExitCinematic, setBonusExitCinematic] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Keep screen awake while game is active
   useScreenWakeLock();
@@ -93,17 +110,42 @@ export default function HomePage() {
     wallet,
     walletTransactions,
     roundsLog,
+    runtimeMode,
+    applyServerSnapshot,
     claimWelcomeBonus,
+    completeDeposit,
+    completeWithdrawal,
+    enterSimulatorMode,
+    exitSimulatorMode,
     setModal,
     toggleDebugPanel,
     toggleHistory,
     toggleSettings,
     toggleSound,
     toggleModal,
-    setAutoContinueNeverStop
+    setAutoContinueNeverStop,
+    finishDepositProcessing,
+    finishWithdrawalProcessing
   } = usePlayerUiStore();
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
+  const isSimulatorMode = runtimeMode === "simulator";
+  const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
+  const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
+
+  const refreshServerBackedPlayerState = useCallback(async () => {
+    const session = await fetchAuthSession();
+    const authenticated = Boolean(session.authenticated && session.user);
+    setIsAuthenticated(authenticated);
+    setAuthError("");
+
+    if (!authenticated) {
+      return;
+    }
+
+    const snapshot = await fetchPlayerBootstrap();
+    applyServerSnapshot(snapshot);
+  }, [applyServerSnapshot]);
 
   const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
   const paytableThresholds = Array.from(
@@ -288,6 +330,41 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (runtimeMode === "simulator") {
+      setAuthLoading(false);
+      setAuthBusy(false);
+      setAuthError("");
+      setIsAuthenticated(false);
+      return;
+    }
+
+    let disposed = false;
+
+    const bootstrapAuth = async () => {
+      try {
+        setAuthLoading(true);
+        setAuthError("");
+        await refreshServerBackedPlayerState();
+      } catch (error) {
+        if (!disposed) {
+          setIsAuthenticated(false);
+          setAuthError(error instanceof Error ? error.message : "Authentication bootstrap failed.");
+        }
+      } finally {
+        if (!disposed) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      disposed = true;
+    };
+  }, [refreshServerBackedPlayerState, runtimeMode]);
+
+  useEffect(() => {
     const handleFullscreenChange = () => {
       setFullscreenEnabled(document.fullscreenElement === shellRef.current);
     };
@@ -297,7 +374,13 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!hasHydrated || !slot.needsDepositPrompt) {
+    if (!allowSkipLogin && runtimeMode === "simulator") {
+      exitSimulatorMode();
+    }
+  }, [allowSkipLogin, exitSimulatorMode, runtimeMode]);
+
+  useEffect(() => {
+    if (!hasHydrated || !canPlayWithoutAuth || !slot.needsDepositPrompt) {
       depositPromptShownRef.current = false;
       return;
     }
@@ -308,10 +391,40 @@ export default function HomePage() {
 
     setModal("depositOpen", true);
     depositPromptShownRef.current = true;
-  }, [depositOpen, hasHydrated, setModal, slot.needsDepositPrompt, welcomeOpen]);
+  }, [canPlayWithoutAuth, depositOpen, hasHydrated, setModal, slot.needsDepositPrompt, welcomeOpen]);
+
+  useEffect(() => {
+    if (!canUseServerPersistence || !slot.lastResult) {
+      return;
+    }
+
+    const roundId = slot.lastResult.roundSummary.roundId;
+    if (!roundId || persistedRoundIdRef.current === roundId) {
+      return;
+    }
+
+    persistedRoundIdRef.current = roundId;
+
+    void persistPlayerRound(activeGameConfigProfile.profileId, slot.lastResult)
+      .then((snapshot) => {
+        applyServerSnapshot(snapshot);
+      })
+      .catch((error) => {
+        persistedRoundIdRef.current = null;
+        console.warn(
+          "[player] failed to persist round to API; local gameplay state is kept until next bootstrap.",
+          error
+        );
+      });
+  }, [activeGameConfigProfile.profileId, applyServerSnapshot, canUseServerPersistence, slot.lastResult]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (authLoading || !canPlayWithoutAuth) {
+        event.preventDefault();
+        return;
+      }
+
       if (slot.bonusEntryPending) {
         event.preventDefault();
         return;
@@ -397,6 +510,8 @@ export default function HomePage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    authLoading,
+    canPlayWithoutAuth,
     debugPanelOpen,
     depositOpen,
     historyOpen,
@@ -427,11 +542,118 @@ export default function HomePage() {
     }
   };
 
-  const startWelcomeFlow = () => {
-    claimWelcomeBonus();
-  };
+  const handleLogin = useCallback(
+    async (payload: { email: string; password: string }) => {
+      setAuthBusy(true);
+      setAuthError("");
+      try {
+        exitSimulatorMode();
+        await loginPlayer(payload);
+        await refreshServerBackedPlayerState();
+      } catch (error) {
+        setAuthError(error instanceof Error ? error.message : "Login failed.");
+        throw error;
+      } finally {
+        setAuthBusy(false);
+        setAuthLoading(false);
+      }
+    },
+    [exitSimulatorMode, refreshServerBackedPlayerState]
+  );
+
+  const handleRegister = useCallback(
+    async (payload: { email: string; password: string; displayName: string }) => {
+      setAuthBusy(true);
+      setAuthError("");
+      try {
+        exitSimulatorMode();
+        await registerPlayer(payload);
+        await refreshServerBackedPlayerState();
+      } catch (error) {
+        setAuthError(error instanceof Error ? error.message : "Registration failed.");
+        throw error;
+      } finally {
+        setAuthBusy(false);
+        setAuthLoading(false);
+      }
+    },
+    [exitSimulatorMode, refreshServerBackedPlayerState]
+  );
+
+  const handleSkipLogin = useCallback(() => {
+    if (!allowSkipLogin) {
+      return;
+    }
+
+    setAuthBusy(false);
+    setAuthLoading(false);
+    setAuthError("");
+    setIsAuthenticated(false);
+    enterSimulatorMode();
+  }, [allowSkipLogin, enterSimulatorMode]);
+
+  const startWelcomeFlow = useCallback(async () => {
+    if (isSimulatorMode) {
+      claimWelcomeBonus();
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      const snapshot = await claimPlayerWelcomeBonus();
+      applyServerSnapshot(snapshot);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Welcome bonus claim failed.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }, [applyServerSnapshot, claimWelcomeBonus, isSimulatorMode]);
+
+  const handleConfirmDeposit = useCallback(
+    async (amount: number) => {
+      if (isSimulatorMode) {
+        completeDeposit();
+        return;
+      }
+
+      try {
+        const snapshot = await depositPlayerWallet(amount, "Simulated Card");
+        applyServerSnapshot(snapshot);
+      } catch (error) {
+        finishDepositProcessing("");
+        throw error;
+      }
+    },
+    [applyServerSnapshot, completeDeposit, finishDepositProcessing, isSimulatorMode]
+  );
+
+  const handleRequestWithdrawal = useCallback(
+    async (amount: number, methodLabel?: string) => {
+      if (isSimulatorMode) {
+        const outcome = completeWithdrawal();
+        if (!outcome.ok) {
+          throw new Error(outcome.reason ?? "Withdrawal failed.");
+        }
+        return;
+      }
+
+      try {
+        const snapshot = await withdrawPlayerWallet(amount, methodLabel);
+        applyServerSnapshot(snapshot);
+      } catch (error) {
+        finishWithdrawalProcessing("");
+        throw error;
+      }
+    },
+    [applyServerSnapshot, completeWithdrawal, finishWithdrawalProcessing, isSimulatorMode]
+  );
 
   const spinFromInputIntent = () => {
+    if (authLoading || !canPlayWithoutAuth) {
+      return;
+    }
+
     if (slot.bonusEntryPending) {
       return;
     }
@@ -525,7 +747,10 @@ export default function HomePage() {
               <PixiTempleBoard
                 board={board}
                 bonusActive={bonusModeActive}
+                floatingTextFadeMs={slot.floatingTextFadeMs}
+                floatingTextHoldMs={slot.floatingTextHoldMs}
                 phaseMessage={slot.phaseMessage}
+                presentationTimings={slot.presentationTimings}
                 result={slot.lastResult}
                 spinPhase={slot.spinPhase}
               />
@@ -552,7 +777,10 @@ export default function HomePage() {
         betRiskTooltip={slot.betRiskTooltip}
         betValidationMessage={slot.betValidationMessage}
         betValidationTooltip={slot.betValidationTooltip}
-        canSpin={slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation)}
+        canSpin={
+          canPlayWithoutAuth &&
+          (slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation))
+        }
         canStartAutospin={slot.canStartAutospin}
         isAutospinActive={slot.isAutospinActive}
         onCommitBetInput={slot.applyManualBet}
@@ -562,16 +790,29 @@ export default function HomePage() {
         onDecreaseBet={slot.decrementBetByStep}
         onIncreaseBet={slot.incrementBetByStep}
         onSpin={spinFromInputIntent}
+        onSpinSpeedChange={slot.setSpinAnimationSpeed}
         onStartAutospin={slot.startAutoSpin}
         onStartAutospinInfinite={slot.startAutoSpinInfinite}
         onStopAutoSpin={slot.stopAutoSpin}
         onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
+        spinAnimationSpeed={slot.spinAnimationSpeed}
         spinPhase={slot.spinPhase}
         spinPulseKey={slot.spinPulseKey}
+        spinSpeedOptions={slot.spinSpeedOptions}
       />
 
-      {slot.bonusAnnouncementLocked || slot.bonusSummaryLocked ? (
+      {slot.bonusAnnouncementLocked || slot.bonusSummaryLocked || authLoading ? (
         <div aria-hidden="true" className="slotInputLockLayer" />
+      ) : null}
+
+      {isSimulatorMode ? (
+        <div className="runtimeModeBadge">
+          <span className="eyebrow">Local Simulator</span>
+          <strong>No SQL save</strong>
+          <button className="controlChip subtle" onClick={exitSimulatorMode} type="button">
+            Use Login
+          </button>
+        </div>
       ) : null}
 
       <OverlayModal onClose={toggleHistory} open={historyOpen} title="Round History">
@@ -793,7 +1034,7 @@ export default function HomePage() {
         open={depositOpen}
         title="Deposit Credits"
       >
-        <DepositModal />
+        <DepositModal onConfirmDeposit={handleConfirmDeposit} />
       </OverlayModal>
 
       <OverlayModal
@@ -801,7 +1042,7 @@ export default function HomePage() {
         open={withdrawOpen}
         title="Withdraw Credits"
       >
-        <WithdrawModal />
+        <WithdrawModal onRequestWithdrawal={handleRequestWithdrawal} />
       </OverlayModal>
 
       <OverlayModal
@@ -835,7 +1076,21 @@ export default function HomePage() {
         winPresentation={slot.winPresentation}
       />
 
-      <WelcomeOverlay onStart={startWelcomeFlow} open={hasHydrated && welcomeOpen} />
+      <WelcomeOverlay
+        busy={authBusy}
+        onStart={startWelcomeFlow}
+        open={hasHydrated && canPlayWithoutAuth && welcomeOpen}
+      />
+      {!authLoading && !canPlayWithoutAuth ? (
+        <AuthOverlay
+          allowSkipLogin={allowSkipLogin}
+          busy={authBusy}
+          error={authError}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onSkipLogin={handleSkipLogin}
+        />
+      ) : null}
     </main>
   );
 }

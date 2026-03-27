@@ -736,3 +736,36 @@ and not only on naive width breakpoints.
   - Verification passed for this runtime-switch wiring with `api` typecheck and `player-web` production build; remaining warnings are pre-existing lint warnings unrelated to the profile-switch flow
   - Started identity-layer separation for `Constellation`: the left support rail now renders a dedicated `Samsara Scatters / Constellation Trigger` block instead of a meter-looking block, and the entry/complete bonus overlays now carry their own constellation styling so the variant no longer reads like the base game with only different math underneath
   - Continued the `Constellation` identity pass inside the live shell: the Menu now surfaces an explicit active-variant hero with count-anywhere/scatter cues, section headings rename themselves for the variant, and the right branding rail uses constellation-aware live bonus wording instead of default free-spin copy
+  - Cleaned the admin operator surface by replacing the old inline-style profile selector shell with structured CSS-module cards, profile-specific mechanic summaries, and a clearer active-configuration summary so profile switching reads like a real operator tool rather than a temporary debug list
+  - Implemented the first SQL Server + authenticated persistence foundation:
+    - added `docker-compose.yml` for local SQL Server plus `.env` examples for the database/auth contract
+    - switched Prisma from PostgreSQL to SQL Server and normalized structured persistence fields into serialized text so the schema stays compatible with Prisma SQL Server support
+    - added DB bootstrap for the primary game row, math-profile registry rows, active profile setting, and an optional seeded admin account
+  - Implemented the first real auth/session rollout:
+    - added `/auth/register`, `/auth/login`, `/auth/logout`, and `/auth/me`
+    - introduced `HttpOnly` cookie sessions with role-aware guards for player/admin access instead of relying on the old loopback/dev-key-only assumption
+    - protected operator mutations and analytics reads behind admin auth while leaving the public runtime config read path available to the player
+  - Implemented the first server-backed player persistence rollout:
+    - added authenticated bootstrap, welcome-bonus claim, deposit, withdrawal, and round-persistence endpoints
+    - `player-web` now blocks unauthenticated play behind a login/register overlay and rehydrates wallet plus resumable `GameState` from the API after login
+    - round/session/wallet persistence is now pushed back to the API while the actual spin math still runs client-side in v1
+  - Implemented the first admin-auth rollout:
+    - `admin-web` now requires authenticated admin login before showing the operator surface
+    - profile switching and analytics fetches now send authenticated credentials instead of behaving like public/debug-only tools
+  - Completed the live SQL Server validation pass for the authenticated persistence rollout:
+    - local Docker SQL Server now boots healthy and the real `TheEyeInTheSky` database has been created
+    - the initial Prisma migration now applies cleanly against the live SQL Server instance
+    - seed now writes the primary game row, all engine profiles, the active profile setting, and the seeded admin account into the live DB
+    - manual HTTP smoke passed for player registration, session cookies, authoritative bootstrap, welcome bonus, deposit, withdrawal, round persistence, and resumable session state
+    - manual HTTP smoke also passed for admin login and admin-only profile switching, while non-admin users are correctly rejected from `/game-config/select`
+  - Added post-smoke hardening for the authenticated persistence path:
+    - `/player/rounds` is now idempotent by `roundId`, so duplicate client submissions no longer replay wallet/ledger mutations
+    - a repeatable local SQL/auth smoke script now exists at `scripts/sql-auth-smoke.ps1`
+  - Recorded one remaining local-runtime caveat for the API:
+    - the reliable local smoke path currently uses `corepack pnpm --filter api exec node --import tsx dist/apps/api/src/main.js`
+    - this is a temporary monorepo workspace-resolution workaround for `@eye/game-engine` source imports and should be cleaned up in a follow-up packaging/runtime pass
+  - Added a dev-only `Skip Login` simulator path in `player-web`:
+    - the auth overlay now exposes `Skip Login` only outside production
+    - simulator mode bypasses auth and all server-backed player persistence calls
+    - simulator keeps only local wallet-money continuity and intentionally drops persisted stats/history/resumable game state
+    - a visible lightweight simulator badge lets the operator return to the real login flow

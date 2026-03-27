@@ -6,7 +6,7 @@ Uses: slot wallet/bet/autoplay state and spin-button.tsx
 
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
-import type { SpinPhase } from "@/lib/presentation/spin-state-machine";
+import type { SpinAnimationSpeed, SpinPhase } from "@/lib/presentation/spin-state-machine";
 
 type ControlPanelProps = {
   betInput: string;
@@ -23,8 +23,11 @@ type ControlPanelProps = {
   autoContinueNeverStop: boolean;
   canSpin: boolean;
   canStartAutospin: boolean;
+  spinAnimationSpeed: SpinAnimationSpeed;
+  spinSpeedOptions: readonly SpinAnimationSpeed[];
   spinPhase: SpinPhase;
   spinPulseKey: number;
+  onSpinSpeedChange: (speed: SpinAnimationSpeed) => void;
   onBetInputChange: (value: string) => void;
   onCommitBetInput: () => boolean;
   onIncreaseBet: () => boolean;
@@ -53,8 +56,11 @@ export function ControlPanel({
   autoContinueNeverStop,
   canSpin,
   canStartAutospin,
+  spinAnimationSpeed,
+  spinSpeedOptions,
   spinPhase,
   spinPulseKey,
+  onSpinSpeedChange,
   onBetInputChange,
   onCommitBetInput,
   onIncreaseBet,
@@ -67,6 +73,12 @@ export function ControlPanel({
   onStopAutoSpin,
   onToggleAutoContinueNeverStop
 }: ControlPanelProps) {
+  const spinSpeedLabel: Record<SpinAnimationSpeed, string> = {
+    slow: "Slow",
+    normal: "Normal",
+    fast: "Fast",
+    fast_af: "FastAF"
+  };
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
   const [isManualClickedRef, setIsManualClicked] = useState(false);
   const [isSpinButtonPressed, setIsSpinButtonPressed] = useState(false);
@@ -223,6 +235,15 @@ export function ControlPanel({
 
   const suppressSelectionOnPointerDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+  };
+
+  const normalizedSpeedOptions: SpinAnimationSpeed[] =
+    spinSpeedOptions.length > 0 ? [...spinSpeedOptions] : ["normal"];
+  const activeSpeedIndex = Math.max(0, normalizedSpeedOptions.indexOf(spinAnimationSpeed));
+  const nextSpeed = normalizedSpeedOptions[(activeSpeedIndex + 1) % normalizedSpeedOptions.length];
+
+  const handleCycleSpinSpeed = () => {
+    onSpinSpeedChange(nextSpeed);
   };
 
   const autoplayIsStopState = isAutospinActive || autospinStopRequested;
@@ -388,6 +409,19 @@ export function ControlPanel({
                 <path d="M4 6l6 6-6 6" />
                 <path d="M17 6v12" />
               </svg>
+            </button>
+
+            {/* Spin Speed: single cycle button */}
+            <button
+              aria-label={`Spin speed ${spinSpeedLabel[spinAnimationSpeed]}. Click for ${spinSpeedLabel[nextSpeed]}`}
+              className="dockSmallButton dockSpeedCycleButton"
+              data-speed-label={spinSpeedLabel[spinAnimationSpeed]}
+              onMouseDown={suppressSelectionOnPointerDown}
+              onClick={handleCycleSpinSpeed}
+              title={`Speed: ${spinSpeedLabel[spinAnimationSpeed]} -> ${spinSpeedLabel[nextSpeed]}`}
+              type="button"
+            >
+              <span className="dockSpeedCycleValue">{spinSpeedLabel[spinAnimationSpeed]}</span>
             </button>
           </div>
         </div>

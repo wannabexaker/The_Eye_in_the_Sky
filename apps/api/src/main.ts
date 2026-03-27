@@ -2,15 +2,55 @@ import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 
+const isAllowedOrigin = (origin: string | undefined) => {
+  if (!origin) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname;
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+      return true;
+    }
+
+    const extraOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return extraOrigins.includes(origin);
+  } catch {
+    return false;
+  }
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.getHttpAdapter().getInstance().set("trust proxy", 1);
 
   app.enableCors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3100"
-    ],
+    origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin ?? "unknown"} is not allowed by CORS.`));
+    },
     credentials: true
   });
 

@@ -1,5 +1,8 @@
 import type { GameMathProfileId } from "@eye/game-engine";
-import { Controller, Get, Post, Body, BadRequestException } from "@nestjs/common";
+import { Controller, Get, Post, Body, BadRequestException, UseGuards } from "@nestjs/common";
+import { AdminGuard } from "./auth.guard";
+import { CurrentUser } from "./current-user.decorator";
+import type { CurrentAuthUser } from "./auth.types";
 import { GameConfigService, type GameConfigStateDto } from "./game-config.service";
 
 @Controller("game-config")
@@ -7,7 +10,7 @@ export class GameConfigController {
   constructor(private readonly gameConfigService: GameConfigService) {}
 
   @Get()
-  getActiveConfig(): GameConfigStateDto {
+  getActiveConfig(): Promise<GameConfigStateDto> {
     return this.gameConfigService.getActiveConfig();
   }
 
@@ -17,7 +20,11 @@ export class GameConfigController {
   }
 
   @Post("select")
-  selectProfile(@Body() body: { profileId: string }): GameConfigStateDto {
+  @UseGuards(AdminGuard)
+  selectProfile(
+    @Body() body: { profileId: string },
+    @CurrentUser() currentUser: CurrentAuthUser
+  ): Promise<GameConfigStateDto> {
     if (!body.profileId) {
       throw new BadRequestException("profileId is required");
     }
@@ -33,6 +40,6 @@ export class GameConfigController {
       );
     }
 
-    return this.gameConfigService.setActiveProfile(body.profileId as GameMathProfileId);
+    return this.gameConfigService.setActiveProfile(body.profileId as GameMathProfileId, currentUser.id);
   }
 }

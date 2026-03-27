@@ -20,14 +20,12 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { symbolAssetSources } from "@/lib/assets/asset-manifest";
 import {
-  FLOATING_TEXT_FADE_MS,
-  FLOATING_TEXT_HOLD_MS,
   getFloatingTextAlpha,
   shouldSuppressBoardDropAnimation
 } from "@/lib/presentation/board-animation-rules";
 import { ParticleSystem } from "@/lib/presentation/particle-system";
 import {
-  PRESENTATION_TIMINGS,
+  type SpinPresentationTimings,
   type SpinPhase
 } from "@/lib/presentation/spin-state-machine";
 
@@ -142,6 +140,9 @@ type Props = {
   spinPhase: SpinPhase;
   phaseMessage: string;
   bonusActive: boolean;
+  presentationTimings: SpinPresentationTimings;
+  floatingTextHoldMs: number;
+  floatingTextFadeMs: number;
 };
 
 const drawSymbolIcon = (graphics: Graphics, symbol: SymbolId, accent: number) => {
@@ -219,7 +220,10 @@ export function PixiTempleBoard({
   result,
   spinPhase,
   phaseMessage,
-  bonusActive
+  bonusActive,
+  presentationTimings,
+  floatingTextHoldMs,
+  floatingTextFadeMs
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -326,7 +330,7 @@ export function PixiTempleBoard({
       const sprite = cellRefs.current[cell.row * cols + cell.col];
       if (sprite) {
         sprite.highlighted = true;
-        sprite.pulseUntil = performance.now() + PRESENTATION_TIMINGS.winHighlight;
+        sprite.pulseUntil = performance.now() + presentationTimings.winHighlight;
       }
     });
   };
@@ -383,7 +387,7 @@ export function PixiTempleBoard({
     }
 
     const elapsed = Math.max(0, now - highlightStartRef.current);
-    const highlightDuration = Math.max(1, PRESENTATION_TIMINGS.winHighlight);
+    const highlightDuration = Math.max(1, presentationTimings.winHighlight);
     const progress = Math.min(1, elapsed / highlightDuration);
     const flashPhase = progress * PRE_BREAK_FLASH_COUNT * Math.PI;
     const pulse = 0.52 + Math.abs(Math.sin(flashPhase)) * 0.52;
@@ -600,7 +604,7 @@ export function PixiTempleBoard({
     }
 
     if (result.bonusTriggered) {
-      bonusFlashUntilRef.current = performance.now() + PRESENTATION_TIMINGS.bonusTrigger;
+      bonusFlashUntilRef.current = performance.now() + presentationTimings.bonusTrigger;
       emitBonusBurst();
     }
 
@@ -611,9 +615,9 @@ export function PixiTempleBoard({
     if (result.totalWin > 0) {
       guidanceUntilRef.current =
         performance.now() +
-        PRESENTATION_TIMINGS.boardDrop +
-        PRESENTATION_TIMINGS.winHighlight +
-        PRESENTATION_TIMINGS.cascadeDrop +
+        presentationTimings.boardDrop +
+        presentationTimings.winHighlight +
+        presentationTimings.cascadeDrop +
         220;
       lossVeilUntilRef.current = 0;
     } else if (!result.bonusTriggered) {
@@ -636,7 +640,7 @@ export function PixiTempleBoard({
       timeoutsRef.current.push(
         window.setTimeout(() => {
           markWinningCells(cascade.wins);
-        }, cursor + PRESENTATION_TIMINGS.boardDrop)
+        }, cursor + presentationTimings.boardDrop)
       );
 
       timeoutsRef.current.push(
@@ -661,7 +665,7 @@ export function PixiTempleBoard({
               queueFloatingText(root, `+${formatMoney(cascade.stepWin)}`, spawnX, spawnY - 60, isBig ? 32 : 22, 0xf8edd9);
             }
           }
-        }, cursor + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight - 80)
+        }, cursor + presentationTimings.boardDrop + presentationTimings.winHighlight - 80)
       );
 
       timeoutsRef.current.push(
@@ -669,13 +673,13 @@ export function PixiTempleBoard({
           clearWinningCells();
           pendingCascadeWaveRef.current = true;
           setDisplayBoard(cascade.boardAfter);
-        }, cursor + PRESENTATION_TIMINGS.boardDrop + PRESENTATION_TIMINGS.winHighlight + 60)
+        }, cursor + presentationTimings.boardDrop + presentationTimings.winHighlight + 60)
       );
 
       cursor +=
-        PRESENTATION_TIMINGS.boardDrop +
-        PRESENTATION_TIMINGS.winHighlight +
-        PRESENTATION_TIMINGS.cascadeDrop +
+        presentationTimings.boardDrop +
+        presentationTimings.winHighlight +
+        presentationTimings.cascadeDrop +
         110;
     });
 
@@ -1010,7 +1014,7 @@ export function PixiTempleBoard({
 
           const createdAt = (text as any).createdAt ?? now;
           const elapsedMs = now - createdAt;
-          text.alpha = getFloatingTextAlpha(elapsedMs, FLOATING_TEXT_HOLD_MS, FLOATING_TEXT_FADE_MS);
+          text.alpha = getFloatingTextAlpha(elapsedMs, floatingTextHoldMs, floatingTextFadeMs);
 
           if (text.alpha <= 0) {
             text.destroy();
@@ -1075,9 +1079,9 @@ export function PixiTempleBoard({
           const guidanceAlpha = Math.max(
             0,
             ((guidanceUntilRef.current - now) /
-              (PRESENTATION_TIMINGS.boardDrop +
-                PRESENTATION_TIMINGS.winHighlight +
-                PRESENTATION_TIMINGS.cascadeDrop +
+              (presentationTimings.boardDrop +
+                presentationTimings.winHighlight +
+                presentationTimings.cascadeDrop +
                 220)) *
               0.22
           );
@@ -1124,7 +1128,7 @@ export function PixiTempleBoard({
         if (bonusFlashUntilRef.current > now || bonusActiveRef.current) {
           const beamAlpha = bonusActiveRef.current
             ? 0.09
-            : Math.max(0, ((bonusFlashUntilRef.current - now) / PRESENTATION_TIMINGS.bonusTrigger) * 0.18);
+            : Math.max(0, ((bonusFlashUntilRef.current - now) / presentationTimings.bonusTrigger) * 0.18);
 
           bonusBeams.moveTo(logicalWidth / 2 - 120, 0);
           bonusBeams.lineTo(logicalWidth / 2 + 120, 0);
@@ -1243,3 +1247,4 @@ export function PixiTempleBoard({
     </div>
   );
 }
+

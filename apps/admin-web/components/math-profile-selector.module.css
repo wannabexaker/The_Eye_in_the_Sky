@@ -1,0 +1,239 @@
+.root {
+  display: grid;
+  gap: 18px;
+}
+
+.alert {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 100, 100, 0.2);
+  background: rgba(255, 100, 100, 0.12);
+  color: #ffb1b1;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.alertOffline {
+  border-color: rgba(214, 168, 84, 0.24);
+  background: rgba(214, 168, 84, 0.14);
+  color: #f0c886;
+}
+
+.loading {
+  color: #bda98d;
+  font-size: 0.82rem;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.profileCard {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(240, 202, 114, 0.14);
+  background: rgba(20, 14, 18, 0.84);
+  color: #f8edd9;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.profileCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(240, 202, 114, 0.24);
+}
+
+.profileCard:disabled {
+  cursor: default;
+}
+
+.profileCardActive {
+  border-width: 2px;
+  border-color: #c6933c;
+  background:
+    linear-gradient(180deg, rgba(198, 147, 60, 0.14), rgba(20, 14, 18, 0.88)),
+    rgba(20, 14, 18, 0.84);
+}
+
+.profileCardPending {
+  opacity: 0.55;
+}
+
+.profileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profileStatus {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 202, 114, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: #c6933c;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.profileStatusLegacy {
+  color: #e0a77b;
+}
+
+.profileTitle {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.profileVersion {
+  margin: 6px 0 0;
+  color: #bda98d;
+  font-size: 0.76rem;
+}
+
+.profileDescription {
+  margin: 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.profileMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metaLabel {
+  margin: 0;
+  color: #bda98d;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.metaValue {
+  margin: 4px 0 0;
+  color: #f8edd9;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pill {
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 202, 114, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.activePanel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(198, 147, 60, 0.24);
+  background: rgba(198, 147, 60, 0.06);
+}
+
+.activeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.activeEyebrow {
+  margin: 0;
+  color: #c6933c;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.activeTitle {
+  margin: 6px 0 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.08rem;
+}
+
+.syncNote {
+  color: rgba(244, 239, 230, 0.6);
+  font-size: 0.72rem;
+  text-align: right;
+  line-height: 1.45;
+}
+
+.activeStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.activeStat {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(240, 202, 114, 0.12);
+  background: rgba(20, 14, 18, 0.44);
+}
+
+.activeStatLabel {
+  margin: 0;
+  color: #bda98d;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.activeStatValue {
+  margin: 6px 0 0;
+  color: #f8edd9;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.offlineHint {
+  color: rgba(244, 239, 230, 0.56);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 720px) {
+  .profileMetaGrid,
+  .activeStats {
+    grid-template-columns: 1fr;
+  }
+
+  .activeHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .syncNote {
+    text-align: left;
+  }
+}
