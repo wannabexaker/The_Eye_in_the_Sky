@@ -208,7 +208,8 @@ const getCellCenter = (row: number, col: number) => ({
 
 const CASCADE_WAVE_COLUMN_DELAY_MS = 26;
 const CASCADE_WAVE_LIFT_PX = 5;
-const PRE_BREAK_FLASH_COUNT = 2;
+const PRE_BREAK_FLASH_COUNT = 3;
+const SPIN_DROP_COLUMN_DELAY_MS = 45;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -562,7 +563,9 @@ export function PixiTempleBoard({
           cell.startY = cell.targetY - dropDistance - waveLift;
           cell.animStart =
             app.ticker.lastTime +
-            (shouldStartCascadeWave ? colIndex * CASCADE_WAVE_COLUMN_DELAY_MS : 0);
+            (shouldStartCascadeWave
+              ? colIndex * CASCADE_WAVE_COLUMN_DELAY_MS
+              : colIndex * SPIN_DROP_COLUMN_DELAY_MS);
           cell.animDuration = phase === "CASCADE" ? 220 : 360;
           cell.animating = true;
         }
@@ -673,7 +676,7 @@ export function PixiTempleBoard({
           clearWinningCells();
           pendingCascadeWaveRef.current = true;
           setDisplayBoard(cascade.boardAfter);
-        }, cursor + presentationTimings.boardDrop + presentationTimings.winHighlight + 60)
+        }, cursor + presentationTimings.boardDrop + presentationTimings.winHighlight + 130)
       );
 
       cursor +=

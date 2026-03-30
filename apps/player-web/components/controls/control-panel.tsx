@@ -114,6 +114,10 @@ export function ControlPanel({
       return;
     }
 
+    if (!canStartAutospin) {
+      return;
+    }
+
     if (!autoplayInputOpen) {
       setAutoplayInputOpen(true);
       return;
@@ -138,7 +142,7 @@ export function ControlPanel({
   };
 
   const handleAutoplayPointerDown = () => {
-    if (isAutospinActive) {
+    if (isAutospinActive || !canStartAutospin) {
       return;
     }
 
@@ -247,6 +251,7 @@ export function ControlPanel({
   };
 
   const autoplayIsStopState = isAutospinActive || autospinStopRequested;
+  const autoplayDisabled = (areBetControlsLocked && !isAutospinActive) || (!isAutospinActive && !canStartAutospin);
 
   return (
     <div className="floatingGameDock">
@@ -364,7 +369,7 @@ export function ControlPanel({
                         : "Set autoplay count"
                 }
                 className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
-                disabled={areBetControlsLocked && !isAutospinActive}
+                disabled={autoplayDisabled}
                 onMouseDown={suppressSelectionOnPointerDown}
                 onPointerDown={handleAutoplayPointerDown}
                 onPointerUp={clearAutoplayHoldTimer}

@@ -613,7 +613,7 @@ export function useSlotMachine(gameConfig: GameConfig) {
     setBonusSummary(null);
     setBonusSummaryLocked(false);
     setWinPresentation(null);
-  }, [gameConfig.version, gameConfig.winMultiplierOptions, wallet.balance]);
+  }, [gameConfig.version, gameConfig.winMultiplierOptions]);
 
   useEffect(() => {
     const previousBonusState = previousBonusStateRef.current;

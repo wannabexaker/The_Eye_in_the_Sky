@@ -1935,6 +1935,38 @@ p {
   text-transform: uppercase;
 }
 
+.menuSessionCard {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 190, 112, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.menuSessionMeta {
+  display: grid;
+  gap: 4px;
+}
+
+.menuSessionMeta strong {
+  color: rgba(244, 239, 230, 0.96);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.1;
+}
+
+.menuSessionMeta span {
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.menuSessionActions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .modalFeedback {
   display: grid;
   gap: 4px;
@@ -2343,27 +2375,6 @@ p {
   opacity: 0.58;
 }
 
-.runtimeModeBadge {
-  position: fixed;
-  top: 18px;
-  left: 18px;
-  z-index: calc(var(--z-overlay) + 1);
-  display: grid;
-  gap: 6px;
-  min-width: 150px;
-  padding: 10px 12px;
-  border: 1px solid rgba(226, 190, 112, 0.22);
-  border-radius: 18px;
-  background: rgba(10, 11, 16, 0.82);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(8px);
-}
-
-.runtimeModeBadge strong {
-  color: var(--gold-bright);
-  font-family: var(--font-display), Georgia, serif;
-}
-
 .bonusEntryModal {
   overflow: hidden;
 }
@@ -2460,28 +2471,32 @@ p {
   order: 1;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionAnalytics {
+.overlayModal[aria-label="Menu"] .menuSectionSession {
   order: 2;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+.overlayModal[aria-label="Menu"] .menuSectionAnalytics {
   order: 3;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionVariant {
+.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
   order: 4;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionRules {
+.overlayModal[aria-label="Menu"] .menuSectionVariant {
   order: 5;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionSymbols {
+.overlayModal[aria-label="Menu"] .menuSectionRules {
   order: 6;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+.overlayModal[aria-label="Menu"] .menuSectionSymbols {
   order: 7;
+}
+
+.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+  order: 8;
 }
 
 .compactModalPanel {
@@ -3253,6 +3268,84 @@ Current shell calibration:
   gap: 10px;
 }
 
+.supportScatterMeterBlock {
+  gap: 10px;
+}
+
+.supportScatterMeterIntro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.supportScatterMeterIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.supportScatterMeterIcon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.42));
+}
+
+.supportScatterMeterBadge {
+  align-self: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 239, 230, 0.78);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.supportScatterMeterBadge.is-live {
+  border-color: rgba(226, 190, 112, 0.34);
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.16), rgba(255, 255, 255, 0.05));
+  color: rgba(255, 248, 226, 0.96);
+}
+
+.supportScatterMeterRewards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.supportScatterMeterChip {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 0;
+  padding: 7px 6px 6px;
+  border: 1px solid rgba(226, 190, 112, 0.1);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(10, 10, 13, 0.82)),
+    rgba(10, 10, 13, 0.72);
+}
+
+.supportScatterMeterChip strong {
+  color: rgba(244, 239, 230, 0.94);
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.supportScatterMeterChip span {
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.68rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .supportScatterHeader {
   display: flex;
   align-items: flex-start;
@@ -3386,6 +3479,128 @@ Current shell calibration:
   overflow: hidden;
 }
 
+.constellationSupportRail {
+  gap: 9px;
+}
+
+.constellationSupportRail .supportBlock {
+  border-color: rgba(160, 127, 224, 0.1);
+  background:
+    linear-gradient(180deg, rgba(14, 13, 19, 0.76), rgba(10, 10, 13, 0.82)),
+    radial-gradient(circle at 50% 0%, rgba(160, 127, 224, 0.045), transparent 56%);
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.constellationSupportRail .panelHeader {
+  margin-bottom: 1px;
+}
+
+.constellationSupportRail .supportBalanceZone {
+  grid-template-columns: repeat(2, minmax(74px, 84px));
+  min-height: 48px;
+}
+
+.constellationSupportRail .bottomBarStat {
+  min-height: 48px;
+  padding: 6px 8px;
+}
+
+.constellationTriggerBlock {
+  gap: 8px;
+}
+
+.constellationTriggerLead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.constellationTriggerIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.42));
+}
+
+.constellationTriggerBadge {
+  align-self: center;
+  padding: 4px 7px;
+  border: 1px solid rgba(160, 127, 224, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(238, 231, 255, 0.74);
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.constellationTriggerBadge.is-live {
+  border-color: rgba(226, 190, 112, 0.2);
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.09), rgba(255, 255, 255, 0.025));
+  color: rgba(255, 247, 224, 0.94);
+}
+
+.constellationTriggerTrack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.constellationTriggerPip {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(160, 127, 224, 0.18), rgba(226, 190, 112, 0.24)),
+    rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.constellationTriggerRewards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.constellationTriggerReward {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 0;
+  padding: 7px 6px 6px;
+  border: 1px solid rgba(160, 127, 224, 0.1);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(10, 10, 13, 0.78)),
+    rgba(10, 10, 13, 0.64);
+}
+
+.constellationTriggerReward strong {
+  color: rgba(244, 239, 230, 0.92);
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.constellationTriggerReward span {
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.66rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.constellationHistoryBlock .supportNote {
+  color: rgba(206, 191, 230, 0.74);
+}
+
+.constellationSupportUtilityBar {
+  padding-top: 4px;
+}
+
 .supportRailUtilityBar {
   display: flex;
   align-items: center;
@@ -3422,6 +3637,77 @@ Current shell calibration:
   overflow: visible;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.brandingRailConstellation {
+  gap: 10px;
+}
+
+.constellationScenePanel {
+  border-radius: 18px;
+  border: 1px solid rgba(160, 127, 224, 0.1);
+  background:
+    linear-gradient(180deg, rgba(14, 13, 19, 0.76), rgba(10, 10, 13, 0.84)),
+    radial-gradient(circle at 50% 0%, rgba(160, 127, 224, 0.045), transparent 56%);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.constellationBrandPanel {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  text-align: center;
+  padding: 6px 0 2px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.constellationBrandLogo {
+  width: min(100%, 32.45vw);
+  max-width: 100%;
+  --brand-logo-scale: 1.18;
+}
+
+.constellationBrandLead {
+  color: rgba(206, 191, 230, 0.7);
+  font-size: 0.56rem;
+  line-height: 1.18;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.constellationScenePanel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.constellationSceneHeader {
+  display: grid;
+  gap: 4px;
+}
+
+.constellationSceneHeader strong {
+  color: rgba(244, 239, 230, 0.94);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-md);
+  line-height: 1.22;
+  max-width: 18ch;
+}
+
+.constellationSceneArt {
+  min-height: 184px;
+  opacity: 0.86;
+}
+
+.constellationSceneFooter span {
+  color: rgba(206, 191, 230, 0.72);
+  font-size: 0.68rem;
+  line-height: 1.45;
 }
 
 .brandLogo {

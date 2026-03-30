@@ -1,16 +1,16 @@
 /*
-Purpose: renders the left support panel with compact feature and status blocks
+Purpose: renders the constellation-simple left support rail with a dedicated compact trigger block
 Layer: frontend (player-web)
-Uses: wallet actions, status state, and samsara meter
+Uses: wallet actions, status state, and scatter trigger summary
 */
 
 "use client";
 
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
-import { SamsaraMeter } from "@/components/board/samsara-meter";
+import { symbolAssetSources } from "@/lib/assets/asset-manifest";
 
-type LeftSupportRailProps = {
+type ConstellationSupportRailProps = {
   balance: string;
   balanceExact: string;
   currentBet: string;
@@ -20,11 +20,11 @@ type LeftSupportRailProps = {
   activeBonusSpins: number;
   bonusActive: boolean;
   phaseMessage: string;
-  meterRatio: number;
-  meterCurrent: number;
-  meterCollected: number;
-  meterContributionLog: number[];
-  meterTarget: number;
+  scatterRewards: Array<{
+    count: number;
+    payoutMultiplier: number;
+    freeSpinsAwarded: number;
+  }>;
   history: SpinResult[];
   soundEnabled: boolean;
   fullscreenEnabled: boolean;
@@ -50,7 +50,7 @@ const COMPACT_VISIBLE_ENTRIES = 3;
 const PORTRAIT_VISIBLE_ENTRIES = 10;
 const HANDHELD_PORTRAIT_VISIBLE_ENTRIES = 11;
 
-export function LeftSupportRail({
+export function ConstellationSupportRail({
   balance,
   balanceExact,
   currentBet,
@@ -60,11 +60,7 @@ export function LeftSupportRail({
   activeBonusSpins,
   bonusActive,
   phaseMessage,
-  meterRatio,
-  meterCurrent,
-  meterCollected,
-  meterContributionLog,
-  meterTarget,
+  scatterRewards,
   history,
   soundEnabled,
   fullscreenEnabled,
@@ -74,7 +70,7 @@ export function LeftSupportRail({
   onToggleHistory,
   onToggleSettings,
   onToggleFullscreen
-}: LeftSupportRailProps) {
+}: ConstellationSupportRailProps) {
   const [compactView, setCompactView] = useState(false);
   const [portraitView, setPortraitView] = useState(false);
   const [handheldPortraitView, setHandheldPortraitView] = useState(false);
@@ -129,8 +125,8 @@ export function LeftSupportRail({
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
   const historyToggleTitle = showMore
-    ? `Collapse ritual log. ${phaseMessage}`
-    : `Expand ritual log. ${phaseMessage}`;
+    ? `Collapse constellation log. ${phaseMessage}`
+    : `Expand constellation log. ${phaseMessage}`;
 
   useEffect(() => {
     if (ritualEntries.length <= defaultVisibleEntries && showMore) {
@@ -168,10 +164,10 @@ export function LeftSupportRail({
 
   return (
     <aside
-      className={`leftRail supportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
+      className={`leftRail supportRail constellationSupportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
     >
       <section
-        className="compactPanel supportBlock treasuryBlock"
+        className="compactPanel supportBlock treasuryBlock constellationTreasuryBlock"
         title="Treasury actions for your fake wallet balance."
       >
         <div className="panelHeader">
@@ -198,7 +194,7 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock supportBalanceBlock"
+        className="compactPanel supportBlock supportBalanceBlock constellationBalanceBlock"
         title={`Current wallet and bet values. Balance: ${balanceExact}. Bet: ${currentBet}.`}
       >
         <div className="bottomBarZone balanceZone supportBalanceZone">
@@ -214,8 +210,8 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className={`compactPanel supportBlock supportStatusBlock ${handheldPortraitView ? "is-handheld-hidden" : ""}`}
-        title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
+        className={`compactPanel supportBlock supportStatusBlock constellationStatusBlock ${handheldPortraitView ? "is-handheld-hidden" : ""}`}
+        title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows active constellation spins."
       >
         <div className="panelHeader">
           <p className="eyebrow">Round Status</p>
@@ -248,38 +244,64 @@ export function LeftSupportRail({
       </section>
 
       <section
-        className="compactPanel supportBlock supportMeterBlock"
+        className="compactPanel supportBlock constellationTriggerBlock"
         title={
           bonusActive
-            ? `${activeBonusSpins} bonus spins remain in Sky Opens.`
-            : "Fill the Samsara meter to trigger Sky Opens bonus spins."
+            ? `${activeBonusSpins} constellation spins remain active in Sky Opens.`
+            : "4+ Samsara scatters open Sky Opens. Full reward details are in the menu."
         }
       >
         <div className="panelHeader">
           <p className="eyebrow">Samsara</p>
         </div>
-        <SamsaraMeter
-          bonusActive={bonusActive}
-          collectedBets={meterCollected}
-          contributionLog={meterContributionLog}
-          current={meterCurrent}
-          meterRatio={meterRatio}
-          target={meterTarget}
-        />
+        <div className="constellationTriggerLead">
+          <img
+            alt="Samsara"
+            className="constellationTriggerIcon"
+            src={symbolAssetSources.samsara[0]}
+          />
+          <span
+            className={`constellationTriggerBadge ${bonusActive ? "is-live" : ""}`}
+            title={
+              bonusActive
+                ? `${activeBonusSpins} constellation spins are live now.`
+                : "4+ Samsara scatters open Sky Opens. See Menu for the full reward ladder."
+            }
+          >
+            {bonusActive ? `${activeBonusSpins} live` : "4+ opens"}
+          </span>
+        </div>
+        <div aria-hidden="true" className="constellationTriggerTrack">
+          {scatterRewards.map((reward) => (
+            <span className="constellationTriggerPip" key={`scatter-pip-${reward.count}`} />
+          ))}
+        </div>
+        <div className="constellationTriggerRewards">
+          {scatterRewards.map((reward) => (
+            <div
+              className="constellationTriggerReward"
+              key={`scatter-reward-${reward.count}`}
+              title={`${reward.count}+ Samsara scatters award ${reward.freeSpinsAwarded} free spins.`}
+            >
+              <strong>{reward.count}+</strong>
+              <span>{reward.freeSpinsAwarded} FS</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section
-        className="compactPanel supportBlock supportHistoryBlock"
-        title="Recent ritual outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
+        className="compactPanel supportBlock supportHistoryBlock constellationHistoryBlock"
+        title="Recent constellation outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
       >
         <div className="panelHeader">
-          <p className="eyebrow">Ritual Log</p>
+          <p className="eyebrow">Constellation Log</p>
           {canToggleHistory ? (
             <button
               className="supportToggle"
               onClick={() => setShowMore((current) => !current)}
               aria-expanded={showMore}
-              aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
+              aria-label={showMore ? "Collapse constellation log" : "Expand constellation log"}
               title={historyToggleTitle}
               type="button"
             >
@@ -289,7 +311,9 @@ export function LeftSupportRail({
             </button>
           ) : null}
         </div>
-        <p className="supportNote" title={phaseMessage}>{phaseMessage}</p>
+        <p className="supportNote" title={phaseMessage}>
+          {phaseMessage}
+        </p>
         <div
           className={`supportHistory ${showMore ? "is-scrollable" : ""}`}
           ref={supportHistoryRef}
@@ -300,7 +324,9 @@ export function LeftSupportRail({
           }
         >
           {history.length === 0 ? (
-            <span className="supportMuted" title="No resolved rounds in this session yet.">No rounds yet.</span>
+            <span className="supportMuted" title="No resolved rounds in this session yet.">
+              No rounds yet.
+            </span>
           ) : (
             visibleEntries.map((result, index) => (
               <div
@@ -316,11 +342,11 @@ export function LeftSupportRail({
         </div>
       </section>
 
-      <div className="supportRailUtilityBar">
+      <div className="supportRailUtilityBar constellationSupportUtilityBar">
         {handheldPortraitView && mobileRoundStatusOpen ? (
           <section
             className="compactPanel supportBlock supportStatusContextWindow"
-            title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
+            title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows active constellation spins."
           >
             <div className="panelHeader">
               <p className="eyebrow">Round Status</p>

@@ -353,10 +353,10 @@ Board responsive variables and local overrides
     --machine-stage-columns: 322px minmax(0, 1fr) 304px;
     --left-rail-max-width: 350px;
     --right-rail-max-width: 304px;
-    --machine-stage-gap: 12px;
-    --stage-status-width: min(100%, 348px);
+    --machine-stage-gap: 10px;
+    --stage-status-width: min(100%, 360px);
     --board-frame-fit-height: 100%;
-    --board-inline-breathe: 8px;
+    --board-inline-breathe: 0px;
     --board-frame-margin-bottom: 0;
     --board-frame-translate-y: 0px;
     --board-frame-radius: clamp(17px, 1.25vw, 30px);
@@ -364,6 +364,7 @@ Board responsive variables and local overrides
     --board-stage-halo-radius: clamp(28px, 2vw, 42px);
     --board-stage-halo-blur: clamp(16px, 1.45vw, 26px);
   }
+
 }
 
 @media (max-width: 1600px), (max-height: 900px) {
@@ -387,6 +388,7 @@ Board responsive variables and local overrides
     --board-art-inset-bottom: -13%;
     --board-art-inset-left: -30%;
   }
+
 }
 
 @media (min-width: 1280px) and (max-width: 1920px) and (max-aspect-ratio: 16/10) {
@@ -410,6 +412,7 @@ Board responsive variables and local overrides
     --board-art-inset-bottom: -12%;
     --board-art-inset-left: -28%;
   }
+
 }
 
 @media (max-width: 1366px), (max-height: 768px) {
@@ -434,6 +437,7 @@ Board responsive variables and local overrides
     --board-art-inset-bottom: -11%;
     --board-art-inset-left: -26%;
   }
+
 }
 
 @media (max-width: 1280px), (max-height: 720px) {

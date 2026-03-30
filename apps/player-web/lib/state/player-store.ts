@@ -902,6 +902,23 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           runtimeMode,
+          wallet: runtimeMode === "simulator" ? simulatorWallet : persisted.wallet ?? currentState.wallet,
+          totalDeposited:
+            runtimeMode === "simulator"
+              ? simulatorTotalDeposited
+              : persisted.totalDeposited ?? currentState.totalDeposited,
+          totalWithdrawn:
+            runtimeMode === "simulator"
+              ? simulatorTotalWithdrawn
+              : persisted.totalWithdrawn ?? currentState.totalWithdrawn,
+          welcomeOpen:
+            runtimeMode === "simulator"
+              ? !simulatorWelcomeClaimed
+              : persisted.welcomeOpen ?? currentState.welcomeOpen,
+          welcomeClaimed:
+            runtimeMode === "simulator"
+              ? simulatorWelcomeClaimed
+              : persisted.welcomeClaimed ?? currentState.welcomeClaimed,
           simulatorWallet,
           simulatorWelcomeClaimed,
           simulatorTotalDeposited,

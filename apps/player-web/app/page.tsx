@@ -6,13 +6,16 @@ Uses: slot hook, player store, Pixi board, and wallet modals
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SymbolId } from "@eye/game-engine";
+import type { AuthUserDto } from "@eye/shared-types";
 import { AuthOverlay } from "@/components/auth/auth-overlay";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
 import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
 import { DebugPanel } from "@/components/debug/debug-panel";
+import { ConstellationSupportRail } from "@/components/layout/constellation-support-rail";
+import { ConstellationRightRail } from "@/components/layout/constellation-right-rail";
 import { LeftSupportRail } from "@/components/layout/left-support-rail";
 import { RightOperatorRail } from "@/components/layout/right-operator-rail";
 import { DepositModal } from "@/components/modals/deposit-modal";
@@ -31,6 +34,7 @@ import {
   fetchAuthSession,
   fetchPlayerBootstrap,
   loginPlayer,
+  logoutPlayer,
   persistPlayerRound,
   registerPlayer,
   withdrawPlayerWallet
@@ -90,6 +94,7 @@ export default function HomePage() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUserDto | null>(null);
 
   // Keep screen awake while game is active
   useScreenWakeLock();
@@ -132,19 +137,37 @@ export default function HomePage() {
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
   const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
+  const presentationBlocked =
+    slot.bonusEntryPending || slot.bonusAnnouncementLocked || slot.bonusSummaryLocked;
+  const authBlocked = authLoading || !canPlayWithoutAuth;
+  const inputAllowed = !authBlocked && !presentationBlocked;
+  const spinInteractionAllowed = useMemo(
+    () =>
+      inputAllowed &&
+      (slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation)),
+    [inputAllowed, slot.bonusAnnouncement, slot.bonusSummary, slot.canSpin, slot.winPresentation]
+  );
+  const sessionCardTitle = isSimulatorMode
+    ? "Local simulator session. Wallet persists only in browser storage."
+    : authUser
+      ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on SQL.`
+      : "Login is required to restore SQL-backed wallet and round state.";
 
   const refreshServerBackedPlayerState = useCallback(async () => {
     const session = await fetchAuthSession();
     const authenticated = Boolean(session.authenticated && session.user);
     setIsAuthenticated(authenticated);
     setAuthError("");
+    setAuthUser(session.user);
 
     if (!authenticated) {
+      usePlayerUiStore.getState().resetSession();
       return;
     }
 
     const snapshot = await fetchPlayerBootstrap();
     applyServerSnapshot(snapshot);
+    setAuthUser(snapshot.user);
   }, [applyServerSnapshot]);
 
   const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
@@ -335,6 +358,7 @@ export default function HomePage() {
       setAuthBusy(false);
       setAuthError("");
       setIsAuthenticated(false);
+      setAuthUser(null);
       return;
     }
 
@@ -348,6 +372,7 @@ export default function HomePage() {
       } catch (error) {
         if (!disposed) {
           setIsAuthenticated(false);
+          setAuthUser(null);
           setAuthError(error instanceof Error ? error.message : "Authentication bootstrap failed.");
         }
       } finally {
@@ -420,7 +445,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (authLoading || !canPlayWithoutAuth) {
+      if (authBlocked) {
         event.preventDefault();
         return;
       }
@@ -510,8 +535,7 @@ export default function HomePage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    authLoading,
-    canPlayWithoutAuth,
+    authBlocked,
     debugPanelOpen,
     depositOpen,
     historyOpen,
@@ -548,6 +572,7 @@ export default function HomePage() {
       setAuthError("");
       try {
         exitSimulatorMode();
+        persistedRoundIdRef.current = null;
         await loginPlayer(payload);
         await refreshServerBackedPlayerState();
       } catch (error) {
@@ -567,6 +592,7 @@ export default function HomePage() {
       setAuthError("");
       try {
         exitSimulatorMode();
+        persistedRoundIdRef.current = null;
         await registerPlayer(payload);
         await refreshServerBackedPlayerState();
       } catch (error) {
@@ -585,12 +611,44 @@ export default function HomePage() {
       return;
     }
 
+    persistedRoundIdRef.current = null;
+    enterSimulatorMode();
+    slot.reset();
     setAuthBusy(false);
     setAuthLoading(false);
     setAuthError("");
     setIsAuthenticated(false);
-    enterSimulatorMode();
-  }, [allowSkipLogin, enterSimulatorMode]);
+    setAuthUser(null);
+  }, [allowSkipLogin, enterSimulatorMode, slot]);
+
+  const handleSwitchToLogin = useCallback(() => {
+    persistedRoundIdRef.current = null;
+    exitSimulatorMode();
+    slot.reset();
+    setAuthBusy(false);
+    setAuthLoading(false);
+    setAuthError("");
+    setIsAuthenticated(false);
+    setAuthUser(null);
+  }, [exitSimulatorMode, slot]);
+
+  const handleLogout = useCallback(async () => {
+    setAuthBusy(true);
+    setAuthError("");
+
+    try {
+      await logoutPlayer();
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "Logout failed.");
+    } finally {
+      persistedRoundIdRef.current = null;
+      slot.reset();
+      setAuthUser(null);
+      setIsAuthenticated(false);
+      setAuthBusy(false);
+      setAuthLoading(false);
+    }
+  }, [slot]);
 
   const startWelcomeFlow = useCallback(async () => {
     if (isSimulatorMode) {
@@ -650,7 +708,7 @@ export default function HomePage() {
   );
 
   const spinFromInputIntent = () => {
-    if (authLoading || !canPlayWithoutAuth) {
+    if (!inputAllowed) {
       return;
     }
 
@@ -683,7 +741,7 @@ export default function HomePage() {
 
   return (
     <main
-      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""}`}
+      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-config-source={usingRemoteConfig ? "api" : "env"}
       data-math-profile={activeGameConfigProfile.profileId}
       ref={shellRef}
@@ -705,34 +763,56 @@ export default function HomePage() {
         }}
       />
 
-      <section className="gameArea machineStage">
-        <LeftSupportRail
-          activeBonusSpins={visibleBonusSpins}
-          balance={formatBalanceRoundedEur(wallet.balance)}
-          balanceExact={formatMoneyCompactEur(wallet.balance)}
-          bonusTriggerMode={activeGameConfig.bonusTriggerMode}
-          bonusActive={bonusModeActive}
-          cascades={latestRound?.cascades.length ?? 0}
-          currentBet={formatMoneyCompactEur(slot.bet)}
-          freeSpins={visibleBonusSpins}
-          history={slot.history}
-          meterCollected={slot.samsaraCollectedBets}
-          meterContributionLog={slot.samsaraContributionLog}
-          meterCurrent={slot.gameState.bonusMeter}
-          meterRatio={slot.meterRatio}
-          meterTarget={activeGameConfig.bonusMeterTarget}
-          scatterRewards={activeGameConfig.scatterRewards}
-          onDeposit={() => toggleModal("depositOpen")}
-          onToggleFullscreen={toggleFullscreen}
-          onToggleHistory={toggleHistory}
-          onToggleSettings={toggleSettings}
-          onToggleSound={toggleSound}
-          onWithdraw={() => toggleModal("withdrawOpen")}
-          phaseMessage={slot.phaseMessage}
-          roundWin={latestRound?.totalWin ?? 0}
-          fullscreenEnabled={fullscreenEnabled}
-          soundEnabled={soundEnabled}
-        />
+      <section className={`gameArea machineStage ${isConstellationVariant ? "is-constellation-stage" : "is-main-cluster-stage"}`}>
+        {isConstellationVariant ? (
+          <ConstellationSupportRail
+            activeBonusSpins={visibleBonusSpins}
+            balance={formatBalanceRoundedEur(wallet.balance)}
+            balanceExact={formatMoneyCompactEur(wallet.balance)}
+            bonusActive={bonusModeActive}
+            cascades={latestRound?.cascades.length ?? 0}
+            currentBet={formatMoneyCompactEur(slot.bet)}
+            freeSpins={visibleBonusSpins}
+            history={slot.history}
+            onDeposit={() => toggleModal("depositOpen")}
+            onToggleFullscreen={toggleFullscreen}
+            onToggleHistory={toggleHistory}
+            onToggleSettings={toggleSettings}
+            onToggleSound={toggleSound}
+            onWithdraw={() => toggleModal("withdrawOpen")}
+            phaseMessage={slot.phaseMessage}
+            roundWin={latestRound?.totalWin ?? 0}
+            scatterRewards={activeGameConfig.scatterRewards}
+            fullscreenEnabled={fullscreenEnabled}
+            soundEnabled={soundEnabled}
+          />
+        ) : (
+          <LeftSupportRail
+            activeBonusSpins={visibleBonusSpins}
+            balance={formatBalanceRoundedEur(wallet.balance)}
+            balanceExact={formatMoneyCompactEur(wallet.balance)}
+            bonusActive={bonusModeActive}
+            cascades={latestRound?.cascades.length ?? 0}
+            currentBet={formatMoneyCompactEur(slot.bet)}
+            freeSpins={visibleBonusSpins}
+            history={slot.history}
+            meterCollected={slot.samsaraCollectedBets}
+            meterContributionLog={slot.samsaraContributionLog}
+            meterCurrent={slot.gameState.bonusMeter}
+            meterRatio={slot.meterRatio}
+            meterTarget={activeGameConfig.bonusMeterTarget}
+            onDeposit={() => toggleModal("depositOpen")}
+            onToggleFullscreen={toggleFullscreen}
+            onToggleHistory={toggleHistory}
+            onToggleSettings={toggleSettings}
+            onToggleSound={toggleSound}
+            onWithdraw={() => toggleModal("withdrawOpen")}
+            phaseMessage={slot.phaseMessage}
+            roundWin={latestRound?.totalWin ?? 0}
+            fullscreenEnabled={fullscreenEnabled}
+            soundEnabled={soundEnabled}
+          />
+        )}
 
         <div className="centerStage">
           <div className="boardShell">
@@ -758,11 +838,18 @@ export default function HomePage() {
           </div>
         </div>
 
-        <RightOperatorRail
-          activeBonusSpins={visibleBonusSpins}
-          bonusActive={bonusModeActive}
-          variantId={activeGameConfig.variantId}
-        />
+        {isConstellationVariant ? (
+          <ConstellationRightRail
+            activeBonusSpins={visibleBonusSpins}
+            bonusActive={bonusModeActive}
+          />
+        ) : (
+          <RightOperatorRail
+            activeBonusSpins={visibleBonusSpins}
+            bonusActive={bonusModeActive}
+            variantId={activeGameConfig.variantId}
+          />
+        )}
       </section>
 
       <ControlPanel
@@ -777,11 +864,8 @@ export default function HomePage() {
         betRiskTooltip={slot.betRiskTooltip}
         betValidationMessage={slot.betValidationMessage}
         betValidationTooltip={slot.betValidationTooltip}
-        canSpin={
-          canPlayWithoutAuth &&
-          (slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation))
-        }
-        canStartAutospin={slot.canStartAutospin}
+        canSpin={spinInteractionAllowed}
+        canStartAutospin={inputAllowed && slot.canStartAutospin}
         isAutospinActive={slot.isAutospinActive}
         onCommitBetInput={slot.applyManualBet}
         onCommitAutospinInput={slot.applyManualAutospinCount}
@@ -801,18 +885,8 @@ export default function HomePage() {
         spinSpeedOptions={slot.spinSpeedOptions}
       />
 
-      {slot.bonusAnnouncementLocked || slot.bonusSummaryLocked || authLoading ? (
+      {presentationBlocked || authLoading ? (
         <div aria-hidden="true" className="slotInputLockLayer" />
-      ) : null}
-
-      {isSimulatorMode ? (
-        <div className="runtimeModeBadge">
-          <span className="eyebrow">Local Simulator</span>
-          <strong>No SQL save</strong>
-          <button className="controlChip subtle" onClick={exitSimulatorMode} type="button">
-            Use Login
-          </button>
-        </div>
       ) : null}
 
       <OverlayModal onClose={toggleHistory} open={historyOpen} title="Round History">
@@ -874,6 +948,38 @@ export default function HomePage() {
                 x{option}
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="modalSection menuSectionSession">
+          <p className="eyebrow">Session</p>
+          <div className="menuSessionCard" title={sessionCardTitle}>
+            <div className="menuSessionMeta">
+              <strong>{isSimulatorMode ? "Local Simulator" : authUser?.displayName ?? "Player Session"}</strong>
+              <span>
+                {isSimulatorMode
+                  ? "Skip Login is active. SQL save is disabled in this dev-only mode."
+                  : authUser
+                    ? `${authUser.email} · Wallet, rounds, and bonus state are restored from SQL.`
+                    : "Login is required for SQL-backed wallet and round restore."}
+              </span>
+            </div>
+            <div className="menuSessionActions">
+              {isSimulatorMode ? (
+                <button className="welcomeButton compactPrimary" onClick={handleSwitchToLogin} type="button">
+                  Switch to Login
+                </button>
+              ) : authUser ? (
+                <button
+                  className="welcomeButton compactPrimary"
+                  disabled={authBusy}
+                  onClick={() => void handleLogout()}
+                  type="button"
+                >
+                  {authBusy ? "Signing Out..." : "Logout"}
+                </button>
+              ) : null}
+            </div>
           </div>
         </section>
 
