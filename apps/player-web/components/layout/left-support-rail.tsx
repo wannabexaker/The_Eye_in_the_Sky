@@ -19,7 +19,6 @@ type LeftSupportRailProps = {
   freeSpins: number;
   activeBonusSpins: number;
   bonusActive: boolean;
-  phaseMessage: string;
   meterRatio: number;
   meterCurrent: number;
   meterCollected: number;
@@ -59,7 +58,6 @@ export function LeftSupportRail({
   freeSpins,
   activeBonusSpins,
   bonusActive,
-  phaseMessage,
   meterRatio,
   meterCurrent,
   meterCollected,
@@ -128,9 +126,37 @@ export function LeftSupportRail({
         : DESKTOP_VISIBLE_ENTRIES;
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
-  const historyToggleTitle = showMore
-    ? `Collapse ritual log. ${phaseMessage}`
-    : `Expand ritual log. ${phaseMessage}`;
+  const historyToggleTitle = showMore ? "Collapse ritual log" : "Expand ritual log";
+
+  const emotionVariant = bonusActive
+    ? "bonus"
+    : roundWin > 0 && cascades >= 2
+      ? "surge"
+      : roundWin > 0
+        ? "win"
+        : history.length > 0
+          ? "loss"
+          : "idle";
+
+  const emotionLabel = bonusActive
+    ? "Bonus Live"
+    : roundWin > 0 && cascades >= 2
+      ? "Hot Streak"
+      : roundWin > 0
+        ? "Win Hit"
+        : history.length > 0
+          ? "Miss"
+          : "Ready";
+
+  const emotionHint = bonusActive
+    ? "Sky Opens is active."
+    : roundWin > 0 && cascades >= 2
+      ? "Cascade chain landed."
+      : roundWin > 0
+        ? "Round paid out."
+        : history.length > 0
+          ? "No payout this round."
+          : "Tap spin to start.";
 
   useEffect(() => {
     if (ritualEntries.length <= defaultVisibleEntries && showMore) {
@@ -289,7 +315,11 @@ export function LeftSupportRail({
             </button>
           ) : null}
         </div>
-        <p className="supportNote" title={phaseMessage}>{phaseMessage}</p>
+        <div className={`supportEmotion supportEmotion--${emotionVariant}`} title={emotionHint}>
+          <span aria-hidden="true" className="supportEmotionPulse" />
+          <strong>{emotionLabel}</strong>
+          <span className="supportEmotionHint">{emotionHint}</span>
+        </div>
         <div
           className={`supportHistory ${showMore ? "is-scrollable" : ""}`}
           ref={supportHistoryRef}

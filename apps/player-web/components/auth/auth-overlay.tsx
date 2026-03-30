@@ -22,6 +22,7 @@ export function AuthOverlay({
   const [displayName, setDisplayName] = useState("Temple Initiate");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
 
   const submit = async () => {
@@ -106,14 +107,28 @@ export function AuthOverlay({
               />
             </label>
 
-            <label className="inputGroup">
+            <label className="inputGroup authPasswordField">
               <span>Password</span>
-              <input
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                value={password}
-              />
+              <div className="authPasswordInputWrap">
+                <input
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                />
+                <button
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="authPasswordToggle"
+                  onClick={() => setShowPassword((current) => !current)}
+                  title={showPassword ? "Hide password" : "Show password"}
+                  type="button"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6Z" />
+                    <circle cx="12" cy="12" r="3.2" />
+                  </svg>
+                </button>
+              </div>
             </label>
           </div>
 

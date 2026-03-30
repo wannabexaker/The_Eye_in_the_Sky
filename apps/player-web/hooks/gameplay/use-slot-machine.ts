@@ -1027,20 +1027,22 @@ const validateAutospinCount = useCallback(
         presentationTimings.cascadeDrop +
         extraCascadeMs;
       const postBreakSafetyBufferMs = 40;
+      const spinResultSettleBufferMs = 130;
+      const roundOutcomeMessage = result.bonusTriggered
+        ? "Sky Opens ignites."
+        : result.totalWin > 0
+          ? result.cascades.length > 1
+            ? `Win landed with ${result.cascades.length} cascades.`
+            : "Win landed."
+          : "Missed this spin.";
 
       setSpinPulseKey((current) => current + 1);
       setSpinPhase("SPIN_START");
-      setPhaseMessage(
-        result.mode === "bonus"
-          ? getBonusSpinStartMessage(result, gameConfig)
-          : "The Eye begins its descent."
-      );
       soundManager.play("spin", soundEnabled);
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("BOARD_DROP");
-          setPhaseMessage("Symbols descend through the forbidden temple.");
           soundManager.play("drop", soundEnabled);
         }, presentationTimings.spinStart)
       );
@@ -1048,11 +1050,6 @@ const validateAutospinCount = useCallback(
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("WIN_CHECK");
-          setPhaseMessage(
-            result.cascades.length > 0
-              ? `${result.cascades.length} cascade${result.cascades.length > 1 ? "s" : ""} detected.`
-              : "The board settles without tribute."
-          );
 
           if (result.totalWin > 0) {
             const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
@@ -1066,17 +1063,12 @@ const validateAutospinCount = useCallback(
           } else {
             soundManager.play("loss", soundEnabled);
           }
-        }, presentationTimings.spinStart + presentationTimings.boardDrop)
+        }, presentationTimings.spinStart + presentationTimings.boardDrop + spinResultSettleBufferMs)
       );
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("CASCADE");
-          setPhaseMessage(
-            result.cascades.length > 0
-              ? "Winning symbols turn to ash and new symbols fall into place."
-              : "No cascade chain formed this round."
-          );
 
           if (result.cascades.length > 0) {
             soundManager.play("cascade", soundEnabled);
@@ -1084,28 +1076,25 @@ const validateAutospinCount = useCallback(
         },
           presentationTimings.spinStart +
             presentationTimings.boardDrop +
+            spinResultSettleBufferMs +
             presentationTimings.winHighlight)
       );
+
+      const totalCascadeTimelineWithSettleMs = totalCascadeTimelineMs + spinResultSettleBufferMs;
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("MODIFIER_APPLY");
-          setPhaseMessage(
-            hasMultiplierEvent(result)
-              ? "Relics flare and multipliers illuminate the board."
-              : "The chamber quiets as the round resolves."
-          );
 
           if (hasMultiplierEvent(result)) {
             soundManager.play("multiplier", soundEnabled);
           }
-        }, totalCascadeTimelineMs)
+        }, totalCascadeTimelineWithSettleMs)
       );
 
       if (shouldRunBonusEntryCue) {
         phaseTimersRef.current.push(
           window.setTimeout(() => {
-            setPhaseMessage("Samsara fractures. Sky Opens.");
             soundManager.play("bonus", soundEnabled);
 
             if (bonusEntryTransition && result.nextState.bonusState) {
@@ -1141,15 +1130,15 @@ const validateAutospinCount = useCallback(
                 }, presentationProfile.bonusAnnouncementInputLockMs);
               }
             }
-          }, totalCascadeTimelineMs + presentationTimings.modifierFlash + bonusEntryRevealOffsetMs)
+          }, totalCascadeTimelineWithSettleMs + presentationTimings.modifierFlash + bonusEntryRevealOffsetMs)
         );
       }
 
       phaseTimersRef.current.push(
         window.setTimeout(() => {
           setSpinPhase("ROUND_END");
-          setPhaseMessage(getRoundEndMessage(result, gameConfig));
-        }, totalCascadeTimelineMs + presentationTimings.modifierFlash + bonusPhaseHoldMs)
+          setPhaseMessage(roundOutcomeMessage);
+        }, totalCascadeTimelineWithSettleMs + presentationTimings.modifierFlash + bonusPhaseHoldMs)
       );
 
       phaseTimersRef.current.push(
@@ -1197,9 +1186,8 @@ const validateAutospinCount = useCallback(
           }
 
           setSpinPhase("IDLE");
-          setPhaseMessage(getBonusIdleMessage(result, gameConfig));
         },
-          totalCascadeTimelineMs +
+          totalCascadeTimelineWithSettleMs +
             presentationTimings.modifierFlash +
             bonusPhaseHoldMs +
             presentationTimings.roundEnd +

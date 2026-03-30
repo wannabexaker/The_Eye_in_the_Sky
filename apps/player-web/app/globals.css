@@ -2354,6 +2354,53 @@ p {
   width: min(420px, 100%);
 }
 
+.authPasswordField {
+  width: 100%;
+}
+
+.authPasswordInputWrap {
+  position: relative;
+}
+
+.authPasswordInputWrap input {
+  padding-right: 44px;
+}
+
+.authPasswordToggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(244, 239, 230, 0.72);
+  background: transparent;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.authPasswordToggle:hover {
+  color: rgba(252, 219, 128, 0.95);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.authPasswordToggle:focus-visible {
+  outline: 2px solid rgba(252, 219, 128, 0.6);
+  outline-offset: 1px;
+}
+
+.authPasswordToggle svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+
 .authFeedback {
   max-width: 420px;
   text-align: center;
@@ -3164,11 +3211,134 @@ Current shell calibration:
 }
 
 .supportSummary span,
-.supportNote,
 .supportMuted {
   color: rgba(244, 239, 230, 0.7);
   font-size: var(--font-sm);
   line-height: 1.28;
+}
+
+.supportEmotion {
+  --emotion-ink: rgba(246, 236, 212, 0.92);
+  --emotion-glow: rgba(226, 190, 112, 0.3);
+  --emotion-chip: rgba(26, 20, 14, 0.84);
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-areas:
+    "pulse title"
+    ". hint";
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  justify-items: center;
+  column-gap: 8px;
+  row-gap: 1px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  height: 40px;
+  padding: 6px 8px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
+    var(--emotion-chip);
+}
+
+.supportEmotion strong {
+  grid-area: title;
+  color: var(--emotion-ink);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.66rem;
+  line-height: 1.02;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: block;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.supportEmotionHint {
+  grid-area: hint;
+  color: rgba(244, 239, 230, 0.76);
+  font-size: 0.53rem;
+  line-height: 1.08;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.supportEmotionPulse {
+  grid-area: pulse;
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--emotion-ink);
+  box-shadow:
+    0 0 0 0 var(--emotion-glow),
+    0 0 10px var(--emotion-glow);
+  animation: supportEmotionPulse 1.35s ease-out infinite;
+  justify-self: center;
+  align-self: center;
+  margin-top: 15px;
+  will-change: transform, box-shadow;
+}
+
+.supportEmotion--idle {
+  --emotion-ink: rgba(210, 199, 173, 0.86);
+  --emotion-glow: rgba(172, 156, 124, 0.28);
+  --emotion-chip: rgba(20, 18, 15, 0.8);
+}
+
+.supportEmotion--loss {
+  --emotion-ink: rgba(238, 138, 114, 0.95);
+  --emotion-glow: rgba(199, 64, 33, 0.35);
+  --emotion-chip: rgba(34, 17, 14, 0.86);
+}
+
+.supportEmotion--win {
+  --emotion-ink: rgba(252, 219, 128, 0.97);
+  --emotion-glow: rgba(226, 190, 112, 0.4);
+  --emotion-chip: rgba(30, 24, 14, 0.84);
+}
+
+.supportEmotion--surge {
+  --emotion-ink: rgba(255, 224, 124, 1);
+  --emotion-glow: rgba(236, 180, 44, 0.48);
+  --emotion-chip: rgba(36, 25, 10, 0.88);
+}
+
+.supportEmotion--bonus {
+  --emotion-ink: rgba(165, 241, 223, 0.98);
+  --emotion-glow: rgba(55, 188, 157, 0.42);
+  --emotion-chip: rgba(14, 30, 25, 0.88);
+}
+
+@keyframes supportEmotionPulse {
+  0% {
+    transform: scale(0.9);
+    box-shadow:
+      0 0 0 0 var(--emotion-glow),
+      0 0 10px var(--emotion-glow);
+    opacity: 0.88;
+  }
+  65% {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 10px rgba(0, 0, 0, 0),
+      0 0 16px var(--emotion-glow);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow:
+      0 0 0 0 rgba(0, 0, 0, 0),
+      0 0 9px rgba(0, 0, 0, 0);
+    opacity: 0.9;
+  }
 }
 
 .supportStatusStrip {

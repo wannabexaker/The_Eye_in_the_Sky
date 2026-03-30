@@ -780,7 +780,6 @@ export default function HomePage() {
             onToggleSettings={toggleSettings}
             onToggleSound={toggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
-            phaseMessage={slot.phaseMessage}
             roundWin={latestRound?.totalWin ?? 0}
             scatterRewards={activeGameConfig.scatterRewards}
             fullscreenEnabled={fullscreenEnabled}
@@ -807,7 +806,6 @@ export default function HomePage() {
             onToggleSettings={toggleSettings}
             onToggleSound={toggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
-            phaseMessage={slot.phaseMessage}
             roundWin={latestRound?.totalWin ?? 0}
             fullscreenEnabled={fullscreenEnabled}
             soundEnabled={soundEnabled}

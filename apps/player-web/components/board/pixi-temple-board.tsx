@@ -100,6 +100,7 @@ type CellSprite = {
   animStart: number;
   animDuration: number;
   animating: boolean;
+  useSettleEasing: boolean;
   hovered: boolean;
   highlighted: boolean;
   pulseUntil: number;
@@ -209,7 +210,9 @@ const getCellCenter = (row: number, col: number) => ({
 const CASCADE_WAVE_COLUMN_DELAY_MS = 26;
 const CASCADE_WAVE_LIFT_PX = 5;
 const PRE_BREAK_FLASH_COUNT = 3;
-const SPIN_DROP_COLUMN_DELAY_MS = 45;
+const SPIN_DROP_COLUMN_DELAY_MS = 24;
+const SPIN_DROP_DISTANCE_PX = 240;
+const CASCADE_DROP_DISTANCE_PX = 100;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -267,6 +270,22 @@ export function PixiTempleBoard({
   const [highlightedCells, setHighlightedCells] = useState<{ row: number; col: number }[]>([]);
   const [hoveredSymbol, setHoveredSymbol] = useState<{ label: string; x: number; y: number } | null>(null);
   const displayBoardRef = useRef(displayBoard);
+
+  const safeDestroyApplication = useCallback((target: Application | null) => {
+    if (!target) {
+      return;
+    }
+
+    try {
+      // Guard against teardown races where Application internals are partially initialized.
+      const maybeStage = (target as unknown as { stage?: { destroy?: () => void } }).stage;
+      if (maybeStage && typeof maybeStage.destroy === "function") {
+        target.destroy(true, { children: true });
+      }
+    } catch {
+      // Ignore teardown race errors during unmount.
+    }
+  }, []);
 
   const applySymbolTexture = (cell: CellSprite, symbol: SymbolId, accent: number) => {
     const texture = symbolTexturesRef.current[symbol];
@@ -505,6 +524,9 @@ export function PixiTempleBoard({
       pendingCascadeWaveRef.current &&
       !suppressDropAnimationRef.current &&
       !isWavingRef.current;
+    const cascadeDropDurationMs = Math.max(240, Math.round(presentationTimings.cascadeDrop * 0.72));
+    const spinDropDurationMs = Math.max(400, presentationTimings.boardDrop);
+    const spinStartAnticipationMs = phase === "SPIN_START" ? presentationTimings.spinStart : 0;
 
     if (shouldStartCascadeWave) {
       pendingCascadeWaveRef.current = false;
@@ -517,7 +539,7 @@ export function PixiTempleBoard({
       waveUnlockTimerRef.current = window.setTimeout(() => {
         isWavingRef.current = false;
         waveUnlockTimerRef.current = null;
-      }, 220 + (cols - 1) * CASCADE_WAVE_COLUMN_DELAY_MS + 40);
+      }, cascadeDropDurationMs + (cols - 1) * CASCADE_WAVE_COLUMN_DELAY_MS + 40);
     }
 
     // sync visible tiles with the latest resolved board state
@@ -530,7 +552,11 @@ export function PixiTempleBoard({
 
         const palette = symbolPalette[symbol];
         const dropDistance =
-          phase === "CASCADE" ? 80 : phase === "SPIN_START" ? 180 : 120;
+          phase === "CASCADE"
+            ? CASCADE_DROP_DISTANCE_PX
+            : phase === "SPIN_START"
+              ? SPIN_DROP_DISTANCE_PX
+              : 120;
 
         cell.tile.clear();
         cell.tile.roundRect(0, 0, cellWidth, cellHeight, 22).fill({
@@ -561,19 +587,22 @@ export function PixiTempleBoard({
         } else {
           const waveLift = shouldStartCascadeWave ? CASCADE_WAVE_LIFT_PX : 0;
           cell.startY = cell.targetY - dropDistance - waveLift;
+          const columnDelayMs = shouldStartCascadeWave
+            ? colIndex * CASCADE_WAVE_COLUMN_DELAY_MS
+            : colIndex * SPIN_DROP_COLUMN_DELAY_MS;
           cell.animStart =
             app.ticker.lastTime +
-            (shouldStartCascadeWave
-              ? colIndex * CASCADE_WAVE_COLUMN_DELAY_MS
-              : colIndex * SPIN_DROP_COLUMN_DELAY_MS);
-          cell.animDuration = phase === "CASCADE" ? 220 : 360;
+            spinStartAnticipationMs +
+            columnDelayMs;
+          cell.animDuration = shouldStartCascadeWave ? cascadeDropDurationMs : spinDropDurationMs;
+          cell.useSettleEasing = !shouldStartCascadeWave;
           cell.animating = true;
         }
       });
     });
 
     return true;
-  }, []);
+  }, [presentationTimings.boardDrop, presentationTimings.cascadeDrop, presentationTimings.spinStart]);
 
   useEffect(() => {
     if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
@@ -759,7 +788,7 @@ export function PixiTempleBoard({
         );
 
         if (!mounted) {
-          app.destroy();
+          safeDestroyApplication(app);
           return;
         }
 
@@ -917,6 +946,7 @@ export function PixiTempleBoard({
             animStart: 0,
             animDuration: 360,
             animating: false,
+            useSettleEasing: true,
             hovered: false,
             highlighted: false,
             pulseUntil: 0,
@@ -1036,7 +1066,7 @@ export function PixiTempleBoard({
             currentPhase === "IDLE" && !cell.animating;
           const progress = Math.min(1, Math.max(0, (now - cell.animStart) / cell.animDuration));
           const animating = cell.animating && now >= cell.animStart;
-          const eased = easeOutCubic(progress);
+          const eased = cell.useSettleEasing ? easeOutBack(progress) : easeOutCubic(progress);
           const animatedY = animating
             ? cell.startY + (cell.targetY - cell.startY) * eased
             : cell.targetY;
@@ -1173,11 +1203,11 @@ export function PixiTempleBoard({
         window.clearTimeout(waveUnlockTimerRef.current);
         waveUnlockTimerRef.current = null;
       }
-      app.destroy(true, { children: true });
+      safeDestroyApplication(app);
       appRef.current = null;
       rootRef.current = null;
     };
-  }, [paintBoardCells]);
+  }, [paintBoardCells, safeDestroyApplication]);
 
   useEffect(() => {
     if (!paintBoardCells()) {

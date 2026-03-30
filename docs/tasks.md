@@ -7,6 +7,8 @@
 - `blocked`
 
 ## Active Tasks
+- `done` Stabilize Next.js player-web dev/build workflow with guarded clean build scripts and chunk-corruption recovery runbook
+- `done` Compact support emotion widget to single-line hint (height 48→40px, line-clamp 2→1)
 - `in_progress` Keep a strict per-fix step log (Intent -> Hypothesis -> Code change -> Verification -> Rollback note) for every board animation tweak
 - `in_progress` Stabilize floating win amount visibility timing so numbers remain readable before fade-out without breaking board layering
 - `in_progress` Eliminate residual non-spin waving triggers (especially on idle bet-change state)

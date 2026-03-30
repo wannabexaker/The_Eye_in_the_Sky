@@ -66,10 +66,10 @@ export const getSpinPresentationProfile = (
 ): SpinPresentationProfile => ({
   speed,
   timings: {
-    spinStart: scaleBySpeed(120, speed),
-    boardDrop: scaleBySpeed(350, speed),
-    winHighlight: scaleBySpeed(520, speed),
-    cascadeDrop: scaleBySpeed(320, speed),
+    spinStart: scaleBySpeed(140, speed),
+    boardDrop: scaleBySpeed(380, speed),
+    winHighlight: scaleBySpeed(560, speed),
+    cascadeDrop: scaleBySpeed(330, speed),
     modifierFlash: scaleBySpeed(300, speed),
     bonusTrigger: scaleBySpeed(1200, speed),
     roundEnd: scaleBySpeed(500, speed)

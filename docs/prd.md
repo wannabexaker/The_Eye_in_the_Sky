@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-26`
+- Last updated: `2026-03-30`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -50,6 +50,17 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 ## UI Workflow Guardrails
 - Read `docs/prd.md` and `docs/tasks.md` before touching the board shell or footer geometry.
 - For risky board/footer CSS experiments, keep the previous working block commented or isolated until the replacement is verified.
+
+## Build Reliability Guardrails
+- Never run `player-web` build while `player-web` dev server is active.
+- Use `corepack pnpm build:player:clean` for local signoff builds.
+- If chunk 404/runtime loader errors appear, stop dev, delete `apps/player-web/.next`, and restart dev.
+- Build safety is enforced by `apps/player-web/scripts/guard-no-dev-server.cjs`.
+
+## UI Polish Standards
+- Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
+- CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
+- Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
 
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
