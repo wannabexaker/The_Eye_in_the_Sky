@@ -9,12 +9,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /build
 
-# Install pnpm
-RUN npm install -g pnpm@8
+# Install pnpm matching workspace packageManager version
+RUN npm install -g pnpm@10.6.3
 
-# Copy root-level workspace files
-COPY pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
-COPY .npmrc* ./
+# Copy root-level workspace files (package.json required for pnpm workspace root)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 
 # Copy apps/player-web and packages
 COPY apps/player-web ./apps/player-web

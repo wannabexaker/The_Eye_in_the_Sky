@@ -1,0 +1,119 @@
+# Production docker-compose for Raspberry Pi (or any server)
+# Uses pre-built images from GitHub Container Registry (ghcr.io)
+# instead of building from source.
+#
+# Usage on RPi:
+#   docker-compose -f docker-compose.prod.yml pull
+#   docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: eye-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eye_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-__SET_POSTGRES_PASSWORD__}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d eye_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - services
+    mem_limit: 1024m
+    cpus: "1.0"
+
+  api:
+    image: ghcr.io/wannabexaker/tsogos-api:latest
+    container_name: eye-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3200
+      DATABASE_URL: postgresql://app_user:${POSTGRES_PASSWORD}@postgres:5432/eye_db
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3100}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+      PLAYER_SEED_EMAIL: ${PLAYER_SEED_EMAIL:-}
+      PLAYER_SEED_PASSWORD: ${PLAYER_SEED_PASSWORD:-}
+      AUTH_MODE: ${AUTH_MODE:-INTERNAL_ONLY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./data/analytics:/app/data/analytics
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - services
+    mem_limit: 512m
+    cpus: "0.5"
+
+  player-web:
+    image: ghcr.io/wannabexaker/tsogos-player-web:latest
+    container_name: eye-player-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    networks:
+      - services
+    mem_limit: 768m
+    cpus: "1.0"
+
+  admin-web:
+    image: ghcr.io/wannabexaker/tsogos-admin-web:latest
+    container_name: eye-admin-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    networks:
+      - services
+    mem_limit: 512m
+    cpus: "0.5"
+
+networks:
+  services:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
