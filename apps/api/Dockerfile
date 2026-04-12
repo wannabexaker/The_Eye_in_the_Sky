@@ -25,6 +25,8 @@ RUN pnpm install --frozen-lockfile
 
 # Build API: compile TypeScript → JavaScript
 WORKDIR /build/apps/api
+# Ensure Prisma client is generated in CI/build containers before tsc.
+RUN pnpm exec prisma generate
 RUN pnpm exec tsc --project tsconfig.json
 
 # Prune dev dependencies (keep only production deps)
