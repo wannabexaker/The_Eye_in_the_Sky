@@ -41,14 +41,10 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy built application from builder
-COPY --from=builder /build/apps/player-web/.next ./.next
+# Copy Next.js standalone build output (includes traced runtime deps)
+COPY --from=builder /build/apps/player-web/.next/standalone ./
+COPY --from=builder /build/apps/player-web/.next/static ./.next/static
 COPY --from=builder /build/apps/player-web/public ./public
-COPY --from=builder /build/apps/player-web/package.json ./package.json
-COPY --from=builder /build/apps/player-web/next.config.ts ./next.config.ts
-
-# Install production dependencies only
-RUN npm install --only=production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
@@ -61,5 +57,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD curl -f http://localhost:3000 || exit 1
 
-# Start application
-CMD ["npm", "start"]
+# Start standalone Next server
+CMD ["node", "server.js"]
