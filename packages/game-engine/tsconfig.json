@@ -6,15 +6,15 @@
     "skipLibCheck": true,
     "strict": true,
     "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,
     "outDir": "dist",
     "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
+    "emitDeclarationOnly": false,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"]

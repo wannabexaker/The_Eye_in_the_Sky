@@ -1,0 +1,61 @@
+# Docker build context ignore list
+# These files/directories are excluded from COPY commands in Dockerfiles
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Node dependencies & build artifacts
+node_modules
+dist
+.next
+.cache
+coverage
+.turbo
+
+# IDE & Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation (large, not needed in image)
+docs
+README.md
+DEVELOPER_WORKFLOW.md
+
+# Sensitive files
+.env
+.env.local
+.env.*.local
+.env.docker.local
+CREDENTIALS-LOCAL-REFERENCE.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Test files (unit tests stay, e2e may be excluded)
+test
+*.spec.ts
+
+# Temporary
+tmp
+temp
+NOT-FOR-USE
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Optional pnpm
+.pnpm-store
+pnpm-debug.log
+
+# Prisma
+.env.dev
+.env.prod

@@ -7,10 +7,12 @@
  */
 
 export type RoundAnalyticsTier = "loss" | "win" | "big_win" | "huge_win" | "super_win";
+export type RoundAnalyticsVariant = "2.0" | "simple" | "other";
 
 export interface RoundAnalyticsEntry {
   id: string;
   timestamp: number;
+  variant: RoundAnalyticsVariant;
   bet: number;
   win: number;
   net: number;
@@ -28,6 +30,7 @@ export interface AnalyticsQueryOptions {
   after?: number;
   before?: number;
   mode?: "base" | "bonus";
+  variant?: RoundAnalyticsVariant;
 }
 
 export interface AnalyticsService {

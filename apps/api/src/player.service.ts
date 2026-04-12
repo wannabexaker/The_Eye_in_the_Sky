@@ -282,6 +282,21 @@ export class PlayerService {
       throw new BadRequestException("A valid spin result payload is required.");
     }
 
+    // Validate bet amounts BEFORE hitting the DB constraints
+    const betValue = roundCurrency(Number(result.bet));
+    const chargedBetValue = roundCurrency(Number(result.debugMetadata?.chargedBet ?? 0));
+    const totalWinValue = roundCurrency(Number(result.totalWin));
+
+    if (!Number.isFinite(betValue) || betValue <= 0) {
+      throw new BadRequestException("Bet must be greater than zero.");
+    }
+    if (!Number.isFinite(chargedBetValue) || chargedBetValue < 0) {
+      throw new BadRequestException("Charged bet cannot be negative.");
+    }
+    if (!Number.isFinite(totalWinValue) || totalWinValue < 0) {
+      throw new BadRequestException("Total win cannot be negative.");
+    }
+
     const game = await this.getPrimaryGame();
 
     await this.prisma.$transaction(async (transaction) => {
@@ -313,8 +328,8 @@ export class PlayerService {
       });
 
       const previousBalance = Number(wallet.balance);
-      const chargedBet = roundCurrency(Number(result.debugMetadata?.chargedBet ?? 0));
-      const totalWin = roundCurrency(Number(result.totalWin));
+      const chargedBet = chargedBetValue;
+      const totalWin = totalWinValue;
       const balanceAfterBet = roundCurrency(previousBalance - chargedBet);
       const finalBalance = roundCurrency(balanceAfterBet + totalWin);
 
@@ -326,7 +341,7 @@ export class PlayerService {
           seedUsed: String(result.seedUsed),
           mode: result.mode,
           chargedBet,
-          bet: roundCurrency(Number(result.bet)),
+          bet: betValue,
           totalWin,
           walletDelta: roundCurrency(Number(result.walletDelta)),
           initialBoardJson: JSON.stringify(result.initialBoard),
@@ -343,7 +358,7 @@ export class PlayerService {
           seedUsed: String(result.seedUsed),
           mode: result.mode,
           chargedBet,
-          bet: roundCurrency(Number(result.bet)),
+          bet: betValue,
           totalWin,
           walletDelta: roundCurrency(Number(result.walletDelta)),
           initialBoardJson: JSON.stringify(result.initialBoard),

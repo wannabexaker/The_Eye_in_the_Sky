@@ -10,7 +10,7 @@ Professional monorepo for the slot-style simulation, player shell, and engine to
 - **Simulation (math validation):** `corepack pnpm simulate`
 
 ### API Server
-- **Backend:** `corepack pnpm --filter api dev` (localhost:3200)
+- **Backend:** `corepack pnpm dev:api` (localhost:3200)
   - Handles authentication, sessions, and game logic
   - Requires SQL Server (see [apps/api/README.md](apps/api/README.md))
 
@@ -20,6 +20,74 @@ Professional monorepo for the slot-style simulation, player shell, and engine to
 - **Full lint:** `corepack pnpm lint`
 
 ⚠️ **Important:** Never run `pnpm build` while `pnpm dev:*` is active. See [DEVELOPER_WORKFLOW.md](DEVELOPER_WORKFLOW.md) for safe dev/build patterns.
+---
+
+## Database (SQL Server)
+
+### Connection Details — SSMS / Azure Data Studio
+
+| Field | Value |
+|---|---|
+| Server | `localhost,1433` |
+| Authentication | SQL Server Authentication |
+| Login | `sa` |
+| Password | `<sa_password>` |
+| Database | `TheEyeInTheSky` |
+| Encrypt | No (dev only) |
+| Trust Server Certificate | Yes |
+
+> **SSMS:** Server name `localhost,1433` (comma, not colon). Check "Trust server certificate" under Connection Properties.  
+> **Azure Data Studio:** Same settings, untick SSL/encrypt.
+
+### Connection String
+```
+sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=<sa_password>;encrypt=false;trustServerCertificate=true
+```
+
+### Key Tables
+
+| Table | Contents |
+|---|---|
+| `User` | All registered accounts (email, role, passwordHash) |
+| `AuthSession` | Active sessions (tokenHash, expiresAt, authSource) |
+| `ExternalIdentity` | External platform → game user mappings |
+| `AuthNonceReplay` | Used nonces/JTIs for replay protection |
+| `Wallet` | Player balances (EUR) |
+| `LedgerEntry` | Transaction log (bet, win, bonus, deposit, withdraw) |
+| `Round` | Every completed spin |
+| `GameSession` | Active game sessions per user/game |
+| `GameMathProfile` | Available math configs (v2.0, simple, legacy) |
+| `AppSetting` | Runtime config (active math profile, auth mode) |
+| `AdminAction` | Admin operation audit trail |
+| `AuditLog` | Entity-level change log |
+| `AnalyticsRound` | Aggregated analytics per spin |
+
+### Useful Queries
+```sql
+-- All users
+SELECT id, email, displayName, role, isActive, createdAt FROM [User];
+
+-- Active sessions
+SELECT s.id, u.email, s.authSource, s.createdAt, s.expiresAt
+FROM AuthSession s JOIN [User] u ON s.userId = u.id
+WHERE s.expiresAt > GETUTCDATE();
+
+-- Current auth mode config
+SELECT [key], [value] FROM AppSetting WHERE [key] LIKE 'auth:%';
+
+-- Active math profile
+SELECT [key], [value] FROM AppSetting WHERE [key] LIKE 'game:%';
+
+-- Player balances
+SELECT u.email, w.balance, w.currencyCode
+FROM Wallet w JOIN [User] u ON w.userId = u.id;
+
+-- Recent rounds
+SELECT u.email, r.chargedBet, r.totalWin, r.profileId, r.createdAt
+FROM Round r JOIN [User] u ON r.userId = u.id
+ORDER BY r.createdAt DESC;
+```
+
 ---
 
 ## Development Authentication
@@ -45,7 +113,7 @@ Professional monorepo for the slot-style simulation, player shell, and engine to
 1. **Start all services:**
    ```bash
    # Terminal 1: API backend
-   corepack pnpm --filter api dev
+  corepack pnpm dev:api
    
    # Terminal 2: Player frontend
    corepack pnpm dev:player

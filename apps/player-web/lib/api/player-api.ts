@@ -5,6 +5,19 @@ import type { AuthSessionDto, PlayerSnapshotDto } from "@eye/shared-types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
 
+export type AuthModePublicConfig = {
+  mode: "INTERNAL_ONLY" | "EXTERNAL_ONLY" | "HYBRID";
+  fallbackEnabled: boolean;
+  mockModeEnabled: boolean;
+};
+
+export type PlatformExchangeResult = {
+  user: { id: string; email: string; displayName: string };
+  sessionId: string;
+  expiresAt: number;
+  authSource: "external";
+};
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
@@ -34,6 +47,20 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const fetchAuthSession = () => requestJson<AuthSessionDto>("/auth/me", { method: "GET" });
+
+export const fetchAuthMode = () =>
+  requestJson<AuthModePublicConfig>("/auth/mode", { method: "GET" });
+
+export const exchangePlatformToken = (payload: {
+  platformAssertion: string;
+  nonce: string;
+  timestamp: number;
+  handoffId?: string;
+}) =>
+  requestJson<PlatformExchangeResult>("/auth/platform/exchange", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 
 export const loginPlayer = (payload: { email: string; password: string }) =>
   requestJson<AuthSessionDto>("/auth/login", {

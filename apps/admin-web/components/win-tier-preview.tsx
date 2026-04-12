@@ -40,20 +40,20 @@ const TIER_PRESETS: TierPreset[] = [
   {
     id: "huge_win",
     title: "HUGE WIN",
-    subtitle: "High tier impact",
-    amount: 67.2,
-    multiple: 9.8,
-    probabilityHint: "Rare",
+    subtitle: "≥13× multiplier",
+    amount: 87.3,
+    multiple: 13.4,
+    probabilityHint: "Rare (~1–2%)",
     glowLevel: 0.72,
     plateAsset: "/assets/ui/huge-win-glow-plate.png"
   },
   {
     id: "super_win",
     title: "SUPER WIN",
-    subtitle: "Top ritual payout",
-    amount: 119.2,
-    multiple: 14.9,
-    probabilityHint: "~0.8% target",
+    subtitle: "≥25× multiplier",
+    amount: 166.5,
+    multiple: 25.6,
+    probabilityHint: "Very rare (~0.3%)",
     glowLevel: 1,
     plateAsset: "/assets/ui/super-win-glow-plate.png"
   }

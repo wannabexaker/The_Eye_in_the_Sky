@@ -139,6 +139,7 @@ function BarChart({
 
 export function GameStatsViewer() {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+  const [variantFilter, setVariantFilter] = useState<"all" | "2.0" | "simple">("all");
   const [dashboard, setDashboard] = useState<LiveAnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
@@ -170,7 +171,12 @@ export function GameStatsViewer() {
           setLoading(true);
         }
 
-        const response = await fetch(`${apiBase}/analytics/dashboard?limit=2000`, {
+        const query = new URLSearchParams({ limit: "2000" });
+        if (variantFilter !== "all") {
+          query.set("variant", variantFilter);
+        }
+
+        const response = await fetch(`${apiBase}/analytics/dashboard?${query.toString()}`, {
           signal: controller.signal,
           cache: "no-store",
           credentials: "include"
@@ -220,7 +226,7 @@ export function GameStatsViewer() {
         window.clearTimeout(timer);
       }
     };
-  }, [apiBase]);
+  }, [apiBase, variantFilter]);
 
   const summary = dashboard?.summary ?? null;
 
@@ -239,6 +245,39 @@ export function GameStatsViewer() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 10px",
+          border: "1px solid rgba(240,202,114,0.18)",
+          borderRadius: 8,
+          background: "rgba(22, 14, 20, 0.55)"
+        }}
+      >
+        <label htmlFor="analytics-variant" style={{ fontSize: 11, color: "#c6933c", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Variant
+        </label>
+        <select
+          id="analytics-variant"
+          value={variantFilter}
+          onChange={(event) => setVariantFilter(event.target.value as "all" | "2.0" | "simple")}
+          style={{
+            background: "rgba(10, 8, 12, 0.85)",
+            color: "#f8edd9",
+            border: "1px solid rgba(240,202,114,0.32)",
+            borderRadius: 6,
+            padding: "4px 8px",
+            fontSize: 12
+          }}
+        >
+          <option value="all">All</option>
+          <option value="2.0">2.0</option>
+          <option value="simple">Simple</option>
+        </select>
+      </div>
+
       {offline ? (
         <div
           style={{

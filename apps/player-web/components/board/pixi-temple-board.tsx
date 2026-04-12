@@ -277,13 +277,22 @@ export function PixiTempleBoard({
     }
 
     try {
+      // Critical: Stop ticker FIRST before destroying stage to prevent render loop from accessing destroyed objects
+      if (target.ticker) {
+        target.ticker.stop();
+        target.ticker.destroy();
+      }
+
       // Guard against teardown races where Application internals are partially initialized.
       const maybeStage = (target as unknown as { stage?: { destroy?: () => void } }).stage;
       if (maybeStage && typeof maybeStage.destroy === "function") {
         target.destroy(true, { children: true });
       }
-    } catch {
-      // Ignore teardown race errors during unmount.
+    } catch (error) {
+      // Ignore teardown race errors during unmount. Log in dev for debugging.
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[PixiTempleBoard] Error during destroy:", error);
+      }
     }
   }, []);
 
@@ -335,8 +344,42 @@ export function PixiTempleBoard({
   }, [spinPhase]);
 
   const clearFloatingTexts = () => {
-    floatingTextsRef.current.forEach((text) => text.destroy());
+    // Remove all floating text objects from the layer and destroy them
+    floatingTextsRef.current.forEach((text) => {
+      if (text.parent) {
+        text.parent.removeChild(text);
+      }
+      text.destroy();
+    });
     floatingTextsRef.current = [];
+
+    // Explicitly clear layer children to prevent orphaned display objects
+    if (floatingTextLayerRef.current) {
+      floatingTextLayerRef.current.removeChildren();
+    }
+  };
+
+  const unloadSymbolTextures = () => {
+    // Unload all symbol textures from Pixi's global Assets cache to prevent memory leaks
+    // This ensures assets are released when the board is destroyed
+    void (async () => {
+      try {
+        const allUrls: string[] = [];
+        Object.values(symbolAssetSources).forEach((urls) => {
+          allUrls.push(...urls);
+        });
+
+        // Unload each asset from the Pixi cache
+        // Assets.unload() is fire-and-forget and won't throw if asset doesn't exist
+        for (const url of allUrls) {
+          await Assets.unload(url).catch(() => {
+            // Silently ignore unload failures for non-existent or already-unloaded assets
+          });
+        }
+      } catch {
+        // Suppress errors during asset cleanup
+      }
+    })();
   };
 
   const markWinningCells = (wins: CascadeWin[]) => {
@@ -758,6 +801,10 @@ export function PixiTempleBoard({
           antialias: true,
           resolution: window.devicePixelRatio || 1
         });
+        
+        // Stop ticker immediately after init completes, before async operations
+        // This prevents rendering the incomplete scene tree during asset loading
+        app.ticker.stop();
 
         const textureEntries = await Promise.all(
           (Object.entries(symbolAssetSources) as [SymbolId, readonly string[]][]).map(
@@ -1002,7 +1049,12 @@ export function PixiTempleBoard({
       }
       cellRefs.current = cells;
 
-      app.ticker.add((ticker) => {
+      const tickerListener = (ticker: any) => {
+        // Guard: Exit immediately if component is unmounting or app is destroyed
+        if (!mounted || !appRef.current || !rootRef.current) {
+          return;
+        }
+
         const now = ticker.lastTime;
         const deltaMs = ticker.deltaMS ?? 16.6667;
 
@@ -1042,25 +1094,49 @@ export function PixiTempleBoard({
 
         particleSystemRef.current?.update(deltaMs);
 
-        floatingTextsRef.current = floatingTextsRef.current.filter((text) => {
-          text.y -= 0.35;
+        // Safe floating text update: validate object still exists before accessing
+        const validFloatingTexts: Text[] = [];
+        for (const text of floatingTextsRef.current) {
+          try {
+            // Validate the text object is still in a valid state
+            if (!text.destroyed && text.parent) {
+              text.y -= 0.35;
+              const createdAt = (text as any).createdAt ?? now;
+              const elapsedMs = now - createdAt;
+              text.alpha = getFloatingTextAlpha(elapsedMs, floatingTextHoldMs, floatingTextFadeMs);
 
-          const createdAt = (text as any).createdAt ?? now;
-          const elapsedMs = now - createdAt;
-          text.alpha = getFloatingTextAlpha(elapsedMs, floatingTextHoldMs, floatingTextFadeMs);
-
-          if (text.alpha <= 0) {
-            text.destroy();
-            return false;
+              if (text.alpha <= 0) {
+                text.destroy();
+              } else {
+                validFloatingTexts.push(text);
+              }
+            }
+          } catch (error) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[PixiTempleBoard] Error updating floating text:", error);
+            }
           }
+        }
+        floatingTextsRef.current = validFloatingTexts;
 
-          return true;
-        });
+        // Guard: Validate graphics layers exist before drawing
+        if (runeLayerRef.current && !runeLayerRef.current.destroyed) {
+          drawRuneLayer(runeLayerRef.current, now);
+        }
+        if (winPathRef.current && !winPathRef.current.destroyed) {
+          drawWinPaths(winPathRef.current, highlightedWinsRef.current, now);
+        }
 
-        drawRuneLayer(runeLayer, now);
-        drawWinPaths(winPath, highlightedWinsRef.current, now);
+        // Guard: Validate cell refs array and each cell's parent container
+        if (!cellRefs.current || cellRefs.current.length === 0) {
+          return;
+        }
 
         cellRefs.current.forEach((cell) => {
+          // Skip cells that have been destroyed or removed from scene graph
+          if (!cell || !cell.container || cell.container.destroyed) {
+            return;
+          }
           const currentPhase = phaseRef.current;
           const idleMotionActive =
             currentPhase === "IDLE" && !cell.animating;
@@ -1096,19 +1172,21 @@ export function PixiTempleBoard({
           }
         });
 
-        overlay.clear();
-        if (phaseRef.current === "SPIN_START") {
-          overlay.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0xf0ca72, alpha: 0.04 });
+        if (overlayRef.current && !overlayRef.current.destroyed) {
+          overlayRef.current.clear();
+          if (phaseRef.current === "SPIN_START") {
+            overlayRef.current.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0xf0ca72, alpha: 0.04 });
+          }
+
+          if (phaseRef.current === "WIN_CHECK" && highlightedWinsRef.current.length > 0) {
+            overlayRef.current.rect(0, 0, logicalWidth, logicalHeight).fill({
+              color: 0xf0ca72,
+              alpha: 0.04
+            });
+          }
         }
 
-        if (phaseRef.current === "WIN_CHECK" && highlightedWinsRef.current.length > 0) {
-          overlay.rect(0, 0, logicalWidth, logicalHeight).fill({
-            color: 0xf0ca72,
-            alpha: 0.04
-          });
-        }
-
-        if (guidanceUntilRef.current > now && highlightedWinsRef.current.length > 0) {
+        if (overlayRef.current && !overlayRef.current.destroyed && guidanceUntilRef.current > now && highlightedWinsRef.current.length > 0) {
           const guidanceAlpha = Math.max(
             0,
             ((guidanceUntilRef.current - now) /
@@ -1120,66 +1198,73 @@ export function PixiTempleBoard({
           );
           const winningCells = highlightedWinsRef.current.flatMap((win) => win.cells);
 
-          overlay.stroke({ color: 0xfff2c9, width: 2, alpha: guidanceAlpha * 0.9, cap: "round" });
+          overlayRef.current.stroke({ color: 0xfff2c9, width: 2, alpha: guidanceAlpha * 0.9, cap: "round" });
           winningCells.forEach((cell) => {
             const center = getCellCenter(cell.row, cell.col);
-            overlay.moveTo(logicalWidth / 2, 18);
-            overlay.lineTo(center.x, center.y - 14);
+            overlayRef.current!.moveTo(logicalWidth / 2, 18);
+            overlayRef.current!.lineTo(center.x, center.y - 14);
           });
 
-          overlay.stroke({ color: 0xf0ca72, width: 18, alpha: guidanceAlpha * 0.12, cap: "round" });
-          overlay.arc(logicalWidth / 2, 26, 42, Math.PI * 0.08, Math.PI * 0.92);
-          overlay.arc(logicalWidth / 2, 26, 28, Math.PI * 0.16, Math.PI * 0.84);
+          overlayRef.current.stroke({ color: 0xf0ca72, width: 18, alpha: guidanceAlpha * 0.12, cap: "round" });
+          overlayRef.current.arc(logicalWidth / 2, 26, 42, Math.PI * 0.08, Math.PI * 0.92);
+          overlayRef.current.arc(logicalWidth / 2, 26, 28, Math.PI * 0.16, Math.PI * 0.84);
 
           winningCells.forEach((cell) => {
             const center = getCellCenter(cell.row, cell.col);
-            overlay.circle(center.x, center.y, 30);
+            overlayRef.current!.circle(center.x, center.y, 30);
           });
-          overlay.stroke({ color: 0xffefbc, width: 3, alpha: guidanceAlpha * 0.55 });
+          overlayRef.current.stroke({ color: 0xffefbc, width: 3, alpha: guidanceAlpha * 0.55 });
         }
 
-        if (bigWinUntilRef.current > now) {
+        if (overlayRef.current && !overlayRef.current.destroyed && bigWinUntilRef.current > now) {
           const rayAlpha = ((bigWinUntilRef.current - now) / 1100) * 0.18;
-          overlay.moveTo(logicalWidth / 2, logicalHeight / 2);
-          overlay.lineTo(logicalWidth / 2 - 180, logicalHeight / 2 - 240);
-          overlay.lineTo(logicalWidth / 2 + 180, logicalHeight / 2 - 240);
-          overlay.closePath();
-          overlay.fill({ color: 0xf0ca72, alpha: rayAlpha });
+          overlayRef.current.moveTo(logicalWidth / 2, logicalHeight / 2);
+          overlayRef.current.lineTo(logicalWidth / 2 - 180, logicalHeight / 2 - 240);
+          overlayRef.current.lineTo(logicalWidth / 2 + 180, logicalHeight / 2 - 240);
+          overlayRef.current.closePath();
+          overlayRef.current.fill({ color: 0xf0ca72, alpha: rayAlpha });
         }
 
-        if (lossVeilUntilRef.current > now) {
+        if (overlayRef.current && !overlayRef.current.destroyed && lossVeilUntilRef.current > now) {
           const fade = ((lossVeilUntilRef.current - now) / 700) * 0.18;
-          overlay.rect(0, 0, logicalWidth, logicalHeight).fill({
+          overlayRef.current.rect(0, 0, logicalWidth, logicalHeight).fill({
             color: 0x050507,
             alpha: fade
           });
-          overlay.stroke({ color: 0x79685a, width: 3, alpha: fade * 0.6 });
-          overlay.arc(logicalWidth / 2, logicalHeight / 2 + 34, 96, Math.PI * 0.18, Math.PI * 0.82);
+          overlayRef.current.stroke({ color: 0x79685a, width: 3, alpha: fade * 0.6 });
+          overlayRef.current.arc(logicalWidth / 2, logicalHeight / 2 + 34, 96, Math.PI * 0.18, Math.PI * 0.82);
         }
 
-        bonusBeams.clear();
-        if (bonusFlashUntilRef.current > now || bonusActiveRef.current) {
-          const beamAlpha = bonusActiveRef.current
-            ? 0.09
-            : Math.max(0, ((bonusFlashUntilRef.current - now) / presentationTimings.bonusTrigger) * 0.18);
+        if (bonusBeamsRef.current && !bonusBeamsRef.current.destroyed) {
+          bonusBeamsRef.current.clear();
+          if (bonusFlashUntilRef.current > now || bonusActiveRef.current) {
+            const beamAlpha = bonusActiveRef.current
+              ? 0.09
+              : Math.max(0, ((bonusFlashUntilRef.current - now) / presentationTimings.bonusTrigger) * 0.18);
 
-          bonusBeams.moveTo(logicalWidth / 2 - 120, 0);
-          bonusBeams.lineTo(logicalWidth / 2 + 120, 0);
-          bonusBeams.lineTo(logicalWidth / 2 + 36, logicalHeight - 32);
-          bonusBeams.lineTo(logicalWidth / 2 - 36, logicalHeight - 32);
-          bonusBeams.closePath();
-          bonusBeams.fill({ color: 0xffefbc, alpha: beamAlpha });
-          bonusBeams.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0x09080b, alpha: beamAlpha * 0.45 });
+            bonusBeamsRef.current.moveTo(logicalWidth / 2 - 120, 0);
+            bonusBeamsRef.current.lineTo(logicalWidth / 2 + 120, 0);
+            bonusBeamsRef.current.lineTo(logicalWidth / 2 + 36, logicalHeight - 32);
+            bonusBeamsRef.current.lineTo(logicalWidth / 2 - 36, logicalHeight - 32);
+            bonusBeamsRef.current.closePath();
+            bonusBeamsRef.current.fill({ color: 0xffefbc, alpha: beamAlpha });
+            bonusBeamsRef.current.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0x09080b, alpha: beamAlpha * 0.45 });
+          }
         }
 
-        lightning.clear();
-        if (lightningUntilRef.current > now) {
-          const progress = 1 - (lightningUntilRef.current - now) / 240;
-          const pulse = Math.sin(Math.PI * Math.max(0, Math.min(1, progress)));
-          const alpha = easeInOutSine(pulse) * 0.09;
-          lightning.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0xf8edd9, alpha });
+        if (lightningRef.current && !lightningRef.current.destroyed) {
+          lightningRef.current.clear();
+          if (lightningUntilRef.current > now) {
+            const progress = 1 - (lightningUntilRef.current - now) / 240;
+            const pulse = Math.sin(Math.PI * Math.max(0, Math.min(1, progress)));
+            const alpha = easeInOutSine(pulse) * 0.09;
+            lightningRef.current.rect(0, 0, logicalWidth, logicalHeight).fill({ color: 0xf8edd9, alpha });
+          }
         }
-      });
+        return !mounted;
+      };
+
+      app.ticker.add(tickerListener);
 
         resizeObserverRef.current = new ResizeObserver(() => resizeStage());
         resizeObserverRef.current.observe(host);
@@ -1187,25 +1272,59 @@ export function PixiTempleBoard({
 
         // paint the board immediately after the async Pixi init completes
         paintBoardCells();
+        
+        // Restart ticker after scene tree is fully constructed
+        app.ticker.start();
       } catch {
         // suppress dev-overlay promise noise from browser/graphics init failures
       }
     })();
 
     return () => {
+      // Set mounted false FIRST to signal ticker to exit on next frame
       mounted = false;
+
+      // Clean up timers
       timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
       timeoutsRef.current = [];
+
+      // Clean up floating texts
       clearFloatingTexts();
+
+      // Clean up observers
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+
+      // Clean up wave unlock timer
       if (waveUnlockTimerRef.current !== null) {
         window.clearTimeout(waveUnlockTimerRef.current);
         waveUnlockTimerRef.current = null;
       }
+
+      // Clear all refs BEFORE destroying application to prevent access during teardown
+      cellRefs.current = [];
+      cloudRefs.current = [];
+      eyeRefs.current = [];
+      moteRefs.current = [];
+      symbolTexturesRef.current = {};
+
+      // Destroy PixiJS application (which will stop ticker)
       safeDestroyApplication(app);
+
+      // Unload symbol textures from Pixi's global Assets cache after app destruction
+      unloadSymbolTextures();
+
+      // Final ref cleanup
       appRef.current = null;
       rootRef.current = null;
+      overlayRef.current = null;
+      lightningRef.current = null;
+      bonusBeamsRef.current = null;
+      runeLayerRef.current = null;
+      winPathRef.current = null;
+      backgroundLayerRef.current = null;
+      floatingTextLayerRef.current = null;
+      particleSystemRef.current = null;
     };
   }, [paintBoardCells, safeDestroyApplication]);
 

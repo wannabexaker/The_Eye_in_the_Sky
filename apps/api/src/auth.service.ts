@@ -15,6 +15,7 @@ import {
 } from "./auth.helpers";
 import type { CurrentAuthUser, RequestWithAuth } from "./auth.types";
 import { PrismaService } from "./prisma.service";
+import type { ValidatedPlatformToken } from "./platform-exchange-validator.service";
 
 const mapUser = (user: {
   id: string;
@@ -190,7 +191,9 @@ export class AuthService {
   private async createSessionForUser(
     user: { id: string; email: string; displayName: string; role: string },
     request: RequestWithAuth,
-    response: any
+    response: any,
+    authSource: "internal" | "external" = "internal",
+    authMetadata?: { providerKey?: string; externalSessionRef?: string }
   ): Promise<AuthSessionDto> {
     const sessionToken = createSessionToken();
     const expiresAt = new Date(Date.now() + AUTH_SESSION_TTL_MS);
@@ -201,7 +204,10 @@ export class AuthService {
         tokenHash: hashSessionToken(sessionToken),
         expiresAt,
         userAgent: typeof request.headers?.["user-agent"] === "string" ? request.headers["user-agent"] : null,
-        ipAddress: getRequestIpAddress(request)
+        ipAddress: getRequestIpAddress(request),
+        authSource,
+        providerKey: authMetadata?.providerKey,
+        externalSessionRef: authMetadata?.externalSessionRef
       }
     });
 
@@ -211,5 +217,92 @@ export class AuthService {
       authenticated: true,
       user: mapUser(user)
     };
+  }
+
+  /**
+   * Handle external platform token exchange.
+   * Validates token, maps or provisions user, creates session.
+   */
+  async exchangePlatformToken(
+    validatedToken: ValidatedPlatformToken,
+    providerKey: string,
+    request: RequestWithAuth,
+    response: any
+  ): Promise<AuthSessionDto> {
+    const externalUserId = validatedToken.sub;
+    const email = validatedToken.email;
+    const displayName = validatedToken.username || email?.split("@")[0] || "Platform User";
+
+    if (!externalUserId) {
+      throw new BadRequestException("Token missing required subject (sub) claim");
+    }
+
+    // Try to resolve existing external identity
+    const existingIdentity = await this.prisma.externalIdentity.findUnique({
+      where: {
+        providerKey_externalUserId: {
+          providerKey,
+          externalUserId
+        }
+      },
+      include: { user: true }
+    });
+
+    let user: any;
+
+    if (existingIdentity) {
+      // Use existing user mapped to this external identity
+      user = existingIdentity.user;
+    } else {
+      // Provision new user (or find by email if possible)
+      if (email) {
+        const emailUser = await this.prisma.user.findUnique({ where: { email } });
+        if (emailUser) {
+          user = emailUser;
+        }
+      }
+
+      if (!user) {
+        // Create new user
+        user = await this.prisma.$transaction(async (transaction) => {
+          const newUser = await transaction.user.create({
+            data: {
+              email: email || `external_${externalUserId}@platform.local`,
+              passwordHash: "", // External users have no password
+              displayName,
+              role: "player",
+              isActive: true
+            }
+          });
+
+          await transaction.wallet.create({
+            data: {
+              userId: newUser.id,
+              currencyCode: "EUR",
+              balance: 0
+            }
+          });
+
+          return newUser;
+        });
+      }
+
+      // Create external identity mapping
+      await this.prisma.externalIdentity.create({
+        data: {
+          userId: user.id,
+          providerKey,
+          externalUserId,
+          externalUsername: validatedToken.username,
+          metadataJson: JSON.stringify(validatedToken.metadata || {})
+        }
+      });
+    }
+
+    // Create session with external auth metadata
+    return this.createSessionForUser(user, request, response, "external", {
+      providerKey,
+      externalSessionRef: validatedToken.jti
+    });
   }
 }

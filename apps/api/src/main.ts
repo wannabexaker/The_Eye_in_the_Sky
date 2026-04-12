@@ -1,6 +1,23 @@
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { DatabaseErrorFilter } from "./db-error.filter";
+
+const loadLocalEnv = () => {
+  const candidates = [".env", ".env.development", "apps/api/.env", "apps/api/.env.development"];
+
+  for (const candidate of candidates) {
+    const absolutePath = resolve(process.cwd(), candidate);
+
+    if (existsSync(absolutePath)) {
+      process.loadEnvFile(absolutePath);
+    }
+  }
+};
+
+loadLocalEnv();
 
 const isAllowedOrigin = (origin: string | undefined) => {
   if (!origin) {
@@ -41,6 +58,7 @@ const isAllowedOrigin = (origin: string | undefined) => {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
+  app.useGlobalFilters(new DatabaseErrorFilter());
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {

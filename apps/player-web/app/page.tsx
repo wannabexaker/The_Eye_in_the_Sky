@@ -31,13 +31,16 @@ import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
 import {
   claimPlayerWelcomeBonus,
   depositPlayerWallet,
+  exchangePlatformToken,
+  fetchAuthMode,
   fetchAuthSession,
   fetchPlayerBootstrap,
   loginPlayer,
   logoutPlayer,
   persistPlayerRound,
   registerPlayer,
-  withdrawPlayerWallet
+  withdrawPlayerWallet,
+  type AuthModePublicConfig
 } from "@/lib/api/player-api";
 import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
@@ -95,6 +98,9 @@ export default function HomePage() {
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUserDto | null>(null);
+  const [authMode, setAuthMode] = useState<AuthModePublicConfig | null>(null);
+  // True when mode is EXTERNAL_ONLY and platform exchange has failed — show blocked screen
+  const [authModeBlocked, setAuthModeBlocked] = useState(false);
 
   // Keep screen awake while game is active
   useScreenWakeLock();
@@ -359,6 +365,7 @@ export default function HomePage() {
       setAuthError("");
       setIsAuthenticated(false);
       setAuthUser(null);
+      setAuthModeBlocked(false);
       return;
     }
 
@@ -368,7 +375,93 @@ export default function HomePage() {
       try {
         setAuthLoading(true);
         setAuthError("");
-        await refreshServerBackedPlayerState();
+        setAuthModeBlocked(false);
+
+        // Step 1: Fetch auth mode (non-fatal — defaults to INTERNAL_ONLY on failure)
+        let mode: AuthModePublicConfig = { mode: "INTERNAL_ONLY", fallbackEnabled: false, mockModeEnabled: false };
+        try {
+          mode = await fetchAuthMode();
+          if (!disposed) setAuthMode(mode);
+        } catch {
+          // API unreachable or mode endpoint not yet available — default to internal
+        }
+
+        // Step 2: Try existing session first (works regardless of mode)
+        try {
+          await refreshServerBackedPlayerState();
+          // Session resolved — user is authenticated, nothing more to do
+          return;
+        } catch {
+          // No active session — continue with mode-aware bootstrap
+        }
+
+        // Step 3: Mode-aware path for unauthenticated user
+        if (mode.mode === "INTERNAL_ONLY") {
+          // Show normal login overlay — nothing to auto-attempt
+          if (!disposed) {
+            setIsAuthenticated(false);
+            setAuthUser(null);
+          }
+          return;
+        }
+
+        // EXTERNAL_ONLY or HYBRID: look for a platform assertion in the URL
+        const params = typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+        const platformAssertion = params?.get("platform_assertion") ?? null;
+        const handoffId = params?.get("handoff_id") ?? undefined;
+
+        if (platformAssertion) {
+          // Step 4a: Try platform token exchange
+          try {
+            const nonce = crypto.randomUUID();
+            await exchangePlatformToken({
+              platformAssertion,
+              nonce,
+              timestamp: Date.now(),
+              handoffId
+            });
+            // Exchange succeeded — now load full session
+            await refreshServerBackedPlayerState();
+            // Clean the assertion from the URL so refresh doesn't re-submit it
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("platform_assertion");
+              url.searchParams.delete("handoff_id");
+              window.history.replaceState({}, "", url.toString());
+            }
+          } catch (exchangeError) {
+            if (disposed) return;
+            const msg = exchangeError instanceof Error ? exchangeError.message : "Platform login failed.";
+            if (mode.mode === "EXTERNAL_ONLY") {
+              // Hard block — no fallback available
+              setAuthModeBlocked(true);
+              setAuthError(msg);
+              setIsAuthenticated(false);
+              setAuthUser(null);
+            } else {
+              // HYBRID — fall back to internal login overlay
+              setAuthError(msg);
+              setIsAuthenticated(false);
+              setAuthUser(null);
+            }
+          }
+        } else if (mode.mode === "EXTERNAL_ONLY") {
+          // Step 4b: EXTERNAL_ONLY with no assertion in URL — show blocked screen
+          if (!disposed) {
+            setAuthModeBlocked(true);
+            setIsAuthenticated(false);
+            setAuthUser(null);
+            setAuthError("This game requires a platform launch link. Please return via the platform portal.");
+          }
+        } else {
+          // HYBRID with no assertion — fall through to login overlay
+          if (!disposed) {
+            setIsAuthenticated(false);
+            setAuthUser(null);
+          }
+        }
       } catch (error) {
         if (!disposed) {
           setIsAuthenticated(false);
@@ -1185,7 +1278,23 @@ export default function HomePage() {
         onStart={startWelcomeFlow}
         open={hasHydrated && canPlayWithoutAuth && welcomeOpen}
       />
-      {!authLoading && !canPlayWithoutAuth ? (
+      {/* EXTERNAL_ONLY mode: platform exchange failed or no assertion — hard blocked */}
+      {!authLoading && authModeBlocked ? (
+        <div className="overlayBackdrop welcomeBackdrop" role="alertdialog" aria-label="Access blocked">
+          <section className="overlayModal welcomeModal" style={{ textAlign: "center", padding: "2.5rem 2rem" }}>
+            <div style={{ fontSize: "2.8rem", marginBottom: "0.75rem" }}>🔒</div>
+            <h2 style={{ marginBottom: "0.5rem" }}>Platform Login Required</h2>
+            <p style={{ opacity: 0.72, marginBottom: "1.25rem", lineHeight: 1.5 }}>
+              {authError || "This game requires a valid platform launch link. Please return via the platform portal."}
+            </p>
+            <p style={{ opacity: 0.48, fontSize: "0.8rem" }}>
+              If you believe this is an error, contact support with correlation ID: {Date.now().toString(36).toUpperCase()}
+            </p>
+          </section>
+        </div>
+      ) : null}
+      {/* Internal login overlay — shown for INTERNAL_ONLY and HYBRID (when not blocked) */}
+      {!authLoading && !authModeBlocked && !canPlayWithoutAuth && authMode?.mode !== "EXTERNAL_ONLY" ? (
         <AuthOverlay
           allowSkipLogin={allowSkipLogin}
           busy={authBusy}

@@ -6,6 +6,7 @@ import {
   UnauthorizedException
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
+import { AuthModeService } from "./auth-mode.service";
 import type { RequestWithAuth } from "./auth.types";
 
 @Injectable()
@@ -21,6 +22,44 @@ export class SessionAuthGuard implements CanActivate {
     }
 
     request.authUser = user;
+    return true;
+  }
+}
+
+/**
+ * Allows the request only when internal authentication (login/register) is
+ * permitted by the current auth mode. Throws 403 in EXTERNAL_ONLY mode.
+ */
+@Injectable()
+export class InternalAuthPolicyGuard implements CanActivate {
+  constructor(private readonly authModeService: AuthModeService) {}
+
+  async canActivate(_context: ExecutionContext): Promise<boolean> {
+    const allowed = await this.authModeService.isInternalAuthAllowed();
+    if (!allowed) {
+      throw new ForbiddenException(
+        "Internal authentication is disabled. This deployment requires external platform login."
+      );
+    }
+    return true;
+  }
+}
+
+/**
+ * Allows the request only when external platform token exchange is permitted
+ * by the current auth mode. Throws 403 in INTERNAL_ONLY mode.
+ */
+@Injectable()
+export class ExternalAuthPolicyGuard implements CanActivate {
+  constructor(private readonly authModeService: AuthModeService) {}
+
+  async canActivate(_context: ExecutionContext): Promise<boolean> {
+    const allowed = await this.authModeService.isExternalAuthAllowed();
+    if (!allowed) {
+      throw new ForbiddenException(
+        "External platform authentication is disabled. This deployment uses internal login only."
+      );
+    }
     return true;
   }
 }

@@ -116,10 +116,12 @@ export type GameMathProfileDto = {
 };
 
 export type RoundAnalyticsTier = "loss" | "win" | "big_win" | "huge_win" | "super_win";
+export type RoundAnalyticsVariant = "2.0" | "simple" | "other";
 
 export type RoundAnalyticsEntry = {
   id: string;
   timestamp: number;
+  variant: RoundAnalyticsVariant;
   bet: number;
   win: number;
   net: number;

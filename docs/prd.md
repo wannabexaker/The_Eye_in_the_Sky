@@ -110,6 +110,12 @@ setPhaseMessage(newMessage);
 - Bonus meter remains visually full at `17` during active bonus and resets with the collected budget when bonus completes.
 - Engine remains source-of-truth for bonus stake to prevent frontend stake manipulation during free spins.
 
+## Architecture Lessons (API Security Hardening)
+- NestJS backend uses schema-based input validation at controller boundaries for all external payloads and critical query params.
+- Raw SQL unsafe entry points (`$queryRawUnsafe`, `$executeRawUnsafe`) are prohibited; Prisma ORM and parameterized paths are the default.
+- Database and validation exceptions are normalized through a global filter so constraints and integrity violations produce consistent client-safe responses.
+- Request throttling is mandatory on auth and wallet mutation routes to reduce abuse and brute-force pressure.
+
 ## Game Identity
 - Title: `The Eye in the Sky`
 - Tone: `dark, divine, ominous, premium, mysterious`

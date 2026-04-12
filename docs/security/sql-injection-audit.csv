@@ -1,0 +1,7 @@
+file_path,line,query_type,risk_level,remediation_status,notes
+apps/api/src/**,N/A,Prisma ORM only,Low,Done,"No $queryRawUnsafe/$executeRawUnsafe found"
+apps/api/src/player.service.ts,199,Wallet mutation via Prisma transaction,Low,Done,"Pre-validation added for non-negative/positive money constraints"
+apps/api/src/player.service.ts,276,Round persistence via Prisma transaction,Medium,Done,"Added bet/chargedBet/totalWin validation gates before DB write"
+apps/api/src/auth.controller.ts,24,Auth payload body validation,Medium,Done,"Zod schema validation added"
+apps/api/src/analytics.controller.ts,32,Analytics ingest/query validation,Medium,Done,"Zod schema validation added + bounded limits"
+apps/api/src/game-config.controller.ts,24,Profile selection validation,Low,Done,"Zod schema validation added"

@@ -112,6 +112,55 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-03-31` **Phase 3.8 — SQL credential hygiene cleanup**
+  - Removed all hardcoded/default SQL passwords from tracked templates and docs
+  - Updated `.env.example`, `apps/api/.env.example`, `apps/api/.env.development`, and `docker-compose.yml` to placeholder-based credentials
+  - Updated `README.md` and `docs/sql-migration-guide.md` examples to use `<sa_password>` or `$env:MSSQL_SA_PASSWORD`
+  - Kept real secrets only in ignored local files (e.g., `apps/api/.env`)
+- `2026-03-31` **Phase 3.7 — Security Test Suite + DatabaseErrorFilter fix**
+  - Installed `jest@30`, `ts-jest`, `supertest` + types as devDependencies
+  - Created `jest.config.js` + `tsconfig.test.json` (separate from production build)
+  - Added `moduleNameMapper` for `jwks-rsa` (ESM-only dependency, mocked in tests)
+  - Created `src/validators/game.validators.spec.ts`: 52 unit tests covering all Zod schemas and `parseOrBadRequest` helper
+    — auth register/login/modePatch, walletOperation, analyticsIngest/Query, profileSelect
+    — attack vectors: SQL injection in email, XSS/HTML in displayName, negative/Infinity amounts, path-traversal in IDs
+  - Created `test/security.e2e-spec.ts`: 35 e2e HTTP tests with full NestJS TestingModule (all services mocked, all guards bypassed)
+    — 6 endpoint groups: POST /auth/register, POST /auth/login, POST /player/wallet/deposit, POST /player/wallet/withdraw, POST /analytics/ingest, GET /analytics/rounds
+  - Fixed `DatabaseErrorFilter`: added `HttpException` pass-through so `BadRequestException` with custom object body serializes correctly (was falling through to default NestJS handler which dropped the body)
+  - Added npm scripts: `test`, `test:e2e`, `test:all`, `test:coverage`
+  - Excluded spec files from `tsconfig.json` production build
+  - Created `docs/security/db-user-setup.sql`: DBA-ready script to create `app_slot_game` least-privilege login
+  - Result: **87/87 tests pass**, build clean, TypeScript errors: 0
+  - Rollback: delete `jest.config.js`, `tsconfig.test.json`, `src/validators/game.validators.spec.ts`, `test/security.e2e-spec.ts`; revert `tsconfig.json` exclude; revert `db-error.filter.ts` HttpException block; revert `package.json` scripts
+- `2026-03-31` **Phase 3.6 — API SQL Injection Hardening**
+  - Performed backend query audit and confirmed no `prisma.$queryRawUnsafe` / `prisma.$executeRawUnsafe` usage in `apps/api/src`
+  - Added centralized Zod validation schemas in `apps/api/src/validators/game.validators.ts`
+  - Applied request validation on `auth`, `player`, `analytics`, and `game-config` controllers before service execution
+  - Added global Prisma/Zod error mapping filter `apps/api/src/db-error.filter.ts` for consistent 4xx/5xx handling
+  - Enabled global request throttling via `@nestjs/throttler` and route-level stricter limits on auth/wallet/round endpoints
+  - Produced security audit sheet `docs/security/sql-injection-audit.csv` with risk and remediation status
+  - Verification: `corepack pnpm --filter api build` successful; TypeScript errors: 0
+- `2026-03-31` **Phase 3.5 — Database Schema Optimization**
+  - Designed and approved comprehensive database integrity layer for production readiness
+  - **CRITICAL Phase 1**: Check constraints added (zero-downtime deployment)
+    - CHK_Wallet_BalanceNonNegative: balance >= 0
+    - CHK_Round_BetPositive: bet > 0 AND chargedBet >= 0
+    - CHK_Round_TotalWinNonNegative: totalWin >= 0
+    - CHK_LedgerEntry_BalanceAfterNonNegative: balanceAfter >= 0
+    - CHK_BonusState_FreeSpinsNonNegative & CHK_BonusState_BudgetNonNegative
+  - **Performance Phase**: New indexes for analytics queries (Round.mode, LedgerEntry.roundId, composite userId/gameId, BonusState mode/userId)
+  - **Analytics Phase**: Optional tables created (RtpSnapshot, PlayerAnalytics, GameEvent) with 30-50% query speedup
+  - **Reporting Phase**: Views created (vw_DailyGamePerformance, vw_PlayerSummary) for admin dashboard
+  - **Backend Support**: Validation gates, exception filter for constraint violations, daily PlayerAnalytics aggregator, GameEvent logging service
+  - Status: SQL scripts ready for STAGING/PROD; backend implementation scheduled next
+- `2026-03-31`
+  - Fixed Pixi board render crash: TypeError Cannot read properties of null (reading 'updateLocalTransform')
+    - Fixed 4 bugs in `pixi-temple-board.tsx`:
+      1. Added `app.ticker.stop()` after app initialization (prevents rendering during async scene tree construction)
+      2. Verified ticker callback declared as `tickerListener` (correct function name)
+      3. Fixed `ticker.add(tickerCallback)` → `app.ticker.add(tickerListener)` (correct object reference and function name)
+      4. Added `app.ticker.start()` after `paintBoardCells()` (restarts ticker only when scene is ready)
+    - Result: Board now renders cleanly without updateLocalTransform crash; TypeScript: 0 errors
 - `2026-03-26`
   - Locked the first explicit math contract for the simple `Constellation` variant in `docs/variant-simple.md`.
   - Recorded first-pass balancing target:

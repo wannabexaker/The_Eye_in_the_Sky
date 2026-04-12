@@ -37,8 +37,8 @@ const CUSTOM_BET_STEP = 1000;
 const BONUS_ENTRY_CINEMATIC_DELAY_MS = 0;
 const WIN_GLOW_START_MULTIPLE = 2;
 const BIG_WIN_THRESHOLD = 5;
-const HUGE_WIN_THRESHOLD = 8;
-const SUPER_WIN_THRESHOLD = 14.9;
+const HUGE_WIN_THRESHOLD = 13;
+const SUPER_WIN_THRESHOLD = 25;
 const ANALYTICS_API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
 const ANALYTICS_INGEST_RETRY_DELAY_MS = 60_000;
 
@@ -71,7 +71,19 @@ const deriveAnalyticsTier = (winMultiple: number, totalWin: number) => {
   return "win" as const;
 };
 
-const pushRoundAnalytics = async (result: SpinResult) => {
+const deriveAnalyticsVariant = (gameConfig: GameConfig): "2.0" | "simple" | "other" => {
+  if (gameConfig.variantId === "constellation_simple") {
+    return "simple";
+  }
+
+  if (gameConfig.version.includes("v2.0")) {
+    return "2.0";
+  }
+
+  return "other";
+};
+
+const pushRoundAnalytics = async (result: SpinResult, gameConfig: GameConfig) => {
   if (typeof window === "undefined") {
     return;
   }
@@ -86,6 +98,7 @@ const pushRoundAnalytics = async (result: SpinResult) => {
       {
         id: result.roundSummary.roundId,
         timestamp: Date.parse(result.roundSummary.timestamp) || Date.now(),
+        variant: deriveAnalyticsVariant(gameConfig),
         bet: result.bet,
         win: result.totalWin,
         net: Number((result.totalWin - result.debugMetadata.chargedBet).toFixed(2)),
@@ -1242,7 +1255,7 @@ const validateAutospinCount = useCallback(
     setLastResult(result);
     setHistory((current) => [result, ...current].slice(0, 10));
     scheduleRoundFeedback(result);
-    void pushRoundAnalytics(result);
+    void pushRoundAnalytics(result, gameConfig);
     return result;
   }, [applyRoundResult, availableBalance, gameConfig, scheduleRoundFeedback]);
 

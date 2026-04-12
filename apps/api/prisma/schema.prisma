@@ -3,21 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                  String        @id @default(cuid())
-  email               String        @unique
+  id                  String            @id @default(cuid())
+  email               String            @unique
   passwordHash        String
   displayName         String
-  role                String        @default("player")
-  isActive            Boolean       @default(true)
-  welcomeBonusClaimed Boolean       @default(false)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  role                String            @default("player")
+  isActive            Boolean           @default(true)
+  welcomeBonusClaimed Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   authSessions        AuthSession[]
+  externalIdentities  ExternalIdentity[]
   wallet              Wallet?
   gameSessions        GameSession[]
   rounds              Round[]
@@ -26,18 +27,24 @@ model User {
 }
 
 model AuthSession {
-  id         String   @id @default(cuid())
-  userId     String
-  tokenHash  String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  lastSeenAt DateTime @default(now())
-  userAgent  String?
-  ipAddress  String?
-  user       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                 String   @id @default(cuid())
+  userId             String
+  tokenHash          String   @unique
+  expiresAt          DateTime
+  createdAt          DateTime @default(now())
+  lastSeenAt         DateTime @default(now())
+  userAgent          String?
+  ipAddress          String?
+  authSource         String   @default("internal")
+  providerKey        String?
+  externalSessionRef String?
+  lastValidatedAt    DateTime?
+  riskFlags          String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([authSource])
 }
 
 model Wallet {
@@ -59,7 +66,7 @@ model LedgerEntry {
   amount       Decimal  @db.Decimal(18, 2)
   balanceAfter Decimal  @db.Decimal(18, 2)
   createdAt    DateTime @default(now())
-  metadataJson String?  @db.NText
+  metadataJson String?  @db.Text
   wallet       Wallet   @relation(fields: [walletId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   round        Round?   @relation(fields: [roundId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -86,7 +93,7 @@ model GameMathProfile {
   label           String
   version         String   @unique
   isLegacy        Boolean  @default(false)
-  configJson      String   @db.NText
+  configJson      String   @db.Text
   targetRtp       Float
   volatilityLabel String
   createdAt       DateTime @default(now())
@@ -98,7 +105,7 @@ model GameMathProfile {
 
 model AppSetting {
   key       String   @id
-  value     String   @db.NVarChar(400)
+  value     String   @db.VarChar(400)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -109,7 +116,7 @@ model GameSession {
   gameId          String
   activeProfileId String
   configVersion   String
-  stateJson       String?  @db.NText
+  stateJson       String?  @db.Text
   lastRoundId     String?
   startedAt       DateTime @default(now())
   lastActiveAt    DateTime @default(now())
@@ -135,8 +142,8 @@ model Round {
   bet              Decimal       @db.Decimal(18, 2)
   totalWin         Decimal       @db.Decimal(18, 2)
   walletDelta      Decimal       @db.Decimal(18, 2)
-  initialBoardJson String?       @db.NText
-  resultJson       String        @db.NText
+  initialBoardJson String?       @db.Text
+  resultJson       String        @db.Text
   createdAt        DateTime      @default(now())
   user             User          @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   game             Game          @relation(fields: [gameId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -161,7 +168,7 @@ model BonusState {
   initialBonusBudget Decimal  @db.Decimal(18, 2)
   remainingBonusBudget Decimal @db.Decimal(18, 2)
   preBonusBet        Decimal  @db.Decimal(18, 2)
-  stateJson          String?  @db.NText
+  stateJson          String?  @db.Text
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   user               User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -174,7 +181,7 @@ model AdminAction {
   id         String   @id @default(cuid())
   userId     String
   actionType String
-  payload    String   @db.NText
+  payload    String   @db.Text
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -186,10 +193,41 @@ model AuditLog {
   entityType String
   entityId   String
   eventType  String
-  payload    String   @db.NText
+  payload    String   @db.Text
   createdAt  DateTime @default(now())
 
   @@index([entityType, entityId, createdAt])
+}
+
+model ExternalIdentity {
+  id               String   @id @default(cuid())
+  userId           String
+  providerKey      String
+  externalUserId   String
+  externalUsername String?
+  metadataJson     String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([providerKey, externalUserId])
+  @@index([userId])
+  @@index([providerKey])
+}
+
+model AuthNonceReplay {
+  id           String   @id @default(cuid())
+  nonceOrJti   String
+  providerKey  String
+  issuedAt     DateTime
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  requestHash  String?
+  createdAt    DateTime @default(now())
+
+  @@unique([nonceOrJti, providerKey])
+  @@index([expiresAt])
+  @@index([providerKey])
 }
 
 model AnalyticsRound {

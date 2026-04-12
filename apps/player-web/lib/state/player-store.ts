@@ -81,6 +81,8 @@ export type PaymentMethod = {
 
 export type PlayerRuntimeMode = "authenticated" | "simulator";
 
+export type PlayerAuthSource = "internal" | "external" | null;
+
 type ModalKey =
   | "debugPanelOpen"
   | "settingsOpen"
@@ -116,6 +118,7 @@ type PaymentMethodDraft = {
 
 type PlayerUiState = {
   runtimeMode: PlayerRuntimeMode;
+  authSource: PlayerAuthSource;
   hasHydrated: boolean;
   soundEnabled: boolean;
   spinAnimationSpeed: SpinAnimationSpeed;
@@ -173,6 +176,7 @@ type PlayerUiState = {
   applyServerSnapshot: (snapshot: PlayerSnapshotDto) => void;
   enterSimulatorMode: () => void;
   exitSimulatorMode: () => void;
+  setAuthSource: (source: PlayerAuthSource) => void;
   resetSession: () => void;
 };
 
@@ -317,6 +321,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
   persist(
     (set, get) => ({
       runtimeMode: "authenticated",
+      authSource: null,
       soundEnabled: false,
       hasHydrated: false,
       spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
@@ -655,8 +660,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
           const analyticsTier: RoundAnalyticsTier =
             result.totalWin <= 0 ? "loss"
-            : winMultiple >= 14.9 ? "super_win"
-            : winMultiple >= 8 ? "huge_win"
+            : winMultiple >= 25 ? "super_win"
+            : winMultiple >= 13 ? "huge_win"
             : winMultiple >= 5 ? "big_win"
             : "win";
 
@@ -665,6 +670,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             timestamp: Number.isFinite(Date.parse(result.roundSummary.timestamp))
               ? Date.parse(result.roundSummary.timestamp)
               : Date.now(),
+            variant: "other",
             bet: result.bet,
             win: result.totalWin,
             net: Number((result.totalWin - result.debugMetadata.chargedBet).toFixed(2)),
@@ -777,6 +783,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
 
           return {
             runtimeMode: "simulator",
+            authSource: null,
             wallet: state.simulatorWallet,
             totalDeposited: state.simulatorTotalDeposited,
             totalWithdrawn: state.simulatorTotalWithdrawn,
@@ -801,6 +808,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       exitSimulatorMode: () =>
         set({
           runtimeMode: "authenticated",
+          authSource: null,
           wallet: {
             balance: 0,
             currency: "EUR"
@@ -826,6 +834,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         }),
       resetSession: () =>
         set((state) => ({
+          authSource: null,
           wallet:
             state.runtimeMode === "simulator"
               ? state.simulatorWallet
@@ -854,7 +863,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           paymentMethodsOpen: false,
           walletHistoryOpen: false,
           analyticsOpen: false
-        }))
+        })),
+      setAuthSource: (source) => set({ authSource: source })
     }),
     {
       name: PLAYER_STORE_PERSIST_KEY,

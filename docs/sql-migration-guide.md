@@ -49,7 +49,7 @@ Expected local flow:
 Example:
 ```powershell
 docker compose up -d sqlserver
-docker exec eye-sky-sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "YourStrong!Passw0rd" -Q "IF DB_ID('TheEyeInTheSky') IS NULL CREATE DATABASE [TheEyeInTheSky];"
+docker exec eye-sky-sqlserver /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$env:MSSQL_SA_PASSWORD" -Q "IF DB_ID('TheEyeInTheSky') IS NULL CREATE DATABASE [TheEyeInTheSky];"
 ```
 
 ### Prisma workflow
@@ -62,13 +62,13 @@ corepack pnpm --filter api prisma:generate
 
 2. Apply the first migration
 ```powershell
-$env:DATABASE_URL="sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=YourStrong!Passw0rd;encrypt=false;trustServerCertificate=true"
+$env:DATABASE_URL="sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=$env:MSSQL_SA_PASSWORD;encrypt=false;trustServerCertificate=true"
 corepack pnpm --dir apps/api exec prisma migrate deploy
 ```
 
 3. Seed base data
 ```powershell
-$env:DATABASE_URL="sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=YourStrong!Passw0rd;encrypt=false;trustServerCertificate=true"
+$env:DATABASE_URL="sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=$env:MSSQL_SA_PASSWORD;encrypt=false;trustServerCertificate=true"
 $env:ADMIN_SEED_EMAIL="admin@example.com"
 $env:ADMIN_SEED_PASSWORD="ChangeMe123!"
 corepack pnpm --filter api prisma:seed

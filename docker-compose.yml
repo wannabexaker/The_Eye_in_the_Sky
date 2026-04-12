@@ -1,27 +1,141 @@
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: eye-sky-sqlserver
+  # ============================================================
+  # PostgreSQL Database
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: eye-postgres
     restart: unless-stopped
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: "Developer"
-      SA_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong!Passw0rd}
+      POSTGRES_DB: eye_db
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-__SET_POSTGRES_PASSWORD__}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
-      - "${SQLSERVER_PORT:-1433}:1433"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q \"SELECT 1\" || exit 1"
-        ]
-      interval: 15s
+      test: ["CMD-SHELL", "pg_isready -U app_user -d eye_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - services
+    # Resource limits for RPi (RPi4 8GB can handle these)
+    mem_limit: 1024m
+    cpus: "1.0"
+
+  # ============================================================
+  # The Eye in the Sky API (NestJS)
+  # ============================================================
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: eye-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3200
+      DATABASE_URL: postgresql://app_user:${POSTGRES_PASSWORD}@postgres:5432/eye_db
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3100,http://localhost:3200,http://player-web:3000,http://admin-web:3100}
+      ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
+      ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+      PLAYER_SEED_EMAIL: ${PLAYER_SEED_EMAIL:-}
+      PLAYER_SEED_PASSWORD: ${PLAYER_SEED_PASSWORD:-}
+      AUTH_MODE: ${AUTH_MODE:-INTERNAL_ONLY}
+      PLATFORM_ISSUER: ${PLATFORM_ISSUER:-}
+      PLATFORM_AUDIENCE: ${PLATFORM_AUDIENCE:-}
+      JWKS_URL: ${JWKS_URL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./data/analytics:/app/data/analytics
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3200/health"]
+      interval: 30s
       timeout: 10s
-      retries: 15
-      start_period: 30s
+      retries: 3
+      start_period: 20s
+    networks:
+      - services
+    # Resource limits for RPi
+    mem_limit: 512m
+    cpus: "0.5"
+
+  # ============================================================
+  # Player Web (Next.js + React + Pixi.js)
+  # ============================================================
+  player-web:
+    build:
+      context: .
+      dockerfile: apps/player-web/Dockerfile
+    container_name: eye-player-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
+      USE_CANVAS_RENDERER: ${USE_CANVAS_RENDERER:-false}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    networks:
+      - services
+    # Resource limits for RPi (GPU-intensive due to Pixi.js)
+    mem_limit: 768m
+    cpus: "1.0"
+
+  # ============================================================
+  # Admin Web (Next.js)
+  # ============================================================
+  admin-web:
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+    container_name: eye-admin-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    networks:
+      - services
+    # Resource limits for RPi
+    mem_limit: 512m
+    cpus: "0.5"
+
+# ============================================================
+# Networks & Volumes
+# ============================================================
+networks:
+  services:
+    driver: bridge
 
 volumes:
-  sqlserver_data:
+  postgres_data:
+    driver: local
+

@@ -3,10 +3,15 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 type RoundAnalyticsTier = "loss" | "win" | "big_win" | "huge_win" | "super_win";
+type RoundAnalyticsVariant = "2.0" | "simple" | "other";
+
+const isRoundAnalyticsVariant = (value: unknown): value is RoundAnalyticsVariant =>
+  value === "2.0" || value === "simple" || value === "other";
 
 export type RoundAnalyticsEntry = {
   id: string;
   timestamp: number;
+  variant: RoundAnalyticsVariant;
   bet: number;
   win: number;
   net: number;
@@ -41,6 +46,8 @@ type AnalyticsDashboard = {
   tierDistribution: AnalyticsSummary["tierDistribution"];
 };
 
+type AnalyticsVariantFilter = RoundAnalyticsVariant | "all";
+
 const MAX_ROUNDS = 100_000;
 const ANALYTICS_STORE_PATH = join(process.cwd(), ".runtime", "analytics-rounds.json");
 
@@ -58,12 +65,41 @@ export class AnalyticsService {
         return [];
       }
 
-      const parsed = JSON.parse(readFileSync(ANALYTICS_STORE_PATH, "utf8")) as RoundAnalyticsEntry[];
+      const parsed = JSON.parse(readFileSync(ANALYTICS_STORE_PATH, "utf8")) as Array<
+        Partial<RoundAnalyticsEntry>
+      >;
       if (!Array.isArray(parsed)) {
         return [];
       }
 
-      return parsed.slice(-MAX_ROUNDS);
+      const normalized: RoundAnalyticsEntry[] = parsed
+        .filter((entry): entry is Partial<RoundAnalyticsEntry> & Pick<RoundAnalyticsEntry, "id"> =>
+          typeof entry.id === "string"
+        )
+        .map((entry) => ({
+          id: entry.id,
+          timestamp: Number.isFinite(entry.timestamp) ? Number(entry.timestamp) : Date.now(),
+          variant: isRoundAnalyticsVariant(entry.variant) ? entry.variant : "2.0",
+          bet: Number(entry.bet ?? 0),
+          win: Number(entry.win ?? 0),
+          net: Number(entry.net ?? 0),
+          mode: (entry.mode === "bonus" ? "bonus" : "base") as "base" | "bonus",
+          cascades: Number(entry.cascades ?? 0),
+          bonusTriggered: Boolean(entry.bonusTriggered),
+          multiplier: Number(entry.multiplier ?? 1),
+          winMultiple: Number(entry.winMultiple ?? 0),
+          tier: (
+            entry.tier === "win" ||
+            entry.tier === "big_win" ||
+            entry.tier === "huge_win" ||
+            entry.tier === "super_win"
+              ? entry.tier
+              : "loss"
+          ) as RoundAnalyticsTier,
+          balanceAfter: Number(entry.balanceAfter ?? 0)
+        }));
+
+      return normalized.slice(-MAX_ROUNDS);
     } catch {
       return [];
     }
@@ -78,9 +114,10 @@ export class AnalyticsService {
     }
   }
 
-  private readRecentRounds(limit = 2000): RoundAnalyticsEntry[] {
+  private readRecentRounds(limit = 2000, variant: AnalyticsVariantFilter = "all"): RoundAnalyticsEntry[] {
     const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(limit, MAX_ROUNDS)) : 2000;
-    return this.rounds.slice(-safeLimit);
+    const filtered = variant === "all" ? this.rounds : this.rounds.filter((entry) => entry.variant === variant);
+    return filtered.slice(-safeLimit);
   }
 
   async ingest(entries: RoundAnalyticsEntry[]) {
@@ -89,17 +126,21 @@ export class AnalyticsService {
     }
 
     const existingIds = new Set(this.rounds.map((entry) => entry.id));
-    const uniqueEntries = entries.filter((entry) => !existingIds.has(entry.id));
+    const normalizedEntries = entries.map((entry) => ({
+      ...entry,
+      variant: isRoundAnalyticsVariant(entry.variant) ? entry.variant : "other"
+    }));
+    const uniqueEntries = normalizedEntries.filter((entry) => !existingIds.has(entry.id));
     this.rounds = [...this.rounds, ...uniqueEntries].slice(-MAX_ROUNDS);
     this.persistRoundsToDisk();
 
     const rounds = this.readRecentRounds(MAX_ROUNDS);
-    return { accepted: entries.length, totalRounds: rounds.length };
+    return { accepted: uniqueEntries.length, totalRounds: rounds.length };
   }
 
-  async listRounds(limit = 250) {
+  async listRounds(limit = 250, variant: AnalyticsVariantFilter = "all") {
     const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(2000, limit)) : 250;
-    const rounds = this.readRecentRounds(safeLimit);
+    const rounds = this.readRecentRounds(safeLimit, variant);
     return rounds.slice(-safeLimit).reverse();
   }
 
@@ -163,13 +204,13 @@ export class AnalyticsService {
     };
   }
 
-  async getSummary(): Promise<AnalyticsSummary> {
-    const rounds = this.readRecentRounds(MAX_ROUNDS);
+  async getSummary(variant: AnalyticsVariantFilter = "all"): Promise<AnalyticsSummary> {
+    const rounds = this.readRecentRounds(MAX_ROUNDS, variant);
     return this.calculateSummary(rounds);
   }
 
-  async getDashboard(limit = 2000): Promise<AnalyticsDashboard> {
-    const rounds = this.readRecentRounds(limit);
+  async getDashboard(limit = 2000, variant: AnalyticsVariantFilter = "all"): Promise<AnalyticsDashboard> {
+    const rounds = this.readRecentRounds(limit, variant);
     const summary = this.calculateSummary(rounds);
 
     let runningWagered = 0;

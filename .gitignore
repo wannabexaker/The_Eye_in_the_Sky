@@ -16,6 +16,9 @@ coverage
 !.env.example
 !.env*.example
 
+# Local credentials reference (git-ignored, development only)
+CREDENTIALS-LOCAL-REFERENCE.md
+
 # Local API runtime helper output
 apps/api/.runtime-api*.log
 
