@@ -34,9 +34,9 @@ max_attempts=30
 wait_seconds=2
 
 while [ $attempt -le $max_attempts ]; do
-  # Extract host/port from DATABASE_URL
+  # Extract host/port from DATABASE_URL and check with pg_isready
   # Format: postgresql://user:password@host:port/database
-  if printf 'SELECT 1\n' | npx prisma db execute --stdin > /dev/null 2>&1; then
+  if pg_isready -h postgres -U app_user -d eye_db > /dev/null 2>&1; then
     echo "✓ PostgreSQL is ready (attempt $attempt/$max_attempts)"
     break
   fi

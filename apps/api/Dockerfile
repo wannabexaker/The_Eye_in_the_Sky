@@ -39,8 +39,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init curl bash
+# Install dumb-init, curl, bash, and postgresql-client (for pg_isready)
+RUN apk add --no-cache dumb-init curl bash postgresql-client
 
 # Copy dist from builder
 COPY --from=builder /build/apps/api/dist ./dist
