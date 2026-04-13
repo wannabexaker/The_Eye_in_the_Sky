@@ -112,6 +112,12 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
+  - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
+  - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.
+  - Code change: updated `apps/api/docker-entrypoint.sh` readiness check from `npx prisma db execute --stdin <<< "SELECT 1"` to POSIX-safe `printf 'SELECT 1\\n' | npx prisma db execute --stdin`.
+  - Verification: expected outcome is API startup proceeds past DB wait loop, runs `prisma migrate deploy`, passes health check, and unblocks dependent `player-web`/`admin-web` services.
+  - Rollback note: revert the readiness-check line in `apps/api/docker-entrypoint.sh` if unexpected behavior appears after deploy.
 - `2026-03-31` **Phase 3.8 — SQL credential hygiene cleanup**
   - Removed all hardcoded/default SQL passwords from tracked templates and docs
   - Updated `.env.example`, `apps/api/.env.example`, `apps/api/.env.development`, and `docker-compose.yml` to placeholder-based credentials

@@ -36,7 +36,7 @@ wait_seconds=2
 while [ $attempt -le $max_attempts ]; do
   # Extract host/port from DATABASE_URL
   # Format: postgresql://user:password@host:port/database
-  if npx prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1; then
+  if printf 'SELECT 1\n' | npx prisma db execute --stdin > /dev/null 2>&1; then
     echo "✓ PostgreSQL is ready (attempt $attempt/$max_attempts)"
     break
   fi

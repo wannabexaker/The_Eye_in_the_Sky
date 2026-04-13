@@ -56,6 +56,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Use `corepack pnpm build:player:clean` for local signoff builds.
 - If chunk 404/runtime loader errors appear, stop dev, delete `apps/player-web/.next`, and restart dev.
 - Build safety is enforced by `apps/player-web/scripts/guard-no-dev-server.cjs`.
+- Container startup scripts must be POSIX-`sh` compatible when the image entrypoint uses `/bin/sh` (Alpine). Do not use bash-only syntax such as here-strings (`<<<`) in entrypoint scripts.
 
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
