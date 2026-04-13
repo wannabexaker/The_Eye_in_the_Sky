@@ -34,26 +34,16 @@ RUN pnpm exec tsc --project tsconfig.json
 # ============================================================
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /build/apps/api
 
 # Install dumb-init, curl, bash, and postgresql-client (for pg_isready)
 RUN apk add --no-cache dumb-init curl bash postgresql-client
 
-# Copy dist from builder
-COPY --from=builder /build/apps/api/dist ./dist
+# Copy the full workspace build tree so pnpm workspace symlinks stay valid.
+COPY --from=builder /build /build
 
-# Copy node_modules with only production deps
-COPY --from=builder /build/apps/api/node_modules ./node_modules
-
-# Copy package.json for reference
-COPY --from=builder /build/apps/api/package.json ./package.json
-
-# Copy Prisma schema and migrations (required for prisma migrate deploy at runtime)
-COPY --from=builder /build/apps/api/prisma ./prisma
-
-# Copy docker entrypoint script
-COPY apps/api/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+# Ensure entrypoint is executable
+RUN chmod +x /build/apps/api/docker-entrypoint.sh
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
@@ -70,4 +60,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start application via entrypoint script
-CMD ["/app/docker-entrypoint.sh"]
+CMD ["/build/apps/api/docker-entrypoint.sh"]
