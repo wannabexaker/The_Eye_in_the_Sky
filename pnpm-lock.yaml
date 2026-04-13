@@ -68,6 +68,9 @@ importers:
       '@prisma/client':
         specifier: 6.5.0
         version: 6.5.0(prisma@6.5.0(typescript@5.8.2))(typescript@5.8.2)
+      prisma:
+        specifier: 6.5.0
+        version: 6.5.0(typescript@5.8.2)
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -108,9 +111,6 @@ importers:
       jwks-rsa:
         specifier: ^4.0.1
         version: 4.0.1
-      prisma:
-        specifier: 6.5.0
-        version: 6.5.0(typescript@5.8.2)
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
