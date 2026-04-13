@@ -29,9 +29,6 @@ WORKDIR /build/apps/api
 RUN pnpm exec prisma generate
 RUN pnpm exec tsc --project tsconfig.json
 
-# Prune dev dependencies (keep only production deps)
-RUN pnpm prune --prod --config.ignore-scripts=true
-
 # ============================================================
 # Stage 2: Runtime
 # ============================================================
