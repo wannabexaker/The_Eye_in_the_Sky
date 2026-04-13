@@ -39,6 +39,9 @@ WORKDIR /build/apps/api
 # Install dumb-init, curl, bash, and postgresql-client (for pg_isready)
 RUN apk add --no-cache dumb-init curl bash postgresql-client
 
+# Keep pnpm available at runtime for workspace-safe prisma execution.
+RUN npm install -g pnpm@10.6.3
+
 # Copy the full workspace build tree so pnpm workspace symlinks stay valid.
 COPY --from=builder /build /build
 

@@ -56,7 +56,7 @@ fi
 # ─────────────────────────────────────────────────────────────
 echo "Running Prisma migrations..."
 
-if npx prisma migrate deploy; then
+if pnpm exec prisma migrate deploy; then
   echo "✓ Migrations completed successfully"
 else
   echo "❌ ERROR: Prisma migrations failed"
@@ -68,7 +68,7 @@ fi
 # ─────────────────────────────────────────────────────────────
 echo "Validating Prisma schema..."
 
-if npx prisma validate; then
+if pnpm exec prisma validate; then
   echo "✓ Schema validation passed"
 else
   echo "❌ ERROR: Schema validation failed"
