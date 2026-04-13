@@ -51,6 +51,9 @@ COPY --from=builder /build/apps/api/node_modules ./node_modules
 # Copy package.json for reference
 COPY --from=builder /build/apps/api/package.json ./package.json
 
+# Copy Prisma schema and migrations (required for prisma migrate deploy at runtime)
+COPY --from=builder /build/apps/api/prisma ./prisma
+
 # Copy docker entrypoint script
 COPY apps/api/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
