@@ -84,4 +84,4 @@ echo "Listening on http://0.0.0.0:$API_PORT"
 echo "Swagger docs: http://0.0.0.0:$API_PORT/swagger"
 echo ""
 
-exec node dist/main.js
+exec node dist/apps/api/src/main.js
