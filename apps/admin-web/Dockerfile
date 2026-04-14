@@ -5,7 +5,9 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM node:20-alpine AS builder
+# Build on the native CI platform (amd64) to avoid QEMU SIGILL on arm64.
+# The runtime stage uses the target platform (arm64 for RPi4).
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 
 WORKDIR /build
 
