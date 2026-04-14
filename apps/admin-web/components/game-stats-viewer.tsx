@@ -138,7 +138,7 @@ function BarChart({
 }
 
 export function GameStatsViewer() {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+  const apiBase = "/_api";
   const [variantFilter, setVariantFilter] = useState<"all" | "2.0" | "simple">("all");
   const [dashboard, setDashboard] = useState<LiveAnalyticsDashboard | null>(null);
   const [loading, setLoading] = useState(true);

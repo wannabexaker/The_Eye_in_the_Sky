@@ -60,7 +60,7 @@ const sections: AdminSection[] = [
 ] as const;
 
 export default function AdminPage() {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+  const apiBase = "/_api";
   const [session, setSession] = useState<AuthSessionDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);

@@ -27,11 +27,16 @@ docs
 README.md
 DEVELOPER_WORKFLOW.md
 
-# Sensitive files
+# Sensitive files — match at root and all subdirectories
 .env
+**/.env
 .env.local
+**/.env.local
 .env.*.local
+**/.env.*.local
 .env.docker.local
+**/.env.development
+**/.env.production
 CREDENTIALS-LOCAL-REFERENCE.md
 
 # CI/CD

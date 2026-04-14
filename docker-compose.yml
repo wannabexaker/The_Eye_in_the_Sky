@@ -83,6 +83,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      API_INTERNAL_URL: http://api:3200
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
       USE_CANVAS_RENDERER: ${USE_CANVAS_RENDERER:-false}
     ports:
@@ -114,6 +115,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3100
+      API_INTERNAL_URL: http://api:3200
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
     ports:
       - "3100:3100"

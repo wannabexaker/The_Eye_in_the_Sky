@@ -146,7 +146,7 @@ export function MathProfileSelector() {
   const [selecting, setSelecting] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+  const apiBase = "/_api";
 
   useEffect(() => {
     const fetchData = async () => {
