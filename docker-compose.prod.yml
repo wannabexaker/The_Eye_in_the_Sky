@@ -35,20 +35,6 @@ services:
     image: ghcr.io/wannabexaker/tsogos-api:latest
     container_name: eye-api
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        echo "=== API Startup ==="
-        until pg_isready -h postgres -U app_user -d eye_db > /dev/null 2>&1; do
-          echo "Waiting for PostgreSQL..."
-          sleep 2
-        done
-        echo "PostgreSQL ready. Pushing schema..."
-        cd /build/apps/api
-        pnpm exec prisma db push --accept-data-loss
-        echo "Schema ready. Starting API..."
-        exec node /build/apps/api/dist/main.js
     depends_on:
       postgres:
         condition: service_healthy
