@@ -3,12 +3,13 @@
 -- ============================================================
 -- This migration creates the full schema as documented in schema.prisma.
 -- Run ONCE on a fresh PostgreSQL database.
+-- Table order respects foreign key dependencies.
 -- ============================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create all tables
+-- 1. User (no deps)
 CREATE TABLE "User" (
     id TEXT NOT NULL PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -21,6 +22,7 @@ CREATE TABLE "User" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- 2. AuthSession → User
 CREATE TABLE "AuthSession" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -42,6 +44,7 @@ CREATE INDEX "AuthSession_userId_idx" ON "AuthSession"("userId");
 CREATE INDEX "AuthSession_expiresAt_idx" ON "AuthSession"("expiresAt");
 CREATE INDEX "AuthSession_authSource_idx" ON "AuthSession"("authSource");
 
+-- 3. Wallet → User
 CREATE TABLE "Wallet" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL UNIQUE,
@@ -52,22 +55,7 @@ CREATE TABLE "Wallet" (
     CONSTRAINT "Wallet_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"(id) ON DELETE CASCADE ON UPDATE NO ACTION
 );
 
-CREATE TABLE "LedgerEntry" (
-    id TEXT NOT NULL PRIMARY KEY,
-    "walletId" TEXT NOT NULL,
-    "roundId" TEXT,
-    reason TEXT NOT NULL,
-    amount DECIMAL(18,2) NOT NULL,
-    "balanceAfter" DECIMAL(18,2) NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "metadataJson" TEXT,
-    CONSTRAINT "LedgerEntry_walletId_fkey" FOREIGN KEY ("walletId") REFERENCES "Wallet"(id) ON DELETE CASCADE ON UPDATE NO ACTION,
-    CONSTRAINT "LedgerEntry_roundId_fkey" FOREIGN KEY ("roundId") REFERENCES "Round"(id) ON DELETE SET NULL ON UPDATE NO ACTION
-);
-
-CREATE INDEX "LedgerEntry_walletId_createdAt_idx" ON "LedgerEntry"("walletId", "createdAt");
-CREATE INDEX "LedgerEntry_reason_createdAt_idx" ON "LedgerEntry"(reason, "createdAt");
-
+-- 4. Game (no deps)
 CREATE TABLE "Game" (
     id TEXT NOT NULL PRIMARY KEY,
     key TEXT NOT NULL UNIQUE,
@@ -77,6 +65,7 @@ CREATE TABLE "Game" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- 5. GameMathProfile → Game
 CREATE TABLE "GameMathProfile" (
     id TEXT NOT NULL PRIMARY KEY,
     "gameId" TEXT NOT NULL,
@@ -94,6 +83,7 @@ CREATE TABLE "GameMathProfile" (
 
 CREATE INDEX "GameMathProfile_gameId_idx" ON "GameMathProfile"("gameId");
 
+-- 6. AppSetting (no deps)
 CREATE TABLE "AppSetting" (
     key TEXT NOT NULL PRIMARY KEY,
     value VARCHAR(400) NOT NULL,
@@ -101,6 +91,7 @@ CREATE TABLE "AppSetting" (
     "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
+-- 7. GameSession → User, Game
 CREATE TABLE "GameSession" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -119,6 +110,7 @@ CREATE TABLE "GameSession" (
 
 CREATE INDEX "GameSession_gameId_idx" ON "GameSession"("gameId");
 
+-- 8. Round → User, Game, GameSession
 CREATE TABLE "Round" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -144,6 +136,24 @@ CREATE INDEX "Round_userId_createdAt_idx" ON "Round"("userId", "createdAt");
 CREATE INDEX "Round_gameId_createdAt_idx" ON "Round"("gameId", "createdAt");
 CREATE INDEX "Round_gameSessionId_idx" ON "Round"("gameSessionId");
 
+-- 9. LedgerEntry → Wallet, Round
+CREATE TABLE "LedgerEntry" (
+    id TEXT NOT NULL PRIMARY KEY,
+    "walletId" TEXT NOT NULL,
+    "roundId" TEXT,
+    reason TEXT NOT NULL,
+    amount DECIMAL(18,2) NOT NULL,
+    "balanceAfter" DECIMAL(18,2) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "metadataJson" TEXT,
+    CONSTRAINT "LedgerEntry_walletId_fkey" FOREIGN KEY ("walletId") REFERENCES "Wallet"(id) ON DELETE CASCADE ON UPDATE NO ACTION,
+    CONSTRAINT "LedgerEntry_roundId_fkey" FOREIGN KEY ("roundId") REFERENCES "Round"(id) ON DELETE SET NULL ON UPDATE NO ACTION
+);
+
+CREATE INDEX "LedgerEntry_walletId_createdAt_idx" ON "LedgerEntry"("walletId", "createdAt");
+CREATE INDEX "LedgerEntry_reason_createdAt_idx" ON "LedgerEntry"(reason, "createdAt");
+
+-- 10. BonusState → User, Round
 CREATE TABLE "BonusState" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -165,6 +175,7 @@ CREATE TABLE "BonusState" (
 
 CREATE INDEX "BonusState_userId_updatedAt_idx" ON "BonusState"("userId", "updatedAt");
 
+-- 11. AdminAction → User
 CREATE TABLE "AdminAction" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -176,6 +187,7 @@ CREATE TABLE "AdminAction" (
 
 CREATE INDEX "AdminAction_userId_createdAt_idx" ON "AdminAction"("userId", "createdAt");
 
+-- 12. AuditLog (no deps)
 CREATE TABLE "AuditLog" (
     id TEXT NOT NULL PRIMARY KEY,
     "entityType" TEXT NOT NULL,
@@ -187,6 +199,7 @@ CREATE TABLE "AuditLog" (
 
 CREATE INDEX "AuditLog_entityType_entityId_createdAt_idx" ON "AuditLog"("entityType", "entityId", "createdAt");
 
+-- 13. ExternalIdentity → User
 CREATE TABLE "ExternalIdentity" (
     id TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -203,6 +216,7 @@ CREATE TABLE "ExternalIdentity" (
 CREATE INDEX "ExternalIdentity_userId_idx" ON "ExternalIdentity"("userId");
 CREATE INDEX "ExternalIdentity_providerKey_idx" ON "ExternalIdentity"("providerKey");
 
+-- 14. AuthNonceReplay (no deps)
 CREATE TABLE "AuthNonceReplay" (
     id TEXT NOT NULL PRIMARY KEY,
     "nonceOrJti" TEXT NOT NULL,
@@ -218,6 +232,7 @@ CREATE TABLE "AuthNonceReplay" (
 CREATE INDEX "AuthNonceReplay_expiresAt_idx" ON "AuthNonceReplay"("expiresAt");
 CREATE INDEX "AuthNonceReplay_providerKey_idx" ON "AuthNonceReplay"("providerKey");
 
+-- 15. AnalyticsRound (no deps)
 CREATE TABLE "AnalyticsRound" (
     id TEXT NOT NULL PRIMARY KEY,
     "timestampMs" BIGINT NOT NULL,
