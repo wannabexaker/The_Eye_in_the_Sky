@@ -3,7 +3,9 @@
 import type { SpinResult } from "@eye/game-engine";
 import type { AuthSessionDto, PlayerSnapshotDto } from "@eye/shared-types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200";
+// Use the server-side proxy path so the browser never needs a direct route to
+// the API. Next.js rewrites /_api/* → API_INTERNAL_URL/* at the server level.
+const API_BASE = "/_api";
 
 export type AuthModePublicConfig = {
   mode: "INTERNAL_ONLY" | "EXTERNAL_ONLY" | "HYBRID";

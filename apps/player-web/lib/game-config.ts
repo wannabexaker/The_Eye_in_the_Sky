@@ -7,7 +7,7 @@ import {
 
 const envProfileId = process.env.NEXT_PUBLIC_GAME_MATH_PROFILE;
 const envConfigVersion = process.env.NEXT_PUBLIC_GAME_CONFIG_VERSION;
-const DEFAULT_API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3200";
+const DEFAULT_API_BASE = "/_api";
 const GAME_CONFIG_FETCH_RETRY_DELAY_MS = 30_000;
 
 let gameConfigFetchBlockedUntil = 0;
