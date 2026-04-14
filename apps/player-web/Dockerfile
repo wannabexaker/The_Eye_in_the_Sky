@@ -42,9 +42,10 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # Copy Next.js standalone build output (includes traced runtime deps)
+# In a monorepo, standalone output preserves the full path: apps/player-web/server.js
 COPY --from=builder /build/apps/player-web/.next/standalone ./
-COPY --from=builder /build/apps/player-web/.next/static ./.next/static
-COPY --from=builder /build/apps/player-web/public ./public
+COPY --from=builder /build/apps/player-web/.next/static ./apps/player-web/.next/static
+COPY --from=builder /build/apps/player-web/public ./apps/player-web/public
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
@@ -57,5 +58,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD curl -f http://localhost:3000 || exit 1
 
-# Start standalone Next server
-CMD ["node", "server.js"]
+# Start standalone Next server (monorepo path)
+CMD ["node", "apps/player-web/server.js"]
