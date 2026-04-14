@@ -1592,7 +1592,7 @@ p {
 .overlayBackdrop {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 20);
+  z-index: calc(var(--z-button) + 22);
   display: grid;
   place-items: center;
   padding: 18px;
