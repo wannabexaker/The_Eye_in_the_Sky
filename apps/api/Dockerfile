@@ -23,6 +23,13 @@ COPY packages/shared-types ./packages/shared-types
 # Install all dependencies (includes dev dependencies for build)
 RUN pnpm install --frozen-lockfile
 
+# Build workspace packages first so their dist/ exists at runtime
+WORKDIR /build/packages/game-engine
+RUN pnpm exec tsc
+
+WORKDIR /build/packages/shared-types
+RUN pnpm exec tsc
+
 # Build API: compile TypeScript → JavaScript
 WORKDIR /build/apps/api
 # Ensure Prisma client is generated in CI/build containers before tsc.
