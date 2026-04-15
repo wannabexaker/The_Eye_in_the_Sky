@@ -23,8 +23,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const body = isBodyMethod ? await req.arrayBuffer() : undefined;
 
   const headers = new Headers(req.headers);
+  // Strip hop-by-hop and browser-only headers — the API must not see the
+  // browser Origin or it will apply CORS rules to a server-to-server request.
   headers.delete("host");
   headers.delete("connection");
+  headers.delete("origin");
+  headers.delete("referer");
 
   const upstreamRes = await fetch(upstream, {
     method: req.method,

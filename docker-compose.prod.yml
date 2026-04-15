@@ -42,7 +42,7 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3200
       DATABASE_URL: postgresql://app_user:${POSTGRES_PASSWORD}@postgres:5432/eye_db
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3100}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3100,http://player-web:3000,http://admin-web:3100}
       ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
       ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
       PLAYER_SEED_EMAIL: ${PLAYER_SEED_EMAIL:-}
