@@ -82,10 +82,11 @@ export function ControlPanel({
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
   const [isManualClickedRef, setIsManualClicked] = useState(false);
   const [isSpinButtonPressed, setIsSpinButtonPressed] = useState(false);
-  const autoplayInputRef = useRef<HTMLInputElement>(null);
   const autoplayHoldTimerRef = useRef<number | null>(null);
-  const autoplayLongPressTriggeredRef = useRef(false);
   const manualClickTimerRef = useRef<number | null>(null);
+
+  // Preset spin counts shown in the chip tray (∞ = infinite)
+  const AUTOSPIN_PRESETS = [10, 25, 50, 100, "∞"] as const;
 
   useEffect(() => {
     if (isAutospinActive) {
@@ -94,21 +95,7 @@ export function ControlPanel({
     }
   }, [isAutospinActive]);
 
-  useEffect(() => {
-    if (!autoplayInputOpen || isAutospinActive || !autoplayInputRef.current) {
-      return;
-    }
-
-    autoplayInputRef.current.focus();
-    autoplayInputRef.current.select();
-  }, [autoplayInputOpen, isAutospinActive]);
-
   const handleAutoplayPress = () => {
-    if (autoplayLongPressTriggeredRef.current) {
-      autoplayLongPressTriggeredRef.current = false;
-      return;
-    }
-
     if (isAutospinActive) {
       onStopAutoSpin();
       return;
@@ -118,18 +105,26 @@ export function ControlPanel({
       return;
     }
 
-    if (!autoplayInputOpen) {
-      setAutoplayInputOpen(true);
-      return;
-    }
+    setAutoplayInputOpen((prev) => !prev);
+  };
 
-    const parsedCount = onCommitAutospinInput();
-    if (!parsedCount) {
-      return;
-    }
-
-    onStartAutospin();
+  // Tapping a preset chip immediately starts autospin — no keyboard needed.
+  const handlePresetSelect = (preset: number | "∞") => {
     setAutoplayInputOpen(false);
+
+    if (preset === "∞") {
+      onStartAutospinInfinite();
+      return;
+    }
+
+    onAutospinInputChange(String(preset));
+    // Give the slot state a tick to register the new value before committing.
+    window.setTimeout(() => {
+      const parsed = onCommitAutospinInput();
+      if (parsed) {
+        onStartAutospin();
+      }
+    }, 0);
   };
 
   const clearAutoplayHoldTimer = () => {
@@ -141,20 +136,12 @@ export function ControlPanel({
     autoplayHoldTimerRef.current = null;
   };
 
+  // Keep pointer-down handler stub so we can still cancel if needed.
   const handleAutoplayPointerDown = () => {
     if (isAutospinActive || !canStartAutospin) {
       return;
     }
-
     clearAutoplayHoldTimer();
-    autoplayLongPressTriggeredRef.current = false;
-
-    autoplayHoldTimerRef.current = window.setTimeout(() => {
-      autoplayLongPressTriggeredRef.current = true;
-      setAutoplayInputOpen(false);
-      onStartAutospinInfinite();
-      autoplayHoldTimerRef.current = null;
-    }, 3000);
   };
 
   useEffect(() => {
@@ -327,35 +314,22 @@ export function ControlPanel({
           {/* Autoplay Controls */}
           <div className="dockAutoCluster">
             <div className={`autoplayPopoverAnchor dockPopoverAnchor ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""}`}>
+              {/* Preset chip tray — slides up when the autoplay button is tapped */}
               {autoplayInputOpen && !isAutospinActive ? (
-                <input
-                  ref={autoplayInputRef}
-                  aria-label="Autoplay spin count"
-                  className="dockAutoInlineInput"
-                  inputMode="numeric"
-                  onBlur={onCommitAutospinInput}
-                  onChange={(event) => onAutospinInputChange(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      const parsedCount = onCommitAutospinInput();
-                      if (!parsedCount) {
-                        return;
-                      }
-
-                      onStartAutospin();
-                      setAutoplayInputOpen(false);
-                    }
-
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      setAutoplayInputOpen(false);
-                    }
-                  }}
-                  placeholder="50"
-                  type="text"
-                  value={autospinCountInput}
-                />
+                <div aria-label="Autoplay spin count presets" className="dockPresetChips" role="group">
+                  {AUTOSPIN_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      aria-label={preset === "∞" ? "Infinite autoplay" : `Autoplay ${preset} spins`}
+                      className="dockPresetChip"
+                      onMouseDown={suppressSelectionOnPointerDown}
+                      onClick={() => handlePresetSelect(preset)}
+                      type="button"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
               ) : null}
 
               <button
@@ -363,13 +337,14 @@ export function ControlPanel({
                   autospinStopRequested
                     ? "Autoplay stopping"
                     : isAutospinActive
-                      ? "Stop autoplay"
+                      ? `Stop autoplay (${autospinRemaining > 0 ? autospinRemaining : "∞"} left)`
                       : autoplayInputOpen
-                        ? "Start autoplay"
-                        : "Set autoplay count"
+                        ? "Close autoplay presets"
+                        : "Autoplay"
                 }
                 className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
                 disabled={autoplayDisabled}
+                onContextMenu={(e) => e.preventDefault()}
                 onMouseDown={suppressSelectionOnPointerDown}
                 onPointerDown={handleAutoplayPointerDown}
                 onPointerUp={clearAutoplayHoldTimer}
@@ -381,9 +356,7 @@ export function ControlPanel({
                     ? "Autoplay is stopping"
                     : isAutospinActive
                       ? "Stop autoplay"
-                      : autoplayInputOpen
-                        ? "Start autoplay"
-                        : "Set autoplay count"
+                      : "Autoplay"
                 }
                 type="button"
               >

@@ -4820,6 +4820,76 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
     0 0 14px rgba(226, 190, 112, 0.34);
 }
 
+/* ── Autospin preset chip tray ─────────────────────────────────────────── */
+.dockPresetChips {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: calc(var(--z-button) + 6);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(16, 14, 20, 0.96), rgba(10, 10, 13, 0.98));
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 -8px 24px rgba(0, 0, 0, 0.38),
+    0 0 1px rgba(226, 190, 112, 0.1);
+  animation: presetChipReveal 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes presetChipReveal {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)  scale(1);    }
+}
+
+.dockPresetChip {
+  min-height: 36px;
+  min-width: 52px;
+  padding: 6px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(244, 232, 200, 0.92);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-align: center;
+  transition: background 100ms ease, border-color 100ms ease, transform 80ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dockPresetChip:hover,
+.dockPresetChip:focus-visible {
+  background: rgba(226, 190, 112, 0.1);
+  border-color: rgba(226, 190, 112, 0.32);
+}
+
+.dockPresetChip:active {
+  transform: scale(0.94);
+  background: rgba(226, 190, 112, 0.18);
+}
+
+/* Infinity chip gets a touch of gold */
+.dockPresetChip:last-child {
+  color: rgba(226, 190, 112, 0.96);
+  border-color: rgba(226, 190, 112, 0.22);
+}
+
+/* On phone portrait the tray needs more tap surface */
+@media (orientation: portrait) and (max-width: 11in) {
+  .dockPresetChip {
+    min-height: 42px;
+    font-size: 0.78rem;
+  }
+}
+
 .autoplayStopXIcon {
   width: 17px;
   height: 17px;
