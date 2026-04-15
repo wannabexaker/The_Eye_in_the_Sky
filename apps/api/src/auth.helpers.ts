@@ -48,5 +48,12 @@ export const isSecureRequest = (request: RequestWithAuth) => {
         ? forwardedProto[0]
         : undefined;
 
-  return request.secure === true || proto === "https" || process.env.NODE_ENV === "production";
+  // COOKIE_SECURE env var allows explicit override (true/false).
+  // Without it: only set Secure when the actual connection is HTTPS.
+  // NODE_ENV===production no longer forces Secure — the RPi4 serves HTTP
+  // and a reverse proxy should set X-Forwarded-Proto when HTTPS is needed.
+  const override = process.env.COOKIE_SECURE;
+  if (override === "true") return true;
+  if (override === "false") return false;
+  return request.secure === true || proto === "https";
 };
