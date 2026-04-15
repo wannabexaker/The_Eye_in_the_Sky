@@ -538,6 +538,13 @@ export default function HomePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Never intercept keyboard input when the user is typing in a form field.
+      const tag = (event.target as HTMLElement)?.tagName;
+      const isTypingInInput = tag === "INPUT" || tag === "TEXTAREA" || (event.target as HTMLElement)?.isContentEditable;
+      if (isTypingInInput) {
+        return;
+      }
+
       if (authBlocked) {
         event.preventDefault();
         return;
