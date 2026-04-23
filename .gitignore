@@ -15,6 +15,7 @@ coverage
 .env.*
 !.env.example
 !.env*.example
+graphify_run.py
 
 # Local credentials reference (git-ignored, development only)
 CREDENTIALS-LOCAL-REFERENCE.md
@@ -24,3 +25,12 @@ apps/api/.runtime-api*.log
 
 # Local editor-only settings
 .vscode/settings.json
+
+# Dev tooling — not needed for app to function
+.claude/
+CLAUDE.md
+graphify-out/
+
+# Local editor workspaces
+.obsidian/
+.idea/
