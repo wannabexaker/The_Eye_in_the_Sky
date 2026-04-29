@@ -34,3 +34,6 @@ graphify-out/
 # Local editor workspaces
 .obsidian/
 .idea/
+
+# Local analysis cache (skill output — never commit)
+docs/

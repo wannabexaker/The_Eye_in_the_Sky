@@ -1,183 +1,127 @@
 # The Eye in the Sky
 
-Professional monorepo for the slot-style simulation, player shell, and engine tooling.
+pnpm monorepo — slot simulation platform with a playable player shell, admin panel, NestJS API, and a deterministic TypeScript game engine
 
-## Quick Start
+## Overview
 
-### Development
-- **Player app:** `corepack pnpm dev:player` (localhost:3000)
-- **Admin panel:** `corepack pnpm --filter admin-web dev` (localhost:3100)
-- **Simulation (math validation):** `corepack pnpm simulate`
+Full-stack slot simulation system built for math validation, engine development, and full-cycle gameplay testing. Not a real-money product. The game engine is a shared package imported by both the player shell and the API, allowing the same math logic to be exercised in isolation via a simulation harness without running a server.
 
-### API Server
-- **Backend:** `corepack pnpm dev:api` (localhost:3200)
-  - Handles authentication, sessions, and game logic
-  - Requires SQL Server (see [apps/api/README.md](apps/api/README.md))
+## Features
 
+- Playable slot UI rendered with PixiJS 8 inside a Next.js shell — board, spin, win/loss display
+- Deterministic game engine with configurable math profiles (v2.0, simple, legacy) selectable at runtime via `AppSetting`
+- Simulation harness (`pnpm simulate`) for RTP and volatility validation without a running server
+- Session-based authentication with role-based access (Player, Admin); server-side session table enables revocation
+- Player wallet with EUR balance; every bet and win recorded in `LedgerEntry`
+- Admin panel: math profile selector, win-tier preview, RTP/volatility monitoring
+- Analytics ingestion endpoint with per-spin aggregation into `AnalyticsRound`
+- Swagger API documentation served by NestJS
+- Build guard script prevents `next build` from running while a dev server holds the `.next` cache
 
-### Build & Lint
-- **Full build:** `corepack pnpm build`
-- **Full lint:** `corepack pnpm lint`
+## Architecture
 
-⚠️ **Important:** Never run `pnpm build` while `pnpm dev:*` is active. See [DEVELOPER_WORKFLOW.md](DEVELOPER_WORKFLOW.md) for safe dev/build patterns.
----
+pnpm workspace with two apps (`player-web`, `admin-web`) and three shared packages (`game-engine`, `shared-types`, `ui`). The API uses Prisma as the ORM against SQL Server. The player shell renders the slot board with PixiJS inside a React component and manages game state with Zustand.
 
-## Database (SQL Server)
+Data flow: player spin → `player-web` → `api` (session check + wallet debit) → `game-engine` (spin resolution) → `api` persists `Round` + `LedgerEntry` → response → `player-web` renders outcome.
 
-### Connection Details — SSMS / Azure Data Studio
+### Components
 
-| Field | Value |
+| Component | Role |
 |---|---|
-| Server | `localhost,1433` |
-| Authentication | SQL Server Authentication |
-| Login | `sa` |
-| Password | `<sa_password>` |
-| Database | `TheEyeInTheSky` |
-| Encrypt | No (dev only) |
-| Trust Server Certificate | Yes |
+| `apps/player-web/` | Next.js 15 player shell; PixiJS board renderer; Zustand state; localhost:3000 |
+| `apps/admin-web/` | Admin panel; math profile config, RTP monitoring; localhost:3100 |
+| `apps/api/` | NestJS 11 REST API; auth, sessions, wallet, game logic, analytics; localhost:3200 |
+| `packages/game-engine/` | Pure TypeScript slot engine; math configs, paytable, payout resolution, simulation harness |
+| `packages/shared-types/` | Cross-app TypeScript contracts |
+| `packages/ui/` | Shared UI component library |
 
-> **SSMS:** Server name `localhost,1433` (comma, not colon). Check "Trust server certificate" under Connection Properties.  
-> **Azure Data Studio:** Same settings, untick SSL/encrypt.
+## Tech Stack
 
-### Connection String
-```
-sqlserver://localhost:1433;database=TheEyeInTheSky;user=sa;password=<sa_password>;encrypt=false;trustServerCertificate=true
-```
-
-### Key Tables
-
-| Table | Contents |
+| Technology | Role |
 |---|---|
-| `User` | All registered accounts (email, role, passwordHash) |
-| `AuthSession` | Active sessions (tokenHash, expiresAt, authSource) |
-| `ExternalIdentity` | External platform → game user mappings |
-| `AuthNonceReplay` | Used nonces/JTIs for replay protection |
-| `Wallet` | Player balances (EUR) |
-| `LedgerEntry` | Transaction log (bet, win, bonus, deposit, withdraw) |
-| `Round` | Every completed spin |
-| `GameSession` | Active game sessions per user/game |
-| `GameMathProfile` | Available math configs (v2.0, simple, legacy) |
-| `AppSetting` | Runtime config (active math profile, auth mode) |
-| `AdminAction` | Admin operation audit trail |
-| `AuditLog` | Entity-level change log |
-| `AnalyticsRound` | Aggregated analytics per spin |
+| Next.js 15 | player-web and admin-web |
+| React 19 | Frontend component model |
+| PixiJS 8 | Slot board rendering |
+| Zustand 5 | Player-web state management |
+| NestJS 11 | API framework |
+| Prisma 6 | ORM and schema migrations |
+| SQL Server | Primary database |
+| TypeScript | All packages |
+| Zod | API request validation |
+| pnpm 10 (corepack) | Package manager |
 
-### Useful Queries
-```sql
--- All users
-SELECT id, email, displayName, role, isActive, createdAt FROM [User];
+## Installation
 
--- Active sessions
-SELECT s.id, u.email, s.authSource, s.createdAt, s.expiresAt
-FROM AuthSession s JOIN [User] u ON s.userId = u.id
-WHERE s.expiresAt > GETUTCDATE();
-
--- Current auth mode config
-SELECT [key], [value] FROM AppSetting WHERE [key] LIKE 'auth:%';
-
--- Active math profile
-SELECT [key], [value] FROM AppSetting WHERE [key] LIKE 'game:%';
-
--- Player balances
-SELECT u.email, w.balance, w.currencyCode
-FROM Wallet w JOIN [User] u ON w.userId = u.id;
-
--- Recent rounds
-SELECT u.email, r.chargedBet, r.totalWin, r.profileId, r.createdAt
-FROM Round r JOIN [User] u ON r.userId = u.id
-ORDER BY r.createdAt DESC;
+```bash
+git clone https://github.com/wannabexaker/The_Eye_in_the_Sky
+cd The_Eye_in_the_Sky
+corepack pnpm install
 ```
 
----
+SQL Server must be running. Configure the connection string in `apps/api/.env` (see `apps/api/README.md` for schema and required vars).
 
-## Development Authentication
+```bash
+cd apps/api
+corepack pnpm prisma:migrate
+corepack pnpm prisma:seed
+```
 
-### Default Test Credentials
+## Usage
 
-⚠️ **These accounts are automatically created for testing. Remove before production.**
+```bash
+# Terminal 1 — API
+corepack pnpm dev:api
 
-#### Standard Player
-- **Email:** `user@example.com`
-- **Password:** `Changeme123`
-- **Role:** Player (base game access)
-- **Starting Balance:** €100.00
+# Terminal 2 — Player shell
+corepack pnpm dev:player
 
-#### Admin User
-- **Email:** `admin@example.com`
-- **Password:** `Channgeme123` (intentional typo)
-- **Role:** Admin (full panel access)
-- **Starting Balance:** €0.00
+# Terminal 3 — Admin panel (optional)
+corepack pnpm dev:admin
+```
 
-### Login Instructions
+| App | URL |
+|---|---|
+| Player | `http://localhost:3000` |
+| Admin | `http://localhost:3100` |
+| API | `http://localhost:3200` |
 
-1. **Start all services:**
-   ```bash
-   # Terminal 1: API backend
-  corepack pnpm dev:api
-   
-   # Terminal 2: Player frontend
-   corepack pnpm dev:player
-   
-   # Terminal 3: Admin panel (optional)
-   corepack pnpm --filter admin-web dev
-   ```
+Run the math simulation without a running server:
 
-2. **Access applications:**
-   - Player: http://localhost:3000 (or :3001 if port busy)
-   - Admin: http://localhost:3100
-   - API: http://localhost:3200
+```bash
+corepack pnpm simulate
+```
 
-3. **Login with test credentials:**
-   - Use email + password at the login screen
-   - Session automatically persists via secure cookie
+```bash
+# Full build (all packages)
+corepack pnpm build
+```
 
-### Security Note
+Do not run `pnpm build` while a `pnpm dev:*` process is active — the `.next` cache will conflict. Use `pnpm dev:player:clean` to wipe the cache before starting dev if needed.
 
-**Before production deployment:**
-1. ⚠️ Disable default credentials in `.env` (remove `PLAYER_SEED_*` and `ADMIN_SEED_*` variables)
-2. Generate strong `AUTH_COOKIE_SECRET` (see [apps/api/README.md](apps/api/README.md))
-3. Use HTTPS only
-4. Update database credentials
-5. Review access control policies
+## Project Structure
 
-For detailed authentication documentation, see [apps/api/README.md](apps/api/README.md).
+```
+The_Eye_in_the_Sky/
+├── apps/
+│   ├── player-web/            — Next.js player shell (PixiJS board, Zustand)
+│   ├── admin-web/             — Admin panel
+│   └── api/                   — NestJS API (auth, wallet, game, analytics)
+│       └── prisma/
+│           ├── schema.prisma  — DB schema
+│           └── seed.ts        — test user seeding
+├── packages/
+│   ├── game-engine/           — deterministic slot engine + simulation harness
+│   ├── shared-types/          — cross-app TypeScript contracts
+│   └── ui/                    — shared UI components
+├── docs/                      — PRD, architecture, math model docs
+├── pnpm-workspace.yaml        — workspace definition
+└── package.json               — root scripts
+```
 
----
+## Notes
 
-## Repository Index
-- [docs/INDEX.md](docs/INDEX.md): documentation map and reading order
-- [apps/api/README.md](apps/api/README.md): **API authentication and backend documentation** ⭐ START HERE
-- [apps/player-web/README.md](apps/player-web/README.md): player shell structure and UX components
-- [packages/game-engine/README.md](packages/game-engine/README.md): engine structure and math config
+The seed script (`prisma:seed`) creates default test accounts. Remove `PLAYER_SEED_*` and `ADMIN_SEED_*` from the API `.env` before any non-development deployment.
 
-## Top-Level Structure
+The `game-engine` package is imported directly by the API — spin resolution happens in the same process as the HTTP handler, not in a separate worker. This simplifies the stack but means CPU-intensive simulation runs block the API event loop if triggered over HTTP.
 
-### Apps
-- **player-web:** Next.js player shell for live gameplay (localhost:3000)
-  - Board rendering with PixiJS
-  - State management with Zustand
-  - Responsive layout: desktop / tablet / mobile / portrait modes
-  
-- **admin-web:** Internal admin panel for configuration and diagnostics (localhost:3100)
-  - Game config viewer and selector
-  - Math profile analysis and win-tier preview
-  - RTP/volatility monitoring
-  
-- **api:** NestJS backend for authentication, sessions, and game state (localhost:3200)
-  - Session-based authentication with role-based access control
-  - Player wallet and ledger management
-  - Game math profile and configuration service
-  - Analytics ingestion endpoint
-
-### Packages
-- **game-engine:** Pure TypeScript slot engine with deterministic RNG
-  - Math config, symbol weights, paytable
-  - Board, cascade, cluster, and payout resolution
-  - Simulation harness for RTP validation
-  
-- **shared-types:** Cross-app TypeScript contracts
-- **ui:** Reusable UI component library
-
-### Docs & Assets
-- **docs/:** PRD, architecture, math models, asset reference
-- **assets/:** Ignored external working files
+Never run `pnpm build` while `pnpm dev:*` is active. The build script includes a guard (`apps/player-web/scripts/guard-no-dev-server.cjs`) that detects a running dev server and aborts, but the check is heuristic — use `pnpm dev:player:clean` to wipe `.next` before building if you encounter stale-cache issues.
