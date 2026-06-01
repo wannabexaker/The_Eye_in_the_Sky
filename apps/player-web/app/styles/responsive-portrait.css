@@ -520,21 +520,6 @@
       display: none;
     }
   }
-
-  .utilityZone,
-  .betAdjustZone,
-  .autoplayZone {
-    justify-content: center;
-  }
-
-  .betAdjustZone,
-  .autoplayZone {
-    justify-items: center;
-  }
-
-  .betMetaRow {
-    justify-content: center;
-  }
 }
 
 @media (orientation: portrait) and (min-width: 960px) and (max-width: 1220px) and (min-height: 1600px) and (max-height: 2300px) {

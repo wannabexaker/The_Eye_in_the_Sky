@@ -12,21 +12,6 @@
   .brandingRail {
     display: none;
   }
-
-  .utilityZone,
-  .betAdjustZone,
-  .autoplayZone {
-    justify-content: center;
-  }
-
-  .betAdjustZone,
-  .autoplayZone {
-    justify-items: center;
-  }
-
-  .betMetaRow {
-    justify-content: center;
-  }
 }
 
 @media (max-width: 480px) {
