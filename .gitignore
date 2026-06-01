@@ -36,5 +36,6 @@ graphify-out/
 .obsidian/
 .idea/
 
-# Local analysis cache (skill output — never commit)
-docs/
+# Local analysis cache (skill output — never commit).
+# Project docs under docs/ ARE tracked (source of truth); only the skill cache is ignored.
+docs/notes.md

@@ -745,6 +745,18 @@ and not only on naive width breakpoints.
   - restore the previous layer before testing the next one
   - keep code comments on board-layer ownership so shell debugging does not restart from zero
 
+## Architecture Updates (2026-06-01)
+- Auth error contract now intentionally returns typed client-facing codes for internal auth failures:
+  - `EMAIL_NOT_FOUND` -> 404
+  - `WRONG_PASSWORD` -> 401
+  - `EMAIL_TAKEN` -> 409
+  - `WEAK_PASSWORD` / `INVALID_DISPLAY_NAME` -> 400
+  - zod validation failures keep the existing field-level issue list shape.
+- Password change is session-retaining by design: `POST /auth/change-password` rotates only `passwordHash` after current-password verification. Existing `AuthSession` rows remain valid.
+- Forgot/reset password uses a DB-backed `PasswordResetToken` model with 30-minute TTL. Non-production responses may include the raw token because no SMTP provider exists; production omits it. Successful reset rotates `passwordHash`, marks the token used, and invalidates all sessions for that player.
+- Guest mode is a player-web-only local runtime mode. It uses sessionStorage and in-memory state, never creates `User` / `Player` rows, and must not call player persistence endpoints.
+- Olamov iframe integration uses the existing `eye.olamov.com` build. Player-web sends `Content-Security-Policy: frame-ancestors 'self' https://*.olamov.com https://olamov.com`; API CORS allows `https://olamov.com` and `https://eye.olamov.com`; cookies switch to `SameSite=None; Secure` when `COOKIE_SECURE=true`.
+
 - `2026-03-27`
   - Wired live math-profile activation end to end so the admin-selected profile now drives `player-web` at runtime through the API instead of remaining an env-only/static choice
   - Added a dedicated runtime config client hook in `player-web` that fetches `/game-config` on mount, refreshes again when the player tab becomes visible, and performs light visible-only polling so admin changes propagate without restoring static config ownership; env config remains the fallback path if the API is unavailable

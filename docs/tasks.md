@@ -112,6 +112,60 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-01` **Task 1 - Specific auth errors**
+  - Intent: return actionable login/register error codes so the player UI can place errors next to the affected field.
+  - Hypothesis: the generic `Invalid credentials` / validation response hid whether the email, password, or register payload was the failing field.
+  - Code change: updated `apps/api/src/auth.controller.ts`, `apps/api/src/auth.service.ts`, `apps/api/src/validators/game.validators.ts`, `apps/player-web/lib/api/player-api.ts`, and `apps/player-web/components/auth/auth-overlay.tsx` with typed `{ code, message }` errors for `EMAIL_NOT_FOUND`, `WRONG_PASSWORD`, `EMAIL_TAKEN`, `WEAK_PASSWORD`, and `INVALID_DISPLAY_NAME`.
+  - Verification: `corepack pnpm --filter api build`; `corepack pnpm --filter api test`; `corepack pnpm --filter api test:e2e`; `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`.
+  - Rollback note: revert the auth error mapping and frontend field-error handling if disambiguated auth responses become a product/security concern.
+- `2026-06-01` **Task 2 - Responsive register/auth panel**
+  - Intent: keep the register/login panel usable on desktop, tablet portrait, and phone portrait without clipping the submit button.
+  - Hypothesis: the modal inherited welcome-screen logo sizing and unconstrained body behavior, making the auth form too tall on smaller screens.
+  - Code change: updated `apps/player-web/app/globals.css`, `apps/player-web/app/styles/responsive-mobile.css`, and `apps/player-web/app/styles/responsive-portrait.css` with clamped auth modal dimensions, reduced auth logo sizing, clamped gaps, and full-width mobile actions.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`; CDP screenshots at `1920x1080`, `1366x768`, `412x915`, and `768x1024` showed no horizontal scroll and visible submit action; full `player-web build` is blocked by an unrelated active `olamovOS` Next dev server on local ports `3000/3001`.
+  - Rollback note: revert only the `.authModal`, `.authBody`, `.authFormGrid`, and auth responsive blocks if modal sizing regresses.
+- `2026-06-01` **Task 3 - Continue as Guest**
+  - Intent: let unauthenticated players enter a local-only guest session without creating DB rows or calling player persistence endpoints.
+  - Hypothesis: the existing dev simulator path was close but persisted through localStorage and did not provide a product-facing guest identity or save-warning HUD.
+  - Code change: added `apps/player-web/lib/identity/guest-session.ts`, extended `apps/player-web/lib/state/player-store.ts` with `guest` runtime mode backed by sessionStorage, added the auth overlay guest button, blocked guest API calls in `player-api.ts`, and added a guest HUD badge/rename/create-account CTA in `app/page.tsx`.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`; `corepack pnpm --filter player-web test`; CDP guest flow confirmed `sessionStorage["eye-in-the-sky-guest-mode"]="true"` and visible guest HUD badge.
+  - Rollback note: remove `guest` runtime mode and the guest API no-op guards to restore the prior dev-only simulator behavior.
+- `2026-06-01` **Task 4 - Change Password**
+  - Intent: allow authenticated users to change their password from the account/menu area while keeping active sessions valid.
+  - Hypothesis: password rotation does not need to invalidate the current session for this fake-money prototype; forced session logout is reserved for reset-token recovery.
+  - Code change: added `POST /auth/change-password` with zod validation and throttling, service-side current-password verification and hash rotation, `changePlayerPassword`, and `components/auth/change-password-modal.tsx` wired from the menu session card.
+  - Verification: `corepack pnpm --filter api build`; `corepack pnpm --filter api test`; `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`.
+  - Rollback note: remove the endpoint and modal wiring if session-retaining password rotation is not desired.
+- `2026-06-01` **Task 5 - Forgot Password reset tokens**
+  - Intent: support local/dev password reset without SMTP while keeping production responses non-enumerating.
+  - Hypothesis: a DB-backed single-use token table is the lowest-risk path because no email provider exists in the repo.
+  - Code change: added `PasswordResetToken` to `apps/api/prisma/schema.prisma`, migration `20260601000001_password_reset_tokens`, zod schemas, `POST /auth/forgot-password`, `POST /auth/reset-password`, non-production token echo, and the inline forgot/reset flow in `AuthOverlay`.
+  - Verification: `corepack pnpm --filter api prisma:generate`; `corepack pnpm --filter api build`; `corepack pnpm --filter api test`; `corepack pnpm --filter api test:e2e`; `corepack pnpm --filter api prisma:migrate` was attempted but failed because the loaded `DATABASE_URL` is not a PostgreSQL URL for the current Prisma provider.
+  - Rollback note: drop `PasswordResetToken`, remove the two auth routes, and revert the overlay forgot/reset mode if token reset is deferred.
+- `2026-06-01` **Task 6 - Random display name and guest rename**
+  - Intent: replace the hardcoded register default with a safe random display-name generator reused by guest mode.
+  - Hypothesis: deterministic-looking random names reduce form friction while still satisfying the existing Unicode-safe zod display-name regex.
+  - Code change: added `apps/player-web/lib/identity/random-display-name.ts`, register-mode generation/reroll UI, submit fallback generation, guest display-name assignment, and an inline guest rename editor in the HUD badge.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`.
+  - Rollback note: revert the generator file and auth/guest display-name wiring to return to manual-only display names.
+- `2026-06-01` **Task 7 - Ouroboros ring during spin**
+  - Intent: keep the ouroboros ring visible and rotating through the full spin cycle.
+  - Hypothesis: the ring was being remounted on every spin because `pulseKey` was used as a React key on `.ouroborosRing`, interrupting the `.spinCta.is-spinning .ouroborosRing` animation despite the CSS keyframes still existing.
+  - Code change: removed the `ouroborosRing` React key from `apps/player-web/components/controls/spin-button.tsx`; kept the ripple key because only the ripple needs to restart per pulse.
+  - Verification: code audit confirmed `ouroboros360Spin` still exists in `globals.css` and no responsive rule hides `.ouroborosRing`; CDP verification during a guest spin observed `data-phase="BOARD_DROP"`, `ringDisplay="block"`, and `ringAnimation="ouroboros360Spin"`.
+  - Rollback note: re-add the ring key only if a future animation owner explicitly needs per-spin remounting.
+- `2026-06-01` **Task 8 - Screen Wake Lock icon**
+  - Intent: replace the ambiguous placeholder wake-lock glyph with distinct active/inactive icons and correct pressed semantics.
+  - Hypothesis: the toggle was hidden too aggressively because the hook exposed only native support instead of a clean manual fallback availability signal.
+  - Code change: updated `hooks/useScreenWakeLock.ts` to expose reactive `isAcquired`, `hasSupport`, and `manualToggleAvailable`, and replaced `wake-lock-toggle.tsx` with screen+sun and screen+moon/crossed icons plus `aria-pressed`.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`.
+  - Rollback note: revert the hook state exposure and toggle component if fallback visibility causes unwanted mobile behavior.
+- `2026-06-01` **Task 9 - Olamov iframe embed**
+  - Intent: allow `eye.olamov.com/?embed=1` to run inside `olamov.com` as a playable iframe.
+  - Hypothesis: iframe embedding is lower-risk than reverse proxying because it keeps the Eye build and deployment boundary unchanged.
+  - Code change: added player-web CSP `frame-ancestors` headers, API CORS allow-list entries for `https://olamov.com` and `https://eye.olamov.com`, `SameSite=None; Secure` cookies when `COOKIE_SECURE=true`, `embed=1` shell data attributes/CSS to hide branding rail, and `docs/integration-olamov.md`.
+  - Verification: `corepack pnpm --filter api build`; `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`; live iframe verification requires deployed headers or a local browser target after the unrelated port blocker is cleared.
+  - Rollback note: remove the CSP/CORS/cookie/embed CSS changes if olamov.com chooses reverse proxy integration instead.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.
