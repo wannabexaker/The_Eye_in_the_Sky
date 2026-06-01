@@ -1,0 +1,54 @@
+name: CI
+
+# Quality gate: typecheck, lint, tests, and a full build on Linux.
+# Linux build avoids the Windows `output: "standalone"` EPERM symlink issue,
+# so `next build` runs to completion here and catches breakage (e.g. a deleted
+# component still imported) that a local Windows build cannot fully verify.
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Prisma client must be generated before the API typechecks/builds.
+      # `prisma generate` reads the schema only — no database connection needed.
+      - name: Generate Prisma client
+        run: pnpm --filter api prisma:generate
+
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Unit tests
+        run: pnpm -r --if-present test
+
+      - name: API e2e tests (isolated, no DB)
+        run: pnpm --filter api test:e2e
+
+      - name: Build (all packages + apps)
+        run: pnpm -r build
