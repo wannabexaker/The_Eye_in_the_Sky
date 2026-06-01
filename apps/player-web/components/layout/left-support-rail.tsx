@@ -9,6 +9,7 @@ Uses: wallet actions, status state, and samsara meter
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
 import { SamsaraMeter } from "@/components/board/samsara-meter";
+import { useViewport } from "@/lib/responsive/use-viewport";
 
 type LeftSupportRailProps = {
   balance: string;
@@ -73,42 +74,11 @@ export function LeftSupportRail({
   onToggleSettings,
   onToggleFullscreen
 }: LeftSupportRailProps) {
-  const [compactView, setCompactView] = useState(false);
-  const [portraitView, setPortraitView] = useState(false);
-  const [handheldPortraitView, setHandheldPortraitView] = useState(false);
+  const { compactView, portraitView, handheldPortraitView } = useViewport();
   const [showMore, setShowMore] = useState(false);
   const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 1600px), (max-height: 900px)");
-    const syncCompactView = () => setCompactView(mediaQuery.matches);
-
-    syncCompactView();
-    mediaQuery.addEventListener("change", syncCompactView);
-    return () => mediaQuery.removeEventListener("change", syncCompactView);
-  }, []);
-
-  useEffect(() => {
-    const portraitQuery = window.matchMedia("(orientation: portrait) and (max-aspect-ratio: 10/16)");
-    const syncPortraitView = () => setPortraitView(portraitQuery.matches);
-
-    syncPortraitView();
-    portraitQuery.addEventListener("change", syncPortraitView);
-    return () => portraitQuery.removeEventListener("change", syncPortraitView);
-  }, []);
-
-  useEffect(() => {
-    const handheldPortraitQuery = window.matchMedia(
-      "(orientation: portrait) and (max-aspect-ratio: 10/16) and (max-width: 11in)"
-    );
-    const syncHandheldPortraitView = () => setHandheldPortraitView(handheldPortraitQuery.matches);
-
-    syncHandheldPortraitView();
-    handheldPortraitQuery.addEventListener("change", syncHandheldPortraitView);
-    return () => handheldPortraitQuery.removeEventListener("change", syncHandheldPortraitView);
-  }, []);
 
   useEffect(() => {
     if (!handheldPortraitView) {
