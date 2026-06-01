@@ -74,6 +74,14 @@ const formatMoneyCompactEur = (value: number) =>
 
 const formatBalanceRoundedEur = (value: number) => `€${Math.round(value)}`;
 
+const readEmbedMode = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return new URLSearchParams(window.location.search).get("embed") === "1";
+};
+
 const symbolLabels: Record<string, string> = {
   ashen_sigil: "Ashen Sigil",
   broken_halo: "Broken Halo",
@@ -98,6 +106,7 @@ export default function HomePage() {
   const bonusExitTimerRef = useRef<number | null>(null);
   const persistedRoundIdRef = useRef<string | null>(null);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
+  const [embedMode, setEmbedMode] = useState(false);
   const [bonusEnterCinematic, setBonusEnterCinematic] = useState(false);
   const [bonusExitCinematic, setBonusExitCinematic] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -330,6 +339,14 @@ export default function HomePage() {
   const visibleBonusSpins = bonusModeActive ? slot.activeBonusSpins : 0;
   const bonusFrameActive = bonusModeActive;
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
+
+  useEffect(() => {
+    const syncEmbedMode = () => setEmbedMode(readEmbedMode());
+
+    syncEmbedMode();
+    window.addEventListener("popstate", syncEmbedMode);
+    return () => window.removeEventListener("popstate", syncEmbedMode);
+  }, []);
 
   useEffect(() => {
     const wasBonusModeActive = previousBonusModeRef.current;
@@ -948,7 +965,8 @@ export default function HomePage() {
 
   return (
     <main
-      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
+      className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
+      data-embed={embedMode ? "true" : "false"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}

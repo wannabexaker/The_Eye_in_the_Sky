@@ -87,6 +87,13 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
 - Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
 
+## Olamov Embed Contract
+- `player-web` supports iframe mode through `?embed=1`; this trims the shell by hiding the right branding rail while keeping board, left support rail, floating dock, and auth flows active.
+- The browser API path remains `/_api`; iframe mode must not bypass the Next proxy or change the session model.
+- The player shell sends `frame-ancestors 'self' https://olamov.com https://*.olamov.com` by default. Use `PLAYER_FRAME_ANCESTORS` only for staging parent origins.
+- When `COOKIE_SECURE=true`, API auth cookies must be emitted as `SameSite=None; Secure` for third-party iframe login. Default local cookies remain `SameSite=Lax`.
+- Safari and Chrome third-party-cookie blocking remains an integration risk; fallback should be top-level login handoff or platform token exchange, not weakening cookie security.
+
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
 - Permanent operating rule: every meaningful implementation change must be recorded in both `docs/tasks.md` (execution log) and `docs/prd.md` (product/architecture impact), without exception.

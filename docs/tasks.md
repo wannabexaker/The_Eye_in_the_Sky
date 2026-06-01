@@ -147,6 +147,14 @@
   - Visual verification: host Playwright smoke captured ignored screenshots under `apps/player-web/screenshots/wo4/` for `360x640`, `390x844`, `412x915`, `844x390`, `800x1280`, `1280x800`, `1366x768`, `1440x900`, `1920x1080`, `2560x1440`, and `3840x2160`; all reported correct viewport band/orientation after hydration and board/dock rectangles inside viewport. The MCP Playwright bridge still cannot reach Windows localhost, so screenshots were captured from host Playwright instead.
   - Verification caveat: game-config fetches returned `500` during visual smoke because the API server was not running on the expected local URL; the player correctly stayed on local fallback config. `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
   - Rollback note: revert the WO-4 commit if responsive shell ownership regresses; keep the `useViewport()` SSR-safe initial state if any future partial rollback retains data-driven viewport attributes.
+- `2026-06-01` **WO-5 olamov iframe embed mode**
+  - Intent: allow the player to be embedded from `olamov.com` without changing the proxy/session model.
+  - Hypothesis: the shell needed an explicit frame policy, iframe-trimmed layout mode, and cross-site cookie behavior for authenticated iframe use; changing API routing would create unnecessary deployment risk.
+  - Code change: added runtime `frame-ancestors` CSP in `player-web` middleware, added `?embed=1` shell trimming through `is-embed-mode`, kept API calls on `/_api`, changed auth cookies to `SameSite=None; Secure` only when `COOKIE_SECURE=true`, added cookie-helper coverage, and documented the integration in `docs/integration-olamov.md`.
+  - Verification: `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`59/59`), `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, and `corepack pnpm --filter player-web test` (`3/3`) passed.
+  - Visual/header verification: host smoke on `http://127.0.0.1:3001/?embed=1` returned `Content-Security-Policy: frame-ancestors 'self' https://olamov.com https://*.olamov.com`; Playwright confirmed `data-embed="true"`, `is-embed-mode`, hidden branding rail, and visible board.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`; Safari/Chrome third-party-cookie blocking remains documented integration risk.
+  - Rollback note: revert the WO-5 commit if iframe login or shell layout regresses; do not weaken cookie policy as a rollback path.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

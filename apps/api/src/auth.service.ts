@@ -18,6 +18,7 @@ import {
   AUTH_SESSION_TTL_MS,
   getRequestIpAddress,
   getRequestSessionToken,
+  getSessionCookieSameSite,
   isSecureRequest,
   normalizeEmail
 } from "./auth.helpers";
@@ -46,7 +47,7 @@ export class AuthService {
   private setSessionCookie(response: any, request: RequestWithAuth, token: string, expiresAt: Date) {
     response.cookie(AUTH_SESSION_COOKIE, token, {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: getSessionCookieSameSite(),
       secure: isSecureRequest(request),
       expires: expiresAt,
       path: "/"
@@ -56,7 +57,7 @@ export class AuthService {
   private clearSessionCookie(response: any, request: RequestWithAuth) {
     response.cookie(AUTH_SESSION_COOKIE, "", {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: getSessionCookieSameSite(),
       secure: isSecureRequest(request),
       expires: new Date(0),
       path: "/"
