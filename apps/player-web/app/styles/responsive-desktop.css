@@ -98,8 +98,7 @@
   }
 
   .floatingGameDock .ouroborosRing {
-    width: clamp(49px, 3.9vw, 60px);
-    height: clamp(49px, 3.9vw, 60px);
+    inset: 0;
   }
 
   .dockStopButton {

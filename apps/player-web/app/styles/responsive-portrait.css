@@ -405,8 +405,7 @@
   }
 
   .floatingGameDock .ouroborosRing {
-    width: calc(var(--portrait-spin-size) * 0.86);
-    height: calc(var(--portrait-spin-size) * 0.86);
+    inset: 0;
   }
 
   .floatingGameDock .spinCore {
@@ -705,8 +704,7 @@
   }
 
   .floatingGameDock .ouroborosRing {
-    width: calc(var(--portrait-spin-size) * 0.86);
-    height: calc(var(--portrait-spin-size) * 0.86);
+    inset: 0;
   }
 
   .floatingGameDock .spinCore {
