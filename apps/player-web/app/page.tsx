@@ -114,7 +114,7 @@ export default function HomePage() {
   const [authModeBlocked, setAuthModeBlocked] = useState(false);
 
   // Keep screen awake while game is active
-  useScreenWakeLock();
+  const wakeLock = useScreenWakeLock();
 
   const clearAuthError = useCallback(() => {
     setAuthError("");
@@ -1285,7 +1285,7 @@ export default function HomePage() {
             Keep the screen awake during gameplay on supported devices.
           </p>
           <div className="chipRow">
-            <WakeLockToggle />
+            <WakeLockToggle {...wakeLock} />
           </div>
         </section>
 

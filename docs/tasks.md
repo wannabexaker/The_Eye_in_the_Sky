@@ -125,6 +125,13 @@
   - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter api test:e2e` (`38/38`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
   - Verification caveat: `corepack pnpm --filter api prisma:migrate` was blocked before DB connection because the local `DATABASE_URL` is not a PostgreSQL URL; `corepack pnpm --filter player-web build:clean` was blocked by the build guard because a local dev server was already listening on port `3000`.
   - Rollback note: revert the WO-1 commit if auth field response shape or guest persistence regresses; database rollback is dropping `PasswordResetToken` plus removing the Prisma relation and generated migration.
+- `2026-06-01` **WO-2 wake lock controller cleanup**
+  - Intent: make screen wake lock state observable and controlled from one hook instance.
+  - Hypothesis: the prior toggle created a second `useScreenWakeLock()` instance and read ref-backed values that did not rerender, so UI state could disagree with the active native/fallback lock.
+  - Code change: converted `useScreenWakeLock()` to stateful native/fallback mode tracking, kept RAF fallback active when native Wake Lock is unavailable, passed the page-level controller into `WakeLockToggle`, and added `aria-pressed` plus distinct active/inactive SVG icons.
+  - Verification: `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
+  - Rollback note: revert the WO-2 commit if mobile wake-lock prompts regress; the previous hook/toggle split can be restored without touching spin math or wallet state.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

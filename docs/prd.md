@@ -73,6 +73,11 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
 
+## Wake Lock Control Contract
+- The player shell owns one `useScreenWakeLock()` controller instance and passes it into UI controls that need to reflect or change wake-lock state.
+- The toggle must expose `aria-pressed` and visibly different active/inactive icons.
+- Native Screen Wake Lock is preferred when available; requestAnimationFrame fallback stays available and visible through the same toggle when native support is missing or denied.
+
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
 - Permanent operating rule: every meaningful implementation change must be recorded in both `docs/tasks.md` (execution log) and `docs/prd.md` (product/architecture impact), without exception.
