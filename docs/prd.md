@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-30`
+- Last updated: `2026-06-01`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -58,6 +58,15 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Build safety is enforced by `apps/player-web/scripts/guard-no-dev-server.cjs`.
 - Container startup scripts must be POSIX-`sh` compatible when the image entrypoint uses `/bin/sh` (Alpine). Do not use bash-only syntax such as here-strings (`<<<`) in entrypoint scripts.
 - On Windows, `player-web` standalone build can compile successfully and then fail during `.next/standalone` trace copy if symlink creation is blocked (`EPERM`). Treat this as an environment signoff issue and rerun in an environment that permits symlinks instead of disabling `output: "standalone"`.
+
+## Auth And Guest Session Contract
+- Auth API errors use `{ code, message, fieldErrors? }` so the player UI can map failures to exact form fields.
+- Public auth codes include `EMAIL_NOT_FOUND`, `WRONG_PASSWORD`, `VALIDATION_FAILED`, `PASSWORD_REUSE`, `INVALID_RESET_TOKEN`, and `RESET_TOKEN_EXPIRED`.
+- Password change requires an authenticated session and keeps existing sessions valid.
+- Password reset uses a one-time `PasswordResetToken`, rejects reused/current passwords, and invalidates all sessions for the user after a successful reset.
+- Non-production forgot-password responses may include the raw reset token for local dev verification; production must deliver the token out of band and must not echo it to the caller.
+- Guest mode is client-only, backed by `sessionStorage`, and must not call wallet, round-persistence, welcome-bonus, or bootstrap write endpoints.
+- Guest mode may reuse the internal `simulator` runtime branch, but user-facing copy must say `Guest` and persisted guest wallet state must not be stored in localStorage.
 
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker

@@ -32,11 +32,15 @@ export class DatabaseErrorFilter implements ExceptionFilter {
 
     if (exception instanceof ZodError) {
       response.status(HttpStatus.BAD_REQUEST).json({
-        error: "Validation failed",
-        details: exception.issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message
-        }))
+        code: "VALIDATION_FAILED",
+        message: "Validation failed",
+        fieldErrors: exception.issues.reduce<Record<string, string>>((accumulator, issue) => {
+          const path = issue.path.join(".") || "form";
+          if (!accumulator[path]) {
+            accumulator[path] = issue.message;
+          }
+          return accumulator;
+        }, {})
       });
       return;
     }

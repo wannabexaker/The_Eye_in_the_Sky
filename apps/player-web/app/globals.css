@@ -1965,6 +1965,8 @@ p {
 .menuSessionActions {
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .modalFeedback {
@@ -2354,6 +2356,70 @@ p {
   width: min(420px, 100%);
 }
 
+.authNameInputWrap {
+  position: relative;
+}
+
+.authNameInputWrap input {
+  padding-right: 46px;
+}
+
+.authDiceButton,
+.authPasswordToggle {
+  cursor: pointer;
+}
+
+.authDiceButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(244, 239, 230, 0.72);
+  background: transparent;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.authDiceButton:hover {
+  color: rgba(252, 219, 128, 0.95);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.authDiceButton:focus-visible {
+  outline: 2px solid rgba(252, 219, 128, 0.6);
+  outline-offset: 1px;
+}
+
+.authDiceButton svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+
+.authFieldError,
+.authDevHint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.authFieldError {
+  color: #f0aa84;
+}
+
+.authDevHint {
+  color: rgba(226, 190, 112, 0.86);
+}
+
 .authPasswordField {
   width: 100%;
 }
@@ -2404,6 +2470,32 @@ p {
 .authFeedback {
   max-width: 420px;
   text-align: center;
+}
+
+.authInlineAction {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(226, 190, 112, 0.92);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.authInlineAction:hover {
+  color: rgba(255, 229, 159, 0.98);
+}
+
+.authInlineAction:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.changePasswordModal {
+  width: min(560px, 100%);
 }
 
 .authSecondaryAction {

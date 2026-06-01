@@ -118,6 +118,13 @@
   - Code change: updated `.gitignore` to exclude `.codex/`, `apps/player-web/screenshots/`, and `apps/player-web/test-results/`; documented the Windows `player-web` standalone symlink build caveat in `docs/prd.md`.
   - Verification: `git status --short` showed only local untracked artifacts before the ignore update; prior baseline checks passed for `corepack pnpm --filter api lint`, `corepack pnpm --filter api test`, and `corepack pnpm --filter player-web test`; `player-web build` compiled but failed during standalone symlink copy with `EPERM`.
   - Rollback note: remove these ignore rules and the PRD caveat only if local visual artifacts are intentionally promoted to tracked evidence and Windows build signoff is moved to a symlink-capable environment.
+- `2026-06-01` **WO-1 auth correctness and guest mode**
+  - Intent: finish the incomplete auth pass with field-mappable API errors, password reset/change flows, random display names, and a real guest path that never writes to server state.
+  - Hypothesis: the previous login/register-only path made field handling ambiguous, left password recovery impossible, and persisted dev simulator state through localStorage in ways that could survive beyond the intended tab.
+  - Code change: added typed auth error codes, `/auth/change-password`, `/auth/forgot-password`, `/auth/reset-password`, `PasswordResetToken`, password reset token hashing, Zod validators, frontend `PlayerApiError`, auth field mapping, change-password modal, random display-name generation, and guest session helpers backed by `sessionStorage`.
+  - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter api test:e2e` (`38/38`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter api prisma:migrate` was blocked before DB connection because the local `DATABASE_URL` is not a PostgreSQL URL; `corepack pnpm --filter player-web build:clean` was blocked by the build guard because a local dev server was already listening on port `3000`.
+  - Rollback note: revert the WO-1 commit if auth field response shape or guest persistence regresses; database rollback is dropping `PasswordResetToken` plus removing the Prisma relation and generated migration.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

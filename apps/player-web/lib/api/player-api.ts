@@ -20,6 +20,22 @@ export type PlatformExchangeResult = {
   authSource: "external";
 };
 
+export type PlayerApiFieldErrors = Record<string, string>;
+
+export class PlayerApiError extends Error {
+  status: number;
+  code: string;
+  fieldErrors: PlayerApiFieldErrors;
+
+  constructor(message: string, status: number, code = "REQUEST_FAILED", fieldErrors: PlayerApiFieldErrors = {}) {
+    super(message);
+    this.name = "PlayerApiError";
+    this.status = status;
+    this.code = code;
+    this.fieldErrors = fieldErrors;
+  }
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
@@ -32,17 +48,32 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
+    let code = "REQUEST_FAILED";
+    let fieldErrors: PlayerApiFieldErrors = {};
     try {
-      const body = (await response.json()) as { message?: string | string[] };
+      const body = (await response.json()) as {
+        code?: string;
+        message?: string | string[];
+        fieldErrors?: PlayerApiFieldErrors;
+        error?: string;
+      };
+      if (typeof body.code === "string") {
+        code = body.code;
+      }
+      if (body.fieldErrors && typeof body.fieldErrors === "object") {
+        fieldErrors = body.fieldErrors;
+      }
       if (Array.isArray(body.message)) {
         message = body.message.join(", ");
       } else if (typeof body.message === "string") {
         message = body.message;
+      } else if (typeof body.error === "string") {
+        message = body.error;
       }
     } catch {
       // ignore malformed error payloads
     }
-    throw new Error(message);
+    throw new PlayerApiError(message, response.status, code, fieldErrors);
   }
 
   return response.json() as Promise<T>;
@@ -76,6 +107,27 @@ export const registerPlayer = (payload: {
   displayName: string;
 }) =>
   requestJson<AuthSessionDto>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+export const changePlayerPassword = (payload: {
+  currentPassword: string;
+  newPassword: string;
+}) =>
+  requestJson<{ ok: boolean }>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+export const forgotPlayerPassword = (payload: { email: string }) =>
+  requestJson<{ ok: boolean; resetToken?: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+export const resetPlayerPassword = (payload: { token: string; newPassword: string }) =>
+  requestJson<{ ok: boolean }>("/auth/reset-password", {
     method: "POST",
     body: JSON.stringify(payload)
   });

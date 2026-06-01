@@ -1,10 +1,18 @@
 import {
   BadRequestException,
   Injectable,
-  UnauthorizedException
+  HttpStatus
 } from "@nestjs/common";
 import type { AuthSessionDto, AuthUserDto } from "@eye/shared-types";
-import { createSessionToken, hashPassword, hashSessionToken, verifyPassword } from "./auth.crypto";
+import {
+  createPasswordResetToken,
+  createSessionToken,
+  hashPassword,
+  hashPasswordResetToken,
+  hashSessionToken,
+  verifyPassword
+} from "./auth.crypto";
+import { authError } from "./auth.errors";
 import {
   AUTH_SESSION_COOKIE,
   AUTH_SESSION_TTL_MS,
@@ -16,6 +24,8 @@ import {
 import type { CurrentAuthUser, RequestWithAuth } from "./auth.types";
 import { PrismaService } from "./prisma.service";
 import type { ValidatedPlatformToken } from "./platform-exchange-validator.service";
+
+const PASSWORD_RESET_TOKEN_TTL_MS = 1000 * 60 * 30;
 
 const mapUser = (user: {
   id: string;
@@ -63,16 +73,25 @@ export class AuthService {
     const displayName = payload.displayName?.trim() || "Temple Initiate";
 
     if (!email || !email.includes("@")) {
-      throw new BadRequestException("Valid email is required.");
+      throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
+        email: "Valid email is required."
+      });
     }
 
     if (password.length < 8) {
-      throw new BadRequestException("Password must be at least 8 characters.");
+      throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
+        password: "Password must be at least 8 characters."
+      });
     }
 
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      throw new BadRequestException("A user with this email already exists.");
+      throw authError(
+        HttpStatus.BAD_REQUEST,
+        "EMAIL_ALREADY_REGISTERED",
+        "A user with this email already exists.",
+        { email: "A user with this email already exists." }
+      );
     }
 
     const passwordHash = await hashPassword(password);
@@ -111,20 +130,150 @@ export class AuthService {
     const password = payload.password?.trim() ?? "";
 
     if (!email || !password) {
-      throw new BadRequestException("Email and password are required.");
+      const fieldErrors: Record<string, string> = {};
+      if (!email) {
+        fieldErrors.email = "Email is required.";
+      }
+      if (!password) {
+        fieldErrors.password = "Password is required.";
+      }
+
+      throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
+        ...fieldErrors
+      });
     }
 
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
-      throw new UnauthorizedException("Invalid credentials.");
+      throw authError(HttpStatus.NOT_FOUND, "EMAIL_NOT_FOUND", "No account exists for this email.", {
+        email: "No account exists for this email."
+      });
     }
 
     const validPassword = await verifyPassword(password, user.passwordHash);
     if (!validPassword) {
-      throw new UnauthorizedException("Invalid credentials.");
+      throw authError(HttpStatus.UNAUTHORIZED, "WRONG_PASSWORD", "Wrong password.", {
+        password: "Wrong password."
+      });
     }
 
     return this.createSessionForUser(user, request, response);
+  }
+
+  async changePassword(
+    payload: { currentPassword?: string; newPassword?: string },
+    currentUser: CurrentAuthUser
+  ) {
+    const currentPassword = payload.currentPassword?.trim() ?? "";
+    const newPassword = payload.newPassword?.trim() ?? "";
+    const user = await this.prisma.user.findUnique({ where: { id: currentUser.id } });
+
+    if (!user || !user.isActive) {
+      throw authError(HttpStatus.NOT_FOUND, "EMAIL_NOT_FOUND", "Player account was not found.");
+    }
+
+    const validCurrent = await verifyPassword(currentPassword, user.passwordHash);
+    if (!validCurrent) {
+      throw authError(HttpStatus.UNAUTHORIZED, "WRONG_PASSWORD", "Current password is wrong.", {
+        currentPassword: "Current password is wrong."
+      });
+    }
+
+    const reusesPassword = await verifyPassword(newPassword, user.passwordHash);
+    if (reusesPassword) {
+      throw authError(HttpStatus.BAD_REQUEST, "PASSWORD_REUSE", "New password must differ from the current password.", {
+        newPassword: "New password must differ from the current password."
+      });
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(newPassword) }
+    });
+
+    // Existing sessions intentionally remain valid after an in-session password change.
+    return { ok: true };
+  }
+
+  async forgotPassword(payload: { email?: string }) {
+    const email = normalizeEmail(payload.email ?? "");
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user || !user.isActive) {
+      return { ok: true };
+    }
+
+    const resetToken = createPasswordResetToken();
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashPasswordResetToken(resetToken),
+        expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
+      }
+    });
+
+    return {
+      ok: true,
+      ...(process.env.NODE_ENV !== "production" ? { resetToken } : {})
+    };
+  }
+
+  async resetPassword(payload: { token?: string; newPassword?: string }) {
+    const token = payload.token?.trim() ?? "";
+    const newPassword = payload.newPassword?.trim() ?? "";
+    const tokenHash = hashPasswordResetToken(token);
+    const resetRecord = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true }
+    });
+
+    if (!resetRecord || resetRecord.usedAt || !resetRecord.user.isActive) {
+      throw authError(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "Reset token is invalid.", {
+        token: "Reset token is invalid."
+      });
+    }
+
+    if (resetRecord.expiresAt.getTime() <= Date.now()) {
+      throw authError(HttpStatus.BAD_REQUEST, "RESET_TOKEN_EXPIRED", "Reset token has expired.", {
+        token: "Reset token has expired."
+      });
+    }
+
+    const reusesPassword = await verifyPassword(newPassword, resetRecord.user.passwordHash);
+    if (reusesPassword) {
+      throw authError(HttpStatus.BAD_REQUEST, "PASSWORD_REUSE", "New password must differ from the current password.", {
+        newPassword: "New password must differ from the current password."
+      });
+    }
+
+    await this.prisma.$transaction(async (transaction) => {
+      const markUsed = await transaction.passwordResetToken.updateMany({
+        where: { id: resetRecord.id, usedAt: null },
+        data: { usedAt: new Date() }
+      });
+
+      if (markUsed.count !== 1) {
+        throw authError(HttpStatus.BAD_REQUEST, "INVALID_RESET_TOKEN", "Reset token is invalid.", {
+          token: "Reset token is invalid."
+        });
+      }
+
+      await transaction.user.update({
+        where: { id: resetRecord.userId },
+        data: { passwordHash: await hashPassword(newPassword) }
+      });
+
+      await transaction.passwordResetToken.updateMany({
+        where: { userId: resetRecord.userId, usedAt: null },
+        data: { usedAt: new Date() }
+      });
+
+      await transaction.authSession.deleteMany({
+        where: { userId: resetRecord.userId }
+      });
+    });
+
+    return { ok: true };
   }
 
   async logout(request: RequestWithAuth, response: any) {
