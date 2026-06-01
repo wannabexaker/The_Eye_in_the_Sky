@@ -1138,12 +1138,51 @@ p {
 .ouroborosRing {
   position: relative;
   z-index: var(--z-local-raised);
-  width: calc(var(--spin-cta-size) * 0.86);
-  height: calc(var(--spin-cta-size) * 0.86);
+  width: calc(var(--spin-cta-size) * 0.92);
+  height: calc(var(--spin-cta-size) * 0.92);
   display: block;
   filter:
     drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26))
     drop-shadow(0 0 10px rgba(226, 190, 112, 0.24));
+}
+
+/* SVG ouroboros — scale-invariant serpent, replaces the old CSS pseudo-element
+   snake whose head/eye were too small to see at dock size. */
+.ouroborosArt {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: 50% 50%;
+  animation: ouroborosDrift 18s linear infinite;
+}
+
+.spinCta.is-spinning .ouroborosArt {
+  animation: ouroborosSpin 1.05s linear infinite;
+}
+
+.ouroborosTongue {
+  transform-origin: 50px 20px;
+  animation: tongueFlick 540ms ease-in-out infinite;
+}
+
+@keyframes ouroborosSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ouroborosDrift {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ouroborosArt,
+  .spinCta.is-spinning .ouroborosArt,
+  .ouroborosTongue {
+    animation: none;
+  }
 }
 
 .ouroborosRing::before {
@@ -1267,13 +1306,8 @@ p {
     inset 0 -8px 16px rgba(84, 55, 17, 0.28);
 }
 
-.spinCta.is-spinning .ouroborosRing {
-  animation: ouroboros360Spin 0.72s cubic-bezier(0.22, 0.61, 0.35, 1) forwards;
-}
-
-.spinCta.is-spinning .ouroborosBody {
-  animation: serpentShimmer 620ms ease-in-out infinite;
-}
+/* Rotation now lives on .ouroborosArt (the SVG); the ring wrapper no longer
+   rotates, to avoid a double-spin. */
 
 .spinCta.is-spinning .spinCore {
   box-shadow:
@@ -3048,12 +3082,12 @@ Current shell calibration:
     ". hint";
   grid-template-rows: auto 1fr;
   align-items: center;
-  justify-items: center;
+  justify-items: start;
   column-gap: 8px;
   row-gap: 1px;
   margin-top: 2px;
   margin-bottom: 4px;
-  height: 40px;
+  min-height: 40px;
   padding: 6px 8px;
   border-radius: 11px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3082,9 +3116,9 @@ Current shell calibration:
   grid-area: hint;
   color: rgba(244, 239, 230, 0.76);
   font-size: 0.53rem;
-  line-height: 1.08;
+  line-height: 1.12;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
@@ -4305,7 +4339,6 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   min-height: var(--dock-stop-footprint);
   flex-shrink: 0;
   overflow: visible;
-  transform: translateX(-20px);
 }
 
 .floatingGameDock .spinCta {
@@ -4313,7 +4346,9 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(calc(-50% - 20px), calc(-50% - 40px));
+  /* Centered horizontally over the dock, lifted to sit above the bet/auto bar
+     as one tidy vertical cluster (no sideways offset that clipped it before). */
+  transform: translate(-50%, calc(-50% - 30px));
   width: var(--spin-cta-size);
   height: var(--spin-cta-size);
   min-width: var(--spin-cta-size);
@@ -4323,11 +4358,11 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
 }
 
 .floatingGameDock .spinCta:hover {
-  transform: translate(calc(-50% - 20px), calc(-50% - 40px)) scale(1.05);
+  transform: translate(-50%, calc(-50% - 30px)) scale(1.05);
 }
 
 .floatingGameDock .spinCta:active:not(:disabled) {
-  transform: translate(calc(-50% - 20px), calc(-50% - 40px)) scale(0.97);
+  transform: translate(-50%, calc(-50% - 30px)) scale(0.97);
 }
 
 .floatingGameDock .spinText {
