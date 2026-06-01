@@ -112,6 +112,12 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-01` **WO-0 baseline and local artifact protection**
+  - Intent: start the hardening pass from a known baseline without accidentally committing local Codex screenshots or generated test output.
+  - Hypothesis: the pasted work order described an older dirty tracked tree; the current checkout has no tracked diffs and only local untracked artifacts.
+  - Code change: updated `.gitignore` to exclude `.codex/`, `apps/player-web/screenshots/`, and `apps/player-web/test-results/`; documented the Windows `player-web` standalone symlink build caveat in `docs/prd.md`.
+  - Verification: `git status --short` showed only local untracked artifacts before the ignore update; prior baseline checks passed for `corepack pnpm --filter api lint`, `corepack pnpm --filter api test`, and `corepack pnpm --filter player-web test`; `player-web build` compiled but failed during standalone symlink copy with `EPERM`.
+  - Rollback note: remove these ignore rules and the PRD caveat only if local visual artifacts are intentionally promoted to tracked evidence and Windows build signoff is moved to a symlink-capable environment.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

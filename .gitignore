@@ -28,8 +28,13 @@ apps/api/.runtime-api*.log
 
 # Dev tooling — not needed for app to function
 .claude/
+.codex/
 CLAUDE.md
 graphify-out/
+
+# Local visual/test artifacts
+apps/player-web/screenshots/
+apps/player-web/test-results/
 
 # Local editor workspaces
 .obsidian/
