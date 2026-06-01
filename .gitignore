@@ -4,6 +4,12 @@ dist
 .turbo
 coverage
 
+# Playwright responsive harness output (regenerated locally / in CI)
+screenshots/
+test-results/
+playwright-report/
+.playwright/
+
 # Local working assets only. Never touch, never commit.
 /NOT-FOR-USE/
 
