@@ -73,7 +73,7 @@
     position: fixed;
     left: clamp(10px, 3vw, 18px);
     bottom: var(--portrait-bottom-safe);
-    z-index: calc(var(--z-surface) + 8);
+    z-index: var(--z-portrait-rail);
     width: min(calc(100vw - var(--portrait-dock-footprint) - 30px), 232px);
     max-width: 232px;
     height: auto;
@@ -235,7 +235,7 @@
     width: 144px;
     min-width: 144px;
     max-width: 144px;
-    z-index: calc(var(--z-surface) + 10);
+    z-index: var(--z-portrait-meter);
     justify-self: auto;
     margin: 0;
     box-sizing: border-box;
@@ -325,7 +325,7 @@
     position: absolute;
     left: 0;
     bottom: calc(100% + 6px);
-    z-index: calc(var(--z-surface) + 12);
+    z-index: var(--z-portrait-context);
     width: min(100vw - 32px, 190px);
     padding: 8px;
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
@@ -530,6 +530,59 @@
 
   .betMetaRow {
     justify-content: center;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 768px) and (min-height: 1180px) {
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"],
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] {
+    --portrait-spin-size: 132px;
+    --portrait-dock-footprint: clamp(168px, 26vw, 216px);
+    --stage-status-width: min(100%, 480px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .supportRail {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: minmax(64px, auto) minmax(112px, auto);
+    grid-template-areas:
+      "treasury balance meter"
+      "history status utility";
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    width: min(calc(100vw - var(--portrait-dock-footprint) - 56px), 560px) !important;
+    max-width: 560px !important;
+    gap: 8px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .treasuryBlock,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .supportRail .treasuryBlock {
+    transform: none;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportHistoryBlock,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .supportRail .supportHistoryBlock {
+    min-height: 132px;
+    max-height: 132px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportRailUtilityBar,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .supportRail .supportRailUtilityBar {
+    justify-content: center;
+    align-self: start;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .brandingRail .brandPanel,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .brandingRail .brandPanel {
+    width: min(100%, 420px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="laptop"] .floatingGameDock {
+    right: clamp(14px, 3vw, 22px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   }
 }
 

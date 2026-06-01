@@ -2,6 +2,8 @@
 Purpose: centralized responsive ownership for player-web shell.
 Scope: split by responsibility for maintainability.
 Order: desktop -> portrait -> mobile fallback.
+Bands: phone <768, tablet 768-1023, laptop 1024-1439, desktop 1440-1919, wide >=1920.
+These bands must stay aligned with `hooks/useViewport.ts`.
 */
 
 @import "./responsive-desktop.css";

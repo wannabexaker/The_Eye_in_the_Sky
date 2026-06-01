@@ -28,3 +28,74 @@
     justify-content: center;
   }
 }
+
+@media (orientation: landscape) and (max-width: 950px) and (max-height: 520px) {
+  .slotViewport[data-orientation="landscape"] {
+    --machine-stage-columns: 1fr;
+    --machine-stage-gap: 0;
+    --stage-status-width: min(100%, 292px);
+    --board-frame-fit-height: calc(100dvh - 12px);
+    --board-inline-breathe: clamp(92px, 22vw, 180px);
+    --board-frame-radius: clamp(10px, 2vh, 14px);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 6px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .gameArea.machineStage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail,
+  .slotViewport[data-orientation="landscape"] .brandingRail,
+  .slotViewport[data-orientation="landscape"] .boardMetaRow {
+    display: none !important;
+  }
+
+  .slotViewport[data-orientation="landscape"] .boardFrameMain {
+    max-width: calc(100vw - var(--board-inline-breathe)) !important;
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDock {
+    --dock-stop-footprint: 28px;
+    right: calc(env(safe-area-inset-right, 0px) + 8px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDockInner {
+    column-gap: 4px;
+    row-gap: 2px;
+    padding: 4px 5px 6px;
+    border-radius: 12px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDock .spinCta {
+    --spin-cta-size: 68px;
+    transform: translate(calc(-50% - 14px), calc(-50% - 30px));
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDock .spinCta:hover {
+    transform: translate(calc(-50% - 14px), calc(-50% - 30px)) scale(1.05);
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDock .spinCta:active:not(:disabled) {
+    transform: translate(calc(-50% - 14px), calc(-50% - 30px)) scale(0.97);
+  }
+
+  .slotViewport[data-orientation="landscape"] .dockSmallButton,
+  .slotViewport[data-orientation="landscape"] .dockBetInput {
+    height: 26px;
+    min-height: 26px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .dockSmallButton {
+    min-width: 26px;
+    padding: 2px 4px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .dockBetInput {
+    width: 34px;
+  }
+}

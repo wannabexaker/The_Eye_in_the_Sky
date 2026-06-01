@@ -29,6 +29,7 @@ import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytic
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { useRuntimeGameConfig } from "@/hooks/use-runtime-game-config";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
+import { useViewport } from "@/hooks/useViewport";
 import {
   changePlayerPassword,
   claimPlayerWelcomeBonus,
@@ -172,6 +173,7 @@ export default function HomePage() {
   } = usePlayerUiStore();
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
+  const viewport = useViewport();
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
   const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
@@ -949,6 +951,8 @@ export default function HomePage() {
       className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-config-source={usingRemoteConfig ? "api" : "env"}
       data-math-profile={activeGameConfigProfile.profileId}
+      data-orientation={viewport.orientation}
+      data-viewport-band={viewport.band}
       ref={shellRef}
     >
       <div

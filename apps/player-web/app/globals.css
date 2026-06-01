@@ -30,13 +30,37 @@
   --font-lg: clamp(1rem, 1.08vw, 1.14rem);
   --z-bg: 0;
   --z-atmosphere: 1;
+  --z-atmosphere-overlay: calc(var(--z-atmosphere) + 1);
   --z-board-frame: 10;
+  --z-board-frame-shade: calc(var(--z-board-frame) + 1);
   --z-board-content: 20;
   --z-board-overlay: 30;
+  --z-symbol-tooltip: calc(var(--z-board-overlay) + 2);
   --z-surface: 40;
   --z-dropdown: 80;
+  --z-autoplay-popover: calc(var(--z-dropdown) + 4);
   --z-modal: 100;
   --z-button: 110;
+  --z-local-under: -1;
+  --z-local-base: 0;
+  --z-local-raised: 1;
+  --z-local-overlay: 2;
+  --z-context-panel: calc(var(--z-modal) - 1);
+  --z-input-lock-backdrop: calc(var(--z-button) + 21);
+  --z-input-lock: calc(var(--z-button) + 22);
+  --z-win-presentation: calc(var(--z-button) + 18);
+  --z-dock: calc(var(--z-button) + 2);
+  --z-dock-popover: calc(var(--z-button) + 6);
+  --z-dock-modal: calc(var(--z-button) + 8);
+  --z-portrait-rail: calc(var(--z-surface) + 8);
+  --z-portrait-meter: calc(var(--z-surface) + 10);
+  --z-portrait-context: calc(var(--z-surface) + 12);
+  --z-rails: calc(var(--z-surface) + 1);
+  --z-stage: calc(var(--z-surface) + 2);
+  --z-center-stage: calc(var(--z-surface) + 4);
+  --z-board-shell: calc(var(--z-surface) + 6);
+  --z-board-meta: calc(var(--z-surface) + 9);
+  --z-board-main: calc(var(--z-surface) + 10);
 }
 
 * {
@@ -155,7 +179,7 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: calc(var(--z-atmosphere) + 1);
+  z-index: var(--z-atmosphere-overlay);
   pointer-events: none;
   opacity: 0;
 }
@@ -286,17 +310,11 @@ p {
   background: radial-gradient(circle at top, rgba(226, 190, 112, 0.06), transparent 22%);
 }
 
-.topHud,
 .controlBar,
 .compactPanel,
 .inlineRounds,
 .overlayModal,
-.statChip,
-.meterChip,
-.iconChip,
-.logoChip,
 .panelCard,
-.phaseBadge,
 .miniStat {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -304,112 +322,8 @@ p {
   backdrop-filter: blur(14px);
 }
 
-.topHud {
-  position: relative;
-  z-index: var(--z-surface);
-  min-height: 0;
-  display: grid;
-  grid-template-columns:
-    minmax(360px, 2.2fr)
-    minmax(260px, 1.42fr)
-    minmax(220px, 1.16fr)
-    minmax(210px, 1.08fr)
-    minmax(190px, 0.9fr)
-    minmax(142px, 0.72fr);
-  gap: clamp(6px, 0.45vw, 9px);
-  align-items: stretch;
-}
-
-.hudGroup {
-  min-width: 0;
-}
-
-.walletGroup,
-.statPairGroup,
-.systemGroup {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.logoChip,
-.statChip,
-.meterChip,
-.iconChip,
-.walletActions {
-  min-width: 0;
-  border-radius: 14px;
-  padding: clamp(7px, 0.65dvh, 10px) clamp(9px, 0.7vw, 12px);
-}
-
-.logoChip {
-  display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(180deg, rgba(20, 18, 23, 0.88), rgba(11, 10, 13, 0.98));
-}
-
-.logoMark {
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  opacity: 0.9;
-  filter: drop-shadow(0 0 12px rgba(226, 190, 112, 0.16));
-}
-
-.logoChipHero {
-  position: relative;
-  grid-template-columns: 1fr;
-  align-items: center;
-  padding: 8px 16px 8px;
-  overflow: hidden;
-}
-
-.logoMarkHero {
-  width: 100%;
-  height: clamp(56px, 6.6dvh, 86px);
-  background-position: left center;
-  background-size: contain;
-  opacity: 0.98;
-  filter:
-    drop-shadow(0 0 22px rgba(226, 190, 112, 0.12))
-    drop-shadow(0 6px 18px rgba(0, 0, 0, 0.28));
-}
-
-.logoHeroTag {
-  position: absolute;
-  left: 22px;
-  bottom: 8px;
-  color: rgba(244, 239, 230, 0.68);
-  font-family: var(--font-display), Georgia, serif;
-  font-size: var(--font-xs);
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-}
-
-.logoCopy {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.logoChip h1 {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.1rem, 1.36vw, 1.55rem);
-  line-height: 0.98;
-  letter-spacing: 0.02em;
-}
-
-.logoEyebrow,
 .eyebrow,
 .controlLabel,
-.statChip span,
-.meterChipHeader span,
-.iconChip span,
 .miniStat span,
 .historyItem span {
   color: var(--muted);
@@ -418,30 +332,9 @@ p {
   text-transform: uppercase;
 }
 
-.logoEyebrow,
 .eyebrow,
-.phaseBadge strong,
 .spinText {
   font-family: var(--font-display), Georgia, serif;
-}
-
-.statChip,
-.iconChip {
-  display: grid;
-  align-content: center;
-  gap: 4px;
-}
-
-.balanceChip strong {
-  color: var(--gold-bright);
-}
-
-.walletActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  align-content: center;
-  background: linear-gradient(180deg, rgba(18, 16, 20, 0.9), rgba(12, 11, 15, 0.96));
 }
 
 .walletAction {
@@ -470,8 +363,6 @@ p {
   font-weight: 700;
 }
 
-.statChip strong,
-.iconChip strong,
 .miniStat strong,
 .clusterValue {
   font-family: var(--font-ui), Georgia, serif;
@@ -479,30 +370,6 @@ p {
   line-height: 1.05;
 }
 
-.meterChip {
-  display: grid;
-  align-content: center;
-  gap: 7px;
-}
-
-.meterChipHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-}
-
-.meterChipHeader strong {
-  font-size: 0.74rem;
-  color: var(--gold-bright);
-}
-
-.iconChip {
-  cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease;
-}
-
-.iconChip:hover,
 .controlChip:hover,
 .secondaryAction:hover {
   transform: translateY(-1px);
@@ -546,7 +413,7 @@ p {
   padding: 0;
   background-color: transparent;
   cursor: pointer;
-  z-index: 2;
+  z-index: var(--z-local-overlay);
 }
 
 .samsaraEye:focus-visible {
@@ -569,7 +436,7 @@ p {
   filter: blur(1.5px);
   opacity: calc(0.08 + (var(--meter-light, 0) * 0.9));
   animation: samsaraAuraBreath 2.4s ease-in-out infinite;
-  z-index: -1;
+  z-index: var(--z-local-under);
 }
 
 .samsaraEye::after {
@@ -746,7 +613,7 @@ p {
   background: linear-gradient(180deg, rgba(14, 12, 17, 0.96), rgba(8, 7, 10, 0.98));
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.46);
   padding: 10px;
-  z-index: calc(var(--z-modal) - 1);
+  z-index: var(--z-context-panel);
 }
 
 .samsaraContextWindow::after {
@@ -895,7 +762,7 @@ p {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: calc(var(--z-board-frame) + 1);
+  z-index: var(--z-board-frame-shade);
   pointer-events: none;
   background:
     radial-gradient(circle at center, transparent 48%, rgba(6, 6, 8, 0.22) 100%),
@@ -1009,7 +876,7 @@ p {
 
 .symbolTooltip {
   position: absolute;
-  z-index: calc(var(--z-board-overlay) + 2);
+  z-index: var(--z-symbol-tooltip);
   pointer-events: none;
   transform: translate(-50%, -100%);
   padding: 4px 8px;
@@ -1134,73 +1001,6 @@ p {
   align-items: stretch;
   border-radius: 16px;
   padding: 8px 10px 7px;
-}
-
-.controlsDock {
-  width: min(100%, 860px);
-  justify-self: center;
-  margin-top: -2px;
-}
-
-.boardControls {
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(15, 15, 19, 0.9), rgba(12, 12, 16, 0.96));
-}
-
-.controlStripMain {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.boardControlDeck {
-  padding: 8px 10px 7px;
-  border: 1px solid rgba(226, 190, 112, 0.16);
-  background:
-    linear-gradient(180deg, rgba(16, 16, 20, 0.98), rgba(11, 11, 14, 0.98)),
-    radial-gradient(circle at top, rgba(226, 190, 112, 0.08), transparent 28%);
-}
-
-.compactControlBar {
-  gap: 6px;
-}
-
-.compactControlStrip {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.barZone {
-  min-width: 0;
-}
-
-.betZone {
-  display: grid;
-  gap: 5px;
-}
-
-.betZoneHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-}
-
-.betInlineControls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.betManualGroup {
-  display: grid;
-  grid-template-columns: minmax(88px, 110px) auto;
-  gap: 6px;
-  align-items: center;
 }
 
 .chipRow {
@@ -1337,7 +1137,7 @@ p {
 
 .ouroborosRing {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-local-raised);
   width: calc(var(--spin-cta-size) * 0.86);
   height: calc(var(--spin-cta-size) * 0.86);
   display: block;
@@ -1404,7 +1204,7 @@ p {
   position: absolute;
   top: calc(var(--spin-cta-size) * 0.174);
   right: calc(var(--spin-cta-size) * -0.012);
-  z-index: 1;
+  z-index: var(--z-local-raised);
   width: calc(var(--spin-cta-size) * 0.163);
   height: calc(var(--spin-cta-size) * 0.163);
   border-radius: 12px 12px 10px 10px;
@@ -1443,7 +1243,7 @@ p {
   position: absolute;
   top: calc(var(--spin-cta-size) * 0.244);
   right: calc(var(--spin-cta-size) * 0.07);
-  z-index: 2;
+  z-index: var(--z-local-overlay);
   width: calc(var(--spin-cta-size) * 0.03);
   height: calc(var(--spin-cta-size) * 0.03);
   border-radius: 999px;
@@ -1456,7 +1256,7 @@ p {
 .spinCore {
   position: absolute;
   inset: calc(var(--spin-cta-size) * 0.233);
-  z-index: 2;
+  z-index: var(--z-local-overlay);
   display: grid;
   place-items: center;
   border-radius: 999px;
@@ -1497,67 +1297,7 @@ p {
   text-transform: uppercase;
 }
 
-.summaryZone {
-  display: grid;
-  gap: 6px;
-  min-width: 132px;
-  justify-items: end;
-}
-
-.summaryStat {
-  display: grid;
-  gap: 2px;
-  text-align: right;
-}
-
-.controlInputRow,
-.controlActionsRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: end;
-}
-
-.controlActionsRow {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.controlField {
-  min-width: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.controlInput {
-  width: 100%;
-  min-height: 32px;
-  padding: 6px 10px;
-  border: 1px solid rgba(226, 190, 112, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-  font: inherit;
-  font-size: clamp(0.8rem, 0.84vw, 0.92rem);
-}
-
-.compactControlInput {
-  min-height: 30px;
-  padding: 5px 10px;
-}
-
-.controlInput:focus {
-  outline: none;
-  border-color: rgba(226, 190, 112, 0.3);
-  box-shadow: 0 0 0 3px rgba(226, 190, 112, 0.08);
-}
-
-.controlInput:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
 .controlHelper,
-.controlLockNotice,
 .validationText {
   margin: 0;
   font-size: var(--font-xs);
@@ -1568,20 +1308,8 @@ p {
   color: var(--muted);
 }
 
-.controlLockNotice {
-  color: rgba(226, 190, 112, 0.86);
-}
-
 .validationText {
   color: #f0b18a;
-}
-
-.compactControlMeta {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  min-height: 14px;
 }
 
 .controlHelper.inline,
@@ -1592,7 +1320,7 @@ p {
 .overlayBackdrop {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 22);
+  z-index: var(--z-input-lock);
   display: grid;
   place-items: center;
   padding: 18px;
@@ -1603,7 +1331,7 @@ p {
 .slotInputLockLayer {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 21);
+  z-index: var(--z-input-lock-backdrop);
   pointer-events: auto;
   background: transparent;
 }
@@ -1805,7 +1533,7 @@ p {
 .paytableTable thead th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-local-raised);
   background: rgba(12, 12, 16, 0.96);
   color: rgba(244, 239, 230, 0.64);
   font-size: 0.68rem;
@@ -2002,7 +1730,7 @@ p {
   --win-multiple: 0;
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 18);
+  z-index: var(--z-win-presentation);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -2026,7 +1754,7 @@ p {
 
 .winPresentationCard {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-local-raised);
   display: grid;
   justify-items: center;
   align-content: start;
@@ -2067,7 +1795,7 @@ p {
   background-size: contain;
   opacity: calc(0.7 + (var(--win-glow-level) * 0.25));
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-local-base);
   filter:
     saturate(calc(0.92 + (var(--win-glow-level) * 0.45)))
     brightness(calc(0.88 + (var(--win-glow-level) * 0.3)))
@@ -2086,7 +1814,7 @@ p {
   background-size: contain;
   opacity: calc(0.44 + (var(--win-glow-level) * 0.34));
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-local-base);
   filter:
     saturate(calc(0.84 + (var(--win-glow-level) * 0.36)))
     brightness(calc(0.82 + (var(--win-glow-level) * 0.24)))
@@ -2104,7 +1832,7 @@ p {
   background-size: contain;
   opacity: 0.98;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-local-base);
   filter:
     saturate(1.34)
     brightness(1.08)
@@ -2115,14 +1843,14 @@ p {
 
 .winPresentationLayer.is-round_win .winPresentationHero > *:not(.simpleWinGlowPlate) {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-local-raised);
 }
 
 .winPresentationLayer.is-big_win .winPresentationHero > *:not(.bigWinGlowPlate),
 .winPresentationLayer.is-huge_win .winPresentationHero > *:not(.bigWinGlowPlate),
 .winPresentationLayer.is-super_win .winPresentationHero > *:not(.superWinGlowPlate) {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-local-raised);
 }
 
 .winPresentationCard.is-ack {
@@ -2147,7 +1875,7 @@ p {
 
 .winPresentationLabel {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-local-raised);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3069,7 +2797,7 @@ Current shell calibration:
   min-height: 0;
   height: 100%;
   position: relative;
-  z-index: calc(var(--z-surface) + 2);
+  z-index: var(--z-stage);
   pointer-events: none;
 }
 
@@ -3081,7 +2809,7 @@ Current shell calibration:
   min-height: 0;
   align-content: start;
   position: relative;
-  z-index: calc(var(--z-surface) + 1);
+  z-index: var(--z-rails);
   pointer-events: auto;
 }
 
@@ -4083,21 +3811,6 @@ Ownership is intentionally isolated in `app/main-board.css`.
 Keep the old center-board geometry out of `globals.css` so Full HD tuning happens in one place only.
 */
 
-/* Active Machine Layout: Bottom Bar Shell */
-
-.controlsDock.bottomControlsDock {
-  position: absolute;
-  left: var(--controls-dock-inset);
-  right: var(--controls-dock-inset);
-  bottom: 0;
-  width: auto;
-  justify-self: auto;
-  margin-top: 0;
-  overflow: visible;
-  z-index: calc(var(--z-surface) + 0);
-  pointer-events: auto;
-}
-
 .machineBottomBar {
   position: relative;
   grid-template-columns: minmax(0, 1fr);
@@ -4320,14 +4033,6 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   border-left: 1px solid rgba(226, 190, 112, 0.08);
 }
 
-.betAdjustControls .controlChip,
-.autoplayZone .controlChip {
-  position: relative;
-  z-index: var(--z-button);
-}
-
-.betAdjustControls .controlInput,
-.autoplayZone .controlInput,
 .supportToggle,
 .walletAction {
   position: relative;
@@ -4559,7 +4264,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: fixed;
   right: clamp(20px, 3.2vw, 60px);
   bottom: clamp(20px, 3.6vh, 60px);
-  z-index: calc(var(--z-button) + 2);
+  z-index: var(--z-dock);
   pointer-events: auto;
   overflow: visible;
 }
@@ -4888,7 +4593,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   font-size: 0.58rem;
   font-weight: 600;
   line-height: 1;
-  z-index: calc(var(--z-button) + 6);
+  z-index: var(--z-dock-popover);
 }
 
 .dockAutoInlineInput:focus {
@@ -4917,7 +4622,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: absolute;
   right: 0;
   bottom: calc(100% + 6px);
-  z-index: calc(var(--z-button) + 6);
+  z-index: var(--z-dock-popover);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -5010,7 +4715,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   left: auto;
   right: 0;
   bottom: calc(100% + 6px);
-  z-index: calc(var(--z-button) + 8);
+  z-index: var(--z-dock-modal);
   width: clamp(138px, 16vw, 172px);
   max-width: min(172px, calc(100vw - 18px));
   transform: translate(0, 8px);

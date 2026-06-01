@@ -79,6 +79,14 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - The toggle must expose `aria-pressed` and visibly different active/inactive icons.
 - Native Screen Wake Lock is preferred when available; requestAnimationFrame fallback stays available and visible through the same toggle when native support is missing or denied.
 
+## Responsive Shell Contract
+- `player-web` viewport bands are `phone <768`, `tablet 768-1023`, `laptop 1024-1439`, `desktop 1440-1919`, and `wide >=1920`.
+- The `useViewport()` hook is the React source of truth for viewport band and orientation; CSS must stay aligned with these bands and may read `data-viewport-band` / `data-orientation` from `.slotViewport`.
+- The hook must render the same default viewport on server and first client render, then update after mount, so responsive data attributes do not create React hydration mismatches.
+- Phone landscape keeps only the center board plus compact floating dock; side rails are hidden in that band to keep the board visible.
+- Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
+- Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
+
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
 - Permanent operating rule: every meaningful implementation change must be recorded in both `docs/tasks.md` (execution log) and `docs/prd.md` (product/architecture impact), without exception.
