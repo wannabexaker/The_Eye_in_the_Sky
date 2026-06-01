@@ -122,7 +122,7 @@ export default function HomePage() {
   const [authModeBlocked, setAuthModeBlocked] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [guestRenameOpen, setGuestRenameOpen] = useState(false);
-  const [guestBadgeCollapsed, setGuestBadgeCollapsed] = useState(false);
+  const [guestBadgeCollapsed, setGuestBadgeCollapsed] = useState(true);
   const [guestNameDraft, setGuestNameDraft] = useState("");
   const [embedMode, setEmbedMode] = useState(false);
 
@@ -1021,7 +1021,7 @@ export default function HomePage() {
               type="button"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" />
+                <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
           </aside>
