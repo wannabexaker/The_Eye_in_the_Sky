@@ -155,6 +155,12 @@
   - Visual/header verification: host smoke on `http://127.0.0.1:3001/?embed=1` returned `Content-Security-Policy: frame-ancestors 'self' https://olamov.com https://*.olamov.com`; Playwright confirmed `data-embed="true"`, `is-embed-mode`, hidden branding rail, and visible board.
   - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`; Safari/Chrome third-party-cookie blocking remains documented integration risk.
   - Rollback note: revert the WO-5 commit if iframe login or shell layout regresses; do not weaken cookie policy as a rollback path.
+- `2026-06-01` **WO-6 repo and docs hygiene**
+  - Intent: make the repository easier to publish and maintain by removing stale local-path, stale SQL Server, and ignored-docs friction.
+  - Hypothesis: current tracked setup truth is PostgreSQL, but public-facing docs/env examples still mixed SQL Server rollout text, seeded demo credentials, and absolute local links.
+  - Code change: removed the blanket `docs/` ignore while keeping `docs/notes.md` ignored, rewrote current README/API/env docs to PostgreSQL placeholders, replaced tracked absolute local links with repo-relative links, added `docs/ARCHITECTURE-OVERVIEW.md`, rewrote the least-privilege DB setup doc for PostgreSQL, sanitized the auth smoke script admin credentials to env-driven inputs, and committed root `AGENTS.md`.
+  - Verification: tracked-file scans found no machine-local absolute links and no tracked real `.env` files; remaining secret-scan hits are placeholders or variable names. Historical SQL Server references remain only in migration/history docs and old changelog entries, not current setup docs.
+  - Rollback note: revert WO-6 only if a downstream release process still requires the old ignored-docs model; do not restore real credentials or absolute local paths.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

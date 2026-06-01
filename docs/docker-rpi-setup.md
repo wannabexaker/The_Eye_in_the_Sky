@@ -285,8 +285,8 @@ sudo systemctl status eye-docker-compose.service
 # Admin Web:   http://<rpi-ip>:3100
 # API:         http://<rpi-ip>:3200
 
-# Example (if RPi IP is 192.168.1.100)
-curl http://192.168.1.100:3200/health
+# Example (replace with your RPi LAN IP)
+curl http://<rpi-lan-ip>:3200/health
 ```
 
 ### Database Backups

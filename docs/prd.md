@@ -94,6 +94,13 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - When `COOKIE_SECURE=true`, API auth cookies must be emitted as `SameSite=None; Secure` for third-party iframe login. Default local cookies remain `SameSite=Lax`.
 - Safari and Chrome third-party-cookie blocking remains an integration risk; fallback should be top-level login handoff or platform token exchange, not weakening cookie security.
 
+## Repo Hygiene Contract
+- PostgreSQL is the active database in current setup docs, env examples, Docker Compose, and Prisma schema.
+- Committed env examples must use placeholders only. Real `.env` files remain ignored.
+- `docs/` is trackable; only local analysis cache files such as `docs/notes.md` stay ignored.
+- Local screenshots, test-results, `.codex/`, `graphify-out/`, and credential reference files remain ignored.
+- Documentation links should be repo-relative, not machine-local absolute paths.
+
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
 - Permanent operating rule: every meaningful implementation change must be recorded in both `docs/tasks.md` (execution log) and `docs/prd.md` (product/architecture impact), without exception.
@@ -762,7 +769,7 @@ and not only on naive width breakpoints.
   - Documented the board-frame isolation findings: the intrusive inset frame was the Pixi `runeLayer` inner rounded-rectangle/corner-stroke pass, while the CSS `boardFrame`, CSS `boardFrame::after`, CSS `boardStageHalo`, and the larger Pixi `frame` mapped to other accepted shell layers
 
 ## Board Frame Layer Findings
-- The unwanted inner/inset frame was not a CSS shell selector. It was the Pixi `runeLayer` pass inside [pixi-temple-board.tsx](/c:/Projects/MyTests/Tsogos/apps/player-web/components/board/pixi-temple-board.tsx), which draws:
+- The unwanted inner/inset frame was not a CSS shell selector. It was the Pixi `runeLayer` pass inside [pixi-temple-board.tsx](../apps/player-web/components/board/pixi-temple-board.tsx), which draws:
   - one inner rounded rectangle
   - four short corner lines
 - The larger Pixi `frame` in the same file is a different layer. In screenshot isolation it mapped to the accepted outer/yellow frame, not the intrusive inset frame.
