@@ -28,15 +28,35 @@
   --font-sm: clamp(0.68rem, 0.72vw, 0.82rem);
   --font-md: clamp(0.84rem, 0.92vw, 1rem);
   --font-lg: clamp(1rem, 1.08vw, 1.14rem);
+  /*
+  Z-INDEX STACKING CONTRACT (single source of truth)
+  Global shell layers, low → high. Use these tokens for anything that stacks
+  against other shell regions. Purely component-internal stacking (e.g. an
+  element vs its own ::before, the ouroboros parts, win-plate layers) keeps
+  small local values like 0/1/2 and is NOT promoted to a global token.
+
+    bg(0) < atmosphere(1) < board-frame(10) < board-content(20)
+    < board-overlay(30) < surface(40) < rail(41) < stage(42)
+    < dropdown(80) < modal(100) < button(110) < dock(112) < guest-badge(114)
+    < context(99 → modal-1) < win(128) < lock(131) < overlay(132)
+  */
   --z-bg: 0;
   --z-atmosphere: 1;
   --z-board-frame: 10;
   --z-board-content: 20;
   --z-board-overlay: 30;
   --z-surface: 40;
+  --z-rail: calc(var(--z-surface) + 1); /* side rails */
+  --z-stage: calc(var(--z-surface) + 2); /* center stage above rails */
   --z-dropdown: 80;
+  --z-context: calc(var(--z-modal) - 1); /* samsara context popover, just under modals */
   --z-modal: 100;
   --z-button: 110;
+  --z-dock: calc(var(--z-button) + 2); /* floating spin dock */
+  --z-guest-badge: calc(var(--z-button) + 4);
+  --z-win: calc(var(--z-button) + 18); /* win presentation layer */
+  --z-lock: calc(var(--z-button) + 21); /* input lock layer */
+  --z-overlay: calc(var(--z-button) + 22); /* modal / overlay backdrop (topmost) */
 }
 
 * {
@@ -210,7 +230,7 @@ p {
   position: fixed;
   top: clamp(10px, 1.4dvh, 18px);
   right: clamp(10px, 1.6vw, 22px);
-  z-index: calc(var(--z-button) + 4);
+  z-index: var(--z-guest-badge);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -228,7 +248,7 @@ p {
   position: fixed;
   top: clamp(10px, 1.4dvh, 18px);
   right: clamp(10px, 1.6vw, 22px);
-  z-index: calc(var(--z-button) + 4);
+  z-index: var(--z-guest-badge);
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -881,7 +901,7 @@ p {
   background: linear-gradient(180deg, rgba(14, 12, 17, 0.96), rgba(8, 7, 10, 0.98));
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.46);
   padding: 10px;
-  z-index: calc(var(--z-modal) - 1);
+  z-index: var(--z-context);
 }
 
 .samsaraContextWindow::after {
@@ -1727,7 +1747,7 @@ p {
 .overlayBackdrop {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 22);
+  z-index: var(--z-overlay);
   display: grid;
   place-items: center;
   padding: 18px;
@@ -1738,7 +1758,7 @@ p {
 .slotInputLockLayer {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 21);
+  z-index: var(--z-lock);
   pointer-events: auto;
   background: transparent;
 }
@@ -2137,7 +2157,7 @@ p {
   --win-multiple: 0;
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-button) + 18);
+  z-index: var(--z-win);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -3194,7 +3214,7 @@ Current shell calibration:
   min-height: 0;
   height: 100%;
   position: relative;
-  z-index: calc(var(--z-surface) + 2);
+  z-index: var(--z-stage);
   pointer-events: none;
 }
 
@@ -3206,7 +3226,7 @@ Current shell calibration:
   min-height: 0;
   align-content: start;
   position: relative;
-  z-index: calc(var(--z-surface) + 1);
+  z-index: var(--z-rail);
   pointer-events: auto;
 }
 
@@ -4684,7 +4704,7 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   position: fixed;
   right: clamp(20px, 3.2vw, 60px);
   bottom: clamp(20px, 3.6vh, 60px);
-  z-index: calc(var(--z-button) + 2);
+  z-index: var(--z-dock);
   pointer-events: auto;
   overflow: visible;
 }
