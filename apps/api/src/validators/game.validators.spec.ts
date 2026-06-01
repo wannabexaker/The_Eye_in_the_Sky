@@ -95,6 +95,48 @@ describe("validators.authLogin", () => {
   });
 });
 
+describe("validators.auth password flows", () => {
+  it("accepts valid change password input", () => {
+    expect(
+      validators.authChangePassword.safeParse({
+        currentPassword: "SecurePass1!",
+        newPassword: "DifferentPass1!"
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects short new password in change password input", () => {
+    expect(
+      validators.authChangePassword.safeParse({
+        currentPassword: "SecurePass1!",
+        newPassword: "short"
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts valid forgot password email", () => {
+    expect(validators.authForgotPassword.safeParse({ email: "PLAYER@EXAMPLE.COM" }).success).toBe(true);
+  });
+
+  it("accepts valid reset password token and new password", () => {
+    expect(
+      validators.authResetPassword.safeParse({
+        token: "a".repeat(64),
+        newPassword: "DifferentPass1!"
+      }).success
+    ).toBe(true);
+  });
+
+  it("rejects short reset password token", () => {
+    expect(
+      validators.authResetPassword.safeParse({
+        token: "short",
+        newPassword: "DifferentPass1!"
+      }).success
+    ).toBe(false);
+  });
+});
+
 // ─── authModePatch ────────────────────────────────────────────────────────────
 
 describe("validators.authModePatch", () => {
@@ -310,10 +352,14 @@ describe("parseOrBadRequest", () => {
       fail("should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(BadRequestException);
-      const body = (err as BadRequestException).getResponse() as { error: string; details: unknown[] };
-      expect(body.error).toBe("Validation failed");
-      expect(Array.isArray(body.details)).toBe(true);
-      expect((body.details as { path: string }[]).some((d) => d.path === "amount")).toBe(true);
+      const body = (err as BadRequestException).getResponse() as {
+        code: string;
+        message: string;
+        fieldErrors: Record<string, string>;
+      };
+      expect(body.code).toBe("VALIDATION_FAILED");
+      expect(body.message).toBe("Validation failed");
+      expect(body.fieldErrors.amount).toBeTruthy();
     }
   });
 

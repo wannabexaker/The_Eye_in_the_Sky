@@ -18,6 +18,12 @@ import {
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
+import {
+  clearGuestSession,
+  ensureGuestSession,
+  loadGuestSession,
+  saveGuestSession
+} from "@/lib/identity/guest-session";
 
 const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
 const ANALYTICS_LOG_PERSIST_KEY = "eye-in-the-sky-rounds-log";
@@ -142,6 +148,7 @@ type PlayerUiState = {
   walletTransactions: WalletTransaction[];
   paymentMethods: PaymentMethod[];
   simulatorWallet: Wallet;
+  guestDisplayName: string;
   simulatorTotalDeposited: number;
   simulatorTotalWithdrawn: number;
   simulatorWelcomeClaimed: boolean;
@@ -176,6 +183,7 @@ type PlayerUiState = {
   applyServerSnapshot: (snapshot: PlayerSnapshotDto) => void;
   enterSimulatorMode: () => void;
   exitSimulatorMode: () => void;
+  setGuestDisplayName: (displayName: string) => void;
   setAuthSource: (source: PlayerAuthSource) => void;
   resetSession: () => void;
 };
@@ -192,6 +200,27 @@ const createTransactionId = () =>
   `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const nowIso = () => new Date().toISOString();
+
+const saveGuestState = (state: {
+  guestDisplayName: string;
+  simulatorWallet: Wallet;
+  simulatorTotalDeposited: number;
+  simulatorTotalWithdrawn: number;
+  simulatorWelcomeClaimed: boolean;
+}) => {
+  if (state.guestDisplayName.trim().length === 0) {
+    return;
+  }
+
+  saveGuestSession({
+    id: loadGuestSession()?.id ?? ensureGuestSession().id,
+    displayName: state.guestDisplayName,
+    walletBalance: state.simulatorWallet.balance,
+    totalDeposited: state.simulatorTotalDeposited,
+    totalWithdrawn: state.simulatorTotalWithdrawn,
+    welcomeClaimed: state.simulatorWelcomeClaimed
+  });
+};
 
 const clearRoundsLogStorage = () => {
   if (typeof window === "undefined") {
@@ -351,6 +380,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         balance: 0,
         currency: "EUR"
       },
+      guestDisplayName: "",
       simulatorTotalDeposited: 0,
       simulatorTotalWithdrawn: 0,
       simulatorWelcomeClaimed: false,
@@ -394,24 +424,37 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           label: "Welcome Bonus"
         };
 
-        set((state) => ({
-          welcomeClaimed: true,
-          welcomeOpen: false,
-          wallet: {
-            ...state.wallet,
-            balance: balanceAfter
-          },
-          simulatorWallet:
+        set((state) => {
+          const simulatorWallet =
             state.runtimeMode === "simulator"
               ? {
                   ...state.simulatorWallet,
                   balance: balanceAfter
                 }
-              : state.simulatorWallet,
-          simulatorWelcomeClaimed:
-            state.runtimeMode === "simulator" ? true : state.simulatorWelcomeClaimed,
-          walletTransactions: appendTransaction(state.walletTransactions, transaction)
-        }));
+              : state.simulatorWallet;
+          const simulatorWelcomeClaimed =
+            state.runtimeMode === "simulator" ? true : state.simulatorWelcomeClaimed;
+
+          if (state.runtimeMode === "simulator") {
+            saveGuestState({
+              ...state,
+              simulatorWallet,
+              simulatorWelcomeClaimed
+            });
+          }
+
+          return {
+            welcomeClaimed: true,
+            welcomeOpen: false,
+            wallet: {
+              ...state.wallet,
+              balance: balanceAfter
+            },
+            simulatorWallet,
+            simulatorWelcomeClaimed,
+            walletTransactions: appendTransaction(state.walletTransactions, transaction)
+          };
+        });
 
         return balanceAfter;
       },
@@ -452,30 +495,43 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           label: "Deposit"
         };
 
-        set((state) => ({
-          wallet: {
-            ...state.wallet,
-            balance: balanceAfter
-          },
-          totalDeposited: Number((state.totalDeposited + draft.amount).toFixed(2)),
-          simulatorWallet:
+        set((state) => {
+          const simulatorWallet =
             state.runtimeMode === "simulator"
               ? {
                   ...state.simulatorWallet,
                   balance: balanceAfter
                 }
-              : state.simulatorWallet,
-          simulatorTotalDeposited:
+              : state.simulatorWallet;
+          const simulatorTotalDeposited =
             state.runtimeMode === "simulator"
               ? Number((state.simulatorTotalDeposited + draft.amount).toFixed(2))
-              : state.simulatorTotalDeposited,
-          depositDraft: {
-            ...state.depositDraft,
-            processing: false,
-            successMessage: `Deposit successful +${draft.amount}`
-          },
-          walletTransactions: appendTransaction(state.walletTransactions, transaction)
-        }));
+              : state.simulatorTotalDeposited;
+
+          if (state.runtimeMode === "simulator") {
+            saveGuestState({
+              ...state,
+              simulatorWallet,
+              simulatorTotalDeposited
+            });
+          }
+
+          return {
+            wallet: {
+              ...state.wallet,
+              balance: balanceAfter
+            },
+            totalDeposited: Number((state.totalDeposited + draft.amount).toFixed(2)),
+            simulatorWallet,
+            simulatorTotalDeposited,
+            depositDraft: {
+              ...state.depositDraft,
+              processing: false,
+              successMessage: `Deposit successful +${draft.amount}`
+            },
+            walletTransactions: appendTransaction(state.walletTransactions, transaction)
+          };
+        });
       },
       finishDepositProcessing: (successMessage) =>
         set((state) => ({
@@ -546,30 +602,43 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           label: "Withdrawal"
         };
 
-        set((state) => ({
-          wallet: {
-            ...state.wallet,
-            balance: balanceAfter
-          },
-          totalWithdrawn: Number((state.totalWithdrawn + withdrawalDraft.amount).toFixed(2)),
-          simulatorWallet:
+        set((state) => {
+          const simulatorWallet =
             state.runtimeMode === "simulator"
               ? {
                   ...state.simulatorWallet,
                   balance: balanceAfter
                 }
-              : state.simulatorWallet,
-          simulatorTotalWithdrawn:
+              : state.simulatorWallet;
+          const simulatorTotalWithdrawn =
             state.runtimeMode === "simulator"
               ? Number((state.simulatorTotalWithdrawn + withdrawalDraft.amount).toFixed(2))
-              : state.simulatorTotalWithdrawn,
-          withdrawalDraft: {
-            ...state.withdrawalDraft,
-            processing: false,
-            successMessage: "Withdrawal requested. Funds sent successfully (simulation)."
-          },
-          walletTransactions: appendTransaction(state.walletTransactions, transaction)
-        }));
+              : state.simulatorTotalWithdrawn;
+
+          if (state.runtimeMode === "simulator") {
+            saveGuestState({
+              ...state,
+              simulatorWallet,
+              simulatorTotalWithdrawn
+            });
+          }
+
+          return {
+            wallet: {
+              ...state.wallet,
+              balance: balanceAfter
+            },
+            totalWithdrawn: Number((state.totalWithdrawn + withdrawalDraft.amount).toFixed(2)),
+            simulatorWallet,
+            simulatorTotalWithdrawn,
+            withdrawalDraft: {
+              ...state.withdrawalDraft,
+              processing: false,
+              successMessage: "Withdrawal requested. Funds sent successfully (simulation)."
+            },
+            walletTransactions: appendTransaction(state.walletTransactions, transaction)
+          };
+        });
 
         return { ok: true };
       },
@@ -698,18 +767,27 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             scheduleRoundsLogFlush(trimmedRoundsLog);
           }
 
+          const simulatorWallet =
+            state.runtimeMode === "simulator"
+              ? {
+                  ...state.simulatorWallet,
+                  balance: result.balanceAfter
+                }
+              : state.simulatorWallet;
+
+          if (state.runtimeMode === "simulator") {
+            saveGuestState({
+              ...state,
+              simulatorWallet
+            });
+          }
+
           return {
             wallet: {
               ...state.wallet,
               balance: result.balanceAfter
             },
-            simulatorWallet:
-              state.runtimeMode === "simulator"
-                ? {
-                    ...state.simulatorWallet,
-                    balance: result.balanceAfter
-                  }
-                : state.simulatorWallet,
+            simulatorWallet,
             samsaraExpiryAt:
               state.runtimeMode === "simulator"
                 ? null
@@ -780,15 +858,25 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         set((state) => {
           clearRoundsLogStorage();
           initializeAnalyticsService([]);
+          const guestSession = ensureGuestSession();
+          const guestWallet = {
+            balance: guestSession.walletBalance,
+            currency: "EUR" as const
+          };
 
           return {
             runtimeMode: "simulator",
             authSource: null,
-            wallet: state.simulatorWallet,
-            totalDeposited: state.simulatorTotalDeposited,
-            totalWithdrawn: state.simulatorTotalWithdrawn,
-            welcomeClaimed: state.simulatorWelcomeClaimed,
-            welcomeOpen: !state.simulatorWelcomeClaimed,
+            guestDisplayName: guestSession.displayName,
+            simulatorWallet: guestWallet,
+            simulatorTotalDeposited: guestSession.totalDeposited,
+            simulatorTotalWithdrawn: guestSession.totalWithdrawn,
+            simulatorWelcomeClaimed: guestSession.welcomeClaimed,
+            wallet: guestWallet,
+            totalDeposited: guestSession.totalDeposited,
+            totalWithdrawn: guestSession.totalWithdrawn,
+            welcomeClaimed: guestSession.welcomeClaimed,
+            welcomeOpen: !guestSession.welcomeClaimed,
             samsaraExpiryAt: null,
             gameStateSnapshot: null,
             roundsLog: [],
@@ -805,10 +893,12 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             historyOpen: false
           };
         }),
-      exitSimulatorMode: () =>
+      exitSimulatorMode: () => {
+        clearGuestSession();
         set({
           runtimeMode: "authenticated",
           authSource: null,
+          guestDisplayName: "",
           wallet: {
             balance: 0,
             currency: "EUR"
@@ -831,6 +921,21 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           walletHistoryOpen: false,
           analyticsOpen: false,
           historyOpen: false
+        });
+      },
+      setGuestDisplayName: (displayName) =>
+        set((state) => {
+          const trimmed = displayName.trim();
+          if (!trimmed || state.runtimeMode !== "simulator") {
+            return { guestDisplayName: state.guestDisplayName };
+          }
+
+          const nextState = {
+            ...state,
+            guestDisplayName: trimmed
+          };
+          saveGuestState(nextState);
+          return { guestDisplayName: trimmed };
         }),
       resetSession: () =>
         set((state) => ({
@@ -884,7 +989,12 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       },
       merge: (persistedState, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<PlayerUiState>;
-        const paymentMethods = ensureDefaultPaymentMethod(persisted.paymentMethods);
+        const guestSession = loadGuestSession();
+        const runtimeMode = guestSession ? "simulator" : "authenticated";
+        const paymentMethods =
+          runtimeMode === "simulator"
+            ? basePaymentMethods()
+            : ensureDefaultPaymentMethod(persisted.paymentMethods);
         const fallbackMethodId = paymentMethods[0]?.id ?? defaultPaymentMethod.id;
         const withdrawalAmount = persisted.withdrawalDraft?.amount ?? baseWithdrawalDraft().amount;
         const persistedSamsaraExpiryAt =
@@ -899,19 +1009,20 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         const samsaraStillValid =
           persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
         const mergedSamsaraExpiryAt = samsaraStillValid ? persistedSamsaraExpiryAt : null;
-        const runtimeMode = persisted.runtimeMode === "simulator" ? "simulator" : "authenticated";
-        const simulatorWallet = persisted.simulatorWallet ?? {
-          balance: 0,
-          currency: "EUR"
+        const simulatorWallet = {
+          balance: guestSession?.walletBalance ?? 0,
+          currency: "EUR" as const
         };
-        const simulatorWelcomeClaimed = persisted.simulatorWelcomeClaimed ?? false;
-        const simulatorTotalDeposited = persisted.simulatorTotalDeposited ?? 0;
-        const simulatorTotalWithdrawn = persisted.simulatorTotalWithdrawn ?? 0;
+        const simulatorWelcomeClaimed = guestSession?.welcomeClaimed ?? false;
+        const simulatorTotalDeposited = guestSession?.totalDeposited ?? 0;
+        const simulatorTotalWithdrawn = guestSession?.totalWithdrawn ?? 0;
 
         return {
           ...currentState,
           ...persisted,
           runtimeMode,
+          authSource: runtimeMode === "simulator" ? null : persisted.authSource ?? currentState.authSource,
+          guestDisplayName: guestSession?.displayName ?? "",
           wallet: runtimeMode === "simulator" ? simulatorWallet : persisted.wallet ?? currentState.wallet,
           totalDeposited:
             runtimeMode === "simulator"
@@ -936,6 +1047,12 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           paymentMethods,
           samsaraExpiryAt: runtimeMode === "simulator" ? null : mergedSamsaraExpiryAt,
           gameStateSnapshot: runtimeMode === "simulator" ? null : mergedGameStateSnapshot,
+          walletTransactions:
+            runtimeMode === "simulator"
+              ? []
+              : Array.isArray(persisted.walletTransactions)
+                ? persisted.walletTransactions
+                : [],
           // roundsLog is loaded from its own localStorage key in onRehydrateStorage
           roundsLog:
             runtimeMode === "simulator"
@@ -960,18 +1077,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         soundEnabled: state.soundEnabled,
         spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,
-        simulatorWallet: state.simulatorWallet,
-        simulatorTotalDeposited: state.simulatorTotalDeposited,
-        simulatorTotalWithdrawn: state.simulatorTotalWithdrawn,
-        simulatorWelcomeClaimed: state.simulatorWelcomeClaimed,
         ...(state.runtimeMode === "simulator"
-          ? {
-              welcomeOpen: state.welcomeOpen,
-              welcomeClaimed: state.welcomeClaimed,
-              wallet: state.wallet,
-              totalDeposited: state.totalDeposited,
-              totalWithdrawn: state.totalWithdrawn
-            }
+          ? {}
           : {
               welcomeOpen: state.welcomeOpen,
               welcomeClaimed: state.welcomeClaimed,

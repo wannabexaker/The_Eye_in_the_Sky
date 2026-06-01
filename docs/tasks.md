@@ -112,6 +112,55 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-01` **WO-0 baseline and local artifact protection**
+  - Intent: start the hardening pass from a known baseline without accidentally committing local Codex screenshots or generated test output.
+  - Hypothesis: the pasted work order described an older dirty tracked tree; the current checkout has no tracked diffs and only local untracked artifacts.
+  - Code change: updated `.gitignore` to exclude `.codex/`, `apps/player-web/screenshots/`, and `apps/player-web/test-results/`; documented the Windows `player-web` standalone symlink build caveat in `docs/prd.md`.
+  - Verification: `git status --short` showed only local untracked artifacts before the ignore update; prior baseline checks passed for `corepack pnpm --filter api lint`, `corepack pnpm --filter api test`, and `corepack pnpm --filter player-web test`; `player-web build` compiled but failed during standalone symlink copy with `EPERM`.
+  - Rollback note: remove these ignore rules and the PRD caveat only if local visual artifacts are intentionally promoted to tracked evidence and Windows build signoff is moved to a symlink-capable environment.
+- `2026-06-01` **WO-1 auth correctness and guest mode**
+  - Intent: finish the incomplete auth pass with field-mappable API errors, password reset/change flows, random display names, and a real guest path that never writes to server state.
+  - Hypothesis: the previous login/register-only path made field handling ambiguous, left password recovery impossible, and persisted dev simulator state through localStorage in ways that could survive beyond the intended tab.
+  - Code change: added typed auth error codes, `/auth/change-password`, `/auth/forgot-password`, `/auth/reset-password`, `PasswordResetToken`, password reset token hashing, Zod validators, frontend `PlayerApiError`, auth field mapping, change-password modal, random display-name generation, and guest session helpers backed by `sessionStorage`.
+  - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter api test:e2e` (`38/38`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter api prisma:migrate` was blocked before DB connection because the local `DATABASE_URL` is not a PostgreSQL URL; `corepack pnpm --filter player-web build:clean` was blocked by the build guard because a local dev server was already listening on port `3000`.
+  - Rollback note: revert the WO-1 commit if auth field response shape or guest persistence regresses; database rollback is dropping `PasswordResetToken` plus removing the Prisma relation and generated migration.
+- `2026-06-01` **WO-2 wake lock controller cleanup**
+  - Intent: make screen wake lock state observable and controlled from one hook instance.
+  - Hypothesis: the prior toggle created a second `useScreenWakeLock()` instance and read ref-backed values that did not rerender, so UI state could disagree with the active native/fallback lock.
+  - Code change: converted `useScreenWakeLock()` to stateful native/fallback mode tracking, kept RAF fallback active when native Wake Lock is unavailable, passed the page-level controller into `WakeLockToggle`, and added `aria-pressed` plus distinct active/inactive SVG icons.
+  - Verification: `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
+  - Rollback note: revert the WO-2 commit if mobile wake-lock prompts regress; the previous hook/toggle split can be restored without touching spin math or wallet state.
+- `2026-06-01` **WO-3 ouroboros spin ring continuity**
+  - Intent: keep the spin CTA ouroboros ring mounted so CSS spin animation can run continuously through phase changes.
+  - Hypothesis: changing `key` on `.ouroborosRing` remounted the ring on every pulse and interrupted the ring animation; only `.spinRipple` needs remounting for the click pulse.
+  - Code change: removed `key={\`ouroboros-${pulseKey}\`}` from `.ouroborosRing` in `spin-button.tsx` and left `key={pulseKey}` on `.spinRipple`.
+  - Verification: inspected `globals.css`, `responsive-desktop.css`, and `responsive-portrait.css`; no responsive rule hides `.ouroborosRing`; `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
+  - Rollback note: restore the key only if a later browser-specific rendering bug requires a forced ring remount; prefer a dedicated animation restart class before remounting the permanent ring.
+- `2026-06-01` **WO-4 responsive shell and z-index governance**
+  - Intent: make responsive layout state deterministic across React and CSS, remove stale archive-only selector ownership, and replace layered magic numbers with named z-index tokens.
+  - Hypothesis: the previous shell mixed duplicate responsive imports, matchMedia state in multiple components, archive CSS selectors, and ad-hoc z-index math; this made phone landscape and tall portrait layouts fragile and made layer debugging slower.
+  - Code change: added `useViewport()` with `phone/tablet/laptop/desktop/wide` bands, exposed `data-viewport-band` and `data-orientation` on `.slotViewport`, moved support rails to the shared hook, removed duplicate `responsive-desktop.css` import, deleted archive-only active CSS rules, added named z-index tokens, added explicit phone-landscape and tablet/laptop portrait layout locks, and fixed the initial viewport hook render to avoid SSR hydration mismatch.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web test` (`3/3`), `corepack pnpm --filter api lint`, and `corepack pnpm --filter api test` (`57/57`) passed.
+  - Visual verification: host Playwright smoke captured ignored screenshots under `apps/player-web/screenshots/wo4/` for `360x640`, `390x844`, `412x915`, `844x390`, `800x1280`, `1280x800`, `1366x768`, `1440x900`, `1920x1080`, `2560x1440`, and `3840x2160`; all reported correct viewport band/orientation after hydration and board/dock rectangles inside viewport. The MCP Playwright bridge still cannot reach Windows localhost, so screenshots were captured from host Playwright instead.
+  - Verification caveat: game-config fetches returned `500` during visual smoke because the API server was not running on the expected local URL; the player correctly stayed on local fallback config. `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
+  - Rollback note: revert the WO-4 commit if responsive shell ownership regresses; keep the `useViewport()` SSR-safe initial state if any future partial rollback retains data-driven viewport attributes.
+- `2026-06-01` **WO-5 olamov iframe embed mode**
+  - Intent: allow the player to be embedded from `olamov.com` without changing the proxy/session model.
+  - Hypothesis: the shell needed an explicit frame policy, iframe-trimmed layout mode, and cross-site cookie behavior for authenticated iframe use; changing API routing would create unnecessary deployment risk.
+  - Code change: added runtime `frame-ancestors` CSP in `player-web` middleware, added `?embed=1` shell trimming through `is-embed-mode`, kept API calls on `/_api`, changed auth cookies to `SameSite=None; Secure` only when `COOKIE_SECURE=true`, added cookie-helper coverage, and documented the integration in `docs/integration-olamov.md`.
+  - Verification: `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`59/59`), `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, and `corepack pnpm --filter player-web test` (`3/3`) passed.
+  - Visual/header verification: host smoke on `http://127.0.0.1:3001/?embed=1` returned `Content-Security-Policy: frame-ancestors 'self' https://olamov.com https://*.olamov.com`; Playwright confirmed `data-embed="true"`, `is-embed-mode`, hidden branding rail, and visible board.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`; Safari/Chrome third-party-cookie blocking remains documented integration risk.
+  - Rollback note: revert the WO-5 commit if iframe login or shell layout regresses; do not weaken cookie policy as a rollback path.
+- `2026-06-01` **WO-6 repo and docs hygiene**
+  - Intent: make the repository easier to publish and maintain by removing stale local-path, stale SQL Server, and ignored-docs friction.
+  - Hypothesis: current tracked setup truth is PostgreSQL, but public-facing docs/env examples still mixed SQL Server rollout text, seeded demo credentials, and absolute local links.
+  - Code change: removed the blanket `docs/` ignore while keeping `docs/notes.md` ignored, rewrote current README/API/env docs to PostgreSQL placeholders, replaced tracked absolute local links with repo-relative links, added `docs/ARCHITECTURE-OVERVIEW.md`, rewrote the least-privilege DB setup doc for PostgreSQL, sanitized the auth smoke script admin credentials to env-driven inputs, and committed root `AGENTS.md`.
+  - Verification: tracked-file scans found no machine-local absolute links and no tracked real `.env` files; remaining secret-scan hits are placeholders or variable names. Historical SQL Server references remain only in migration/history docs and old changelog entries, not current setup docs.
+  - Rollback note: revert WO-6 only if a downstream release process still requires the old ignored-docs model; do not restore real credentials or absolute local paths.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

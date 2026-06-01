@@ -42,6 +42,17 @@ export const validators = {
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),
     password: z.string().min(1).max(100)
   }),
+  authChangePassword: z.object({
+    currentPassword: z.string().min(1).max(100),
+    newPassword: z.string().min(8).max(100)
+  }),
+  authForgotPassword: z.object({
+    email: z.email().max(255).transform((value) => value.trim().toLowerCase())
+  }),
+  authResetPassword: z.object({
+    token: z.string().trim().min(32).max(200),
+    newPassword: z.string().min(8).max(100)
+  }),
   authPlatformExchange: z.object({
     platformAssertion: z.string().trim().min(20).max(10000),
     nonce: safeStringSchema.max(200),
@@ -102,13 +113,17 @@ export type ValidationSchema<T> = z.ZodType<T>;
 export const parseOrBadRequest = <T>(schema: ValidationSchema<T>, input: unknown): T => {
   const result = schema.safeParse(input);
   if (!result.success) {
-    const details = result.error.issues.map((issue) => ({
-      path: issue.path.join("."),
-      message: issue.message
-    }));
+    const fieldErrors = result.error.issues.reduce<Record<string, string>>((accumulator, issue) => {
+      const path = issue.path.join(".") || "form";
+      if (!accumulator[path]) {
+        accumulator[path] = issue.message;
+      }
+      return accumulator;
+    }, {});
     throw new BadRequestException({
-      error: "Validation failed",
-      details
+      code: "VALIDATION_FAILED",
+      message: "Validation failed",
+      fieldErrors
     });
   }
 

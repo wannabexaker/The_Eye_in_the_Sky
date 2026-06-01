@@ -1,135 +1,155 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type WakeLockMode = "native" | "fallback" | null;
 
 interface WakeLockSentinel {
   release(): Promise<void>;
 }
 
-/**
- * Hook to keep the screen awake while the game is active.
- * Uses Screen Wake Lock API on modern browsers (requires user gesture on mobile).
- * Falls back to requestAnimationFrame for unsupported browsers.
- * Automatically releases when document becomes hidden (tab loses focus).
- * Reacquires when document becomes visible again.
- */
-export function useScreenWakeLock() {
+type NavigatorWithWakeLock = Navigator & {
+  wakeLock?: {
+    request(type: "screen"): Promise<WakeLockSentinel>;
+  };
+};
+
+export type ScreenWakeLockControls = {
+  requestWakeLock: () => Promise<void>;
+  releaseWakeLock: () => Promise<void>;
+  isAcquired: boolean;
+  hasSupport: boolean;
+  manualToggleAvailable: boolean;
+  mode: WakeLockMode;
+};
+
+export function useScreenWakeLock(): ScreenWakeLockControls {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const isAcquiredRef = useRef(false);
-  const hasSupport = useRef(false);
+  const modeRef = useRef<WakeLockMode>(null);
+  const [mode, setMode] = useState<WakeLockMode>(null);
+  const [hasSupport, setHasSupport] = useState(false);
   const [manualToggleAvailable, setManualToggleAvailable] = useState(false);
 
-  // Check if wake lock is supported
-  useEffect(() => {
-    const nav = navigator as any;
-    hasSupport.current = !!(nav && nav.wakeLock);
-    setManualToggleAvailable(hasSupport.current);
+  const setActiveMode = useCallback((nextMode: WakeLockMode) => {
+    modeRef.current = nextMode;
+    setMode(nextMode);
   }, []);
 
-  const requestWakeLock = async () => {
-    try {
-      if (isAcquiredRef.current) {
-        return;
-      }
-
-      const nav = navigator as any;
-      if (nav && nav.wakeLock) {
-        try {
-          wakeLockRef.current = await nav.wakeLock.request('screen');
-          isAcquiredRef.current = true;
-          console.log('[useScreenWakeLock] Wake lock acquired');
-        } catch (lockErr) {
-          // Permission denied or user dismissed
-          console.warn('[useScreenWakeLock] Wake lock request denied (may need user gesture):', lockErr);
-          // Fall through to RAF fallback
-          startRAFKeepalive();
-        }
-      } else {
-        // No wake lock support: use RAF fallback
-        startRAFKeepalive();
-      }
-    } catch (err) {
-      console.warn('[useScreenWakeLock] Unexpected error:', err);
+  const stopRAFKeepalive = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
-  };
+  }, []);
 
-  const startRAFKeepalive = () => {
-    if (isAcquiredRef.current) {
+  const startRAFKeepalive = useCallback(() => {
+    if (typeof window === "undefined" || animationFrameRef.current !== null) {
       return;
     }
 
     let lastTime = performance.now();
     const keepAlive = () => {
       const now = performance.now();
-      // Throttle to avoid excessive redraws; just touch a DOM property every ~100ms
       if (now - lastTime > 100) {
-        // Minimal DOM touch to signal activity
-        const body = document.body;
-        const x = body.scrollLeft;
+        void document.body?.scrollLeft;
         lastTime = now;
       }
       animationFrameRef.current = requestAnimationFrame(keepAlive);
     };
-    keepAlive();
-    isAcquiredRef.current = true;
-    console.log('[useScreenWakeLock] Using requestAnimationFrame fallback');
-  };
 
-  const releaseWakeLock = async () => {
-    try {
-      if (wakeLockRef.current) {
-        await wakeLockRef.current.release();
-        wakeLockRef.current = null;
-        console.log('[useScreenWakeLock] Wake lock released');
-      }
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      isAcquiredRef.current = false;
-    } catch (err) {
-      console.warn('[useScreenWakeLock] Release error:', err);
+    animationFrameRef.current = requestAnimationFrame(keepAlive);
+    setActiveMode("fallback");
+  }, [setActiveMode]);
+
+  const requestWakeLock = useCallback(async () => {
+    if (typeof window === "undefined" || document.hidden) {
+      return;
     }
-  };
+
+    const nav = navigator as NavigatorWithWakeLock;
+    if (!nav.wakeLock) {
+      startRAFKeepalive();
+      return;
+    }
+
+    if (wakeLockRef.current) {
+      setActiveMode("native");
+      return;
+    }
+
+    try {
+      const sentinel = await nav.wakeLock.request("screen");
+      wakeLockRef.current = sentinel;
+      stopRAFKeepalive();
+      setActiveMode("native");
+    } catch {
+      startRAFKeepalive();
+    }
+  }, [setActiveMode, startRAFKeepalive, stopRAFKeepalive]);
+
+  const releaseWakeLock = useCallback(async () => {
+    const activeWakeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+
+    if (activeWakeLock) {
+      try {
+        await activeWakeLock.release();
+      } catch {
+        // Browser/platform releases can race with visibility changes.
+      }
+    }
+
+    stopRAFKeepalive();
+    setActiveMode(null);
+  }, [setActiveMode, stopRAFKeepalive]);
 
   useEffect(() => {
-    // Start RAF fallback immediately as a baseline
+    const nav = navigator as NavigatorWithWakeLock;
+    const nativeSupport = Boolean(nav.wakeLock);
+    setHasSupport(nativeSupport);
+    setManualToggleAvailable(typeof window.requestAnimationFrame === "function");
+
     startRAFKeepalive();
 
-    // Try to request native wake lock once
-    if (hasSupport.current) {
-      // Delay the request slightly to let the browser settle
-      const timer = setTimeout(() => {
-        requestWakeLock();
-      }, 500);
-      return () => clearTimeout(timer);
+    if (!nativeSupport) {
+      return () => {
+        void releaseWakeLock();
+      };
     }
 
-    return () => {};
-  }, []);
+    const timer = window.setTimeout(() => {
+      void requestWakeLock();
+    }, 500);
 
-  // Handle visibility changes
+    return () => {
+      window.clearTimeout(timer);
+      void releaseWakeLock();
+    };
+  }, [releaseWakeLock, requestWakeLock, startRAFKeepalive]);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        releaseWakeLock();
-      } else {
-        requestWakeLock();
+        void releaseWakeLock();
+        return;
       }
+
+      void requestWakeLock();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [releaseWakeLock, requestWakeLock]);
 
   return {
     requestWakeLock,
     releaseWakeLock,
-    isAcquired: isAcquiredRef.current,
-    hasSupport: hasSupport.current,
-    manualToggleAvailable
+    isAcquired: mode !== null,
+    hasSupport,
+    manualToggleAvailable,
+    mode
   };
 }

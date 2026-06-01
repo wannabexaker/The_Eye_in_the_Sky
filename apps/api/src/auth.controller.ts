@@ -5,7 +5,7 @@ import { parseOrBadRequest, validators } from "./validators/game.validators";
 import { AuthModeService } from "./auth-mode.service";
 import { PlatformExchangeValidatorService } from "./platform-exchange-validator.service";
 import { AuthNonceReplayService } from "./auth-nonce-replay.service";
-import { AdminGuard, ExternalAuthPolicyGuard, InternalAuthPolicyGuard } from "./auth.guard";
+import { AdminGuard, ExternalAuthPolicyGuard, InternalAuthPolicyGuard, SessionAuthGuard } from "./auth.guard";
 import { CurrentUser } from "./current-user.decorator";
 import type { RequestWithAuth, PlatformExchangeRequest, AuthMode } from "./auth.types";
 import type { CurrentAuthUser } from "./auth.types";
@@ -43,6 +43,33 @@ export class AuthController {
   ) {
     const validatedBody = parseOrBadRequest(validators.authLogin, body);
     return this.authService.login(validatedBody, request, response);
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("change-password")
+  changePassword(
+    @Body() body: { currentPassword?: string; newPassword?: string },
+    @CurrentUser() currentUser: CurrentAuthUser
+  ) {
+    const validatedBody = parseOrBadRequest(validators.authChangePassword, body);
+    return this.authService.changePassword(validatedBody, currentUser);
+  }
+
+  @UseGuards(InternalAuthPolicyGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("forgot-password")
+  forgotPassword(@Body() body: { email?: string }) {
+    const validatedBody = parseOrBadRequest(validators.authForgotPassword, body);
+    return this.authService.forgotPassword(validatedBody);
+  }
+
+  @UseGuards(InternalAuthPolicyGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("reset-password")
+  resetPassword(@Body() body: { token?: string; newPassword?: string }) {
+    const validatedBody = parseOrBadRequest(validators.authResetPassword, body);
+    return this.authService.resetPassword(validatedBody);
   }
 
   @Post("logout")

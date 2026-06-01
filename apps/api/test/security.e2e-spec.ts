@@ -66,6 +66,9 @@ describe("Security: Validation Layer (e2e)", () => {
           useValue: {
             registerPlayer: jest.fn().mockResolvedValue({ id: MOCK_AUTH_USER.id }),
             login: jest.fn().mockResolvedValue({ id: MOCK_AUTH_USER.id }),
+            changePassword: jest.fn().mockResolvedValue({ ok: true }),
+            forgotPassword: jest.fn().mockResolvedValue({ ok: true }),
+            resetPassword: jest.fn().mockResolvedValue({ ok: true }),
             getCurrentSession: jest.fn().mockResolvedValue(null),
             logout: jest.fn().mockResolvedValue(undefined),
             resolveCurrentUser: jest.fn().mockResolvedValue(MOCK_AUTH_USER)
@@ -197,11 +200,10 @@ describe("Security: Validation Layer (e2e)", () => {
         .post(endpoint)
         .send({ email: "bad", password: "x", displayName: "A" });
       expect(res.status).toBe(400);
-      // NestJS wraps BadRequestException object body under res.body.message
-      const payload = res.body.message ?? res.body;
-      expect(payload.error).toBe("Validation failed");
-      expect(Array.isArray(payload.details)).toBe(true);
-      expect((payload.details as Array<{ path: string }>).length).toBeGreaterThan(0);
+      const payload = res.body;
+      expect(payload.code).toBe("VALIDATION_FAILED");
+      expect(payload.message).toBe("Validation failed");
+      expect(Object.keys(payload.fieldErrors as Record<string, string>).length).toBeGreaterThan(0);
     });
 
     it("returns 400 for completely empty body", async () => {
@@ -249,6 +251,35 @@ describe("Security: Validation Layer (e2e)", () => {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
+  describe("POST /auth/password flows", () => {
+    it("returns 400 for short change-password new password", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/auth/change-password")
+        .send({ currentPassword: "SecurePass1!", newPassword: "short" });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_FAILED");
+      expect(res.body.fieldErrors.newPassword).toBeTruthy();
+    });
+
+    it("returns 400 for invalid forgot-password email", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/auth/forgot-password")
+        .send({ email: "not-an-email" });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_FAILED");
+      expect(res.body.fieldErrors.email).toBeTruthy();
+    });
+
+    it("returns 400 for short reset token", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/auth/reset-password")
+        .send({ token: "short", newPassword: "DifferentPass1!" });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_FAILED");
+      expect(res.body.fieldErrors.token).toBeTruthy();
+    });
+  });
+
   // POST /player/wallet/deposit
   // ─────────────────────────────────────────────────────────────────────────
 
