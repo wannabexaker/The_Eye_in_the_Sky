@@ -21,53 +21,44 @@ type SpinButtonProps = {
   pulseKey: number;
 };
 
-/** Scale-invariant ouroboros: a gold serpent biting its tail, with a clearly
- *  readable head + eye + tongue even at ~80px. viewBox 100x100, ring at r≈35. */
+/** Ouroboros serpent ring (original-art proportions), centered and filling the
+ *  ring so it reads as a clean snake circling the "Spin" core at any size.
+ *  viewBox is cropped to the serpent bounds so it sits pinned over the button. */
 function OuroborosArt() {
   return (
-    <svg className="ouroborosArt" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <svg className="ouroborosArt" viewBox="244 258 536 514" fill="none" aria-hidden="true">
       <defs>
-        <linearGradient id="ouroBody" x1="20" y1="18" x2="82" y2="86" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#f7dda2" />
-          <stop offset="0.5" stopColor="#e2be70" />
-          <stop offset="1" stopColor="#a96f29" />
+        <linearGradient id="ouroBody" x1="300" y1="322" x2="704" y2="708" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#f6dca0" />
+          <stop offset="0.55" stopColor="#e2be70" />
+          <stop offset="1" stopColor="#a9742c" />
         </linearGradient>
       </defs>
-      {/* Serpent body — near-full circle, gap at the top where the head meets the tail */}
+      {/* Serpent body */}
       <path
-        d="M45 15 A 35 35 0 1 1 56 14.4"
+        d="M666 364C616 312 548 286 478 292C356 304 266 412 278 536C290 660 392 750 518 736C624 724 706 650 730 556"
         stroke="url(#ouroBody)"
-        strokeWidth="9"
+        strokeWidth="44"
         strokeLinecap="round"
       />
-      {/* Scale texture along the body */}
+      {/* Neck tapering into the head */}
       <path
-        d="M45 15 A 35 35 0 1 1 56 14.4"
+        d="M730 556C742 500 726 444 682 400"
+        stroke="#f3dca0"
+        strokeWidth="27"
+        strokeLinecap="round"
+      />
+      {/* Head biting toward the tail */}
+      <path
+        d="M682 400L750 372L723 444Z"
+        fill="#f3dca0"
         stroke="#5a3b16"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray="1 7.5"
-        opacity="0.4"
-      />
-      {/* Head — a single smooth serpent head at the top, jaws toward the tail */}
-      <path
-        d="M55.5 14.4c5.6-2.8 11.6-0.4 12.9 4.9c1 4.3-1.9 8.2-6.7 8.4c-4 0.2-7.1-2.6-7.2-6.5c-0.07-2.4 0.4-4.8 1-6.8z"
-        fill="url(#ouroBody)"
-        stroke="#553715"
-        strokeWidth="0.9"
+        strokeWidth="5"
         strokeLinejoin="round"
       />
       {/* Eye */}
-      <circle cx="61.4" cy="17.6" r="2.3" fill="#23110a" />
-      <circle cx="62.2" cy="16.8" r="0.7" fill="#f7e2b1" />
-      {/* Small forked tongue flicking down toward the tail */}
-      <path
-        className="ouroborosTongue"
-        d="M56 23.4q-2 2.6-5 2.9m5-2.9q-3 1.2-6 0.2"
-        stroke="#cf4b3c"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
+      <circle cx="424" cy="420" r="16" fill="#23110a" />
+      <circle cx="430" cy="413" r="5.5" fill="#f7e2b1" />
     </svg>
   );
 }
