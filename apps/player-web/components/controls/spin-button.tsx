@@ -52,7 +52,7 @@ export function SpinButton({
       type="button"
     >
       <span className="spinRipple" key={pulseKey} />
-      <span aria-hidden="true" className="ouroborosRing" key={`ouroboros-${pulseKey}`}>
+      <span aria-hidden="true" className="ouroborosRing">
         <span className="ouroborosBody" />
         <span className="ouroborosHead" />
         <span className="ouroborosEye" />

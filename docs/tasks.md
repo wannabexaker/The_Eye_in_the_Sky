@@ -132,6 +132,13 @@
   - Verification: `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
   - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
   - Rollback note: revert the WO-2 commit if mobile wake-lock prompts regress; the previous hook/toggle split can be restored without touching spin math or wallet state.
+- `2026-06-01` **WO-3 ouroboros spin ring continuity**
+  - Intent: keep the spin CTA ouroboros ring mounted so CSS spin animation can run continuously through phase changes.
+  - Hypothesis: changing `key` on `.ouroborosRing` remounted the ring on every pulse and interrupted the ring animation; only `.spinRipple` needs remounting for the click pulse.
+  - Code change: removed `key={\`ouroboros-${pulseKey}\`}` from `.ouroborosRing` in `spin-button.tsx` and left `key={pulseKey}` on `.spinRipple`.
+  - Verification: inspected `globals.css`, `responsive-desktop.css`, and `responsive-portrait.css`; no responsive rule hides `.ouroborosRing`; `corepack pnpm --filter api lint`, `corepack pnpm --filter api test` (`57/57`), `corepack pnpm --filter player-web test` (`3/3`), and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed.
+  - Verification caveat: `corepack pnpm --filter player-web build:clean` remained blocked by the guard because a local dev server is still listening on port `3000`.
+  - Rollback note: restore the key only if a later browser-specific rendering bug requires a forced ring remount; prefer a dedicated animation restart class before remounting the permanent ring.
 - `2026-04-13` **Docker API startup hotfix — POSIX shell compatibility**
   - Intent: keep API container startup deterministic on Raspberry Pi / Alpine runtime.
   - Hypothesis: API health failure (`/app/docker-entrypoint.sh: line 39: syntax error: unexpected redirection`) is caused by bash-only here-string syntax executed by `/bin/sh`.

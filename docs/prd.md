@@ -72,6 +72,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
+- Spin CTA identity layers should remain mounted across pulse effects; remount only transient pulse/ripple layers, not the persistent ouroboros ring.
 
 ## Wake Lock Control Contract
 - The player shell owns one `useScreenWakeLock()` controller instance and passes it into UI controls that need to reflect or change wake-lock state.
