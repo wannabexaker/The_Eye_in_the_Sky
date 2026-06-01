@@ -2051,13 +2051,13 @@ p {
 }
 
 .welcomeModal {
-  width: min(640px, 100%);
-  max-height: none;
+  width: min(460px, 92vw);
+  max-height: min(94dvh, 760px);
 }
 
 .welcomeHeader {
   justify-content: center;
-  padding: 20px 24px 8px;
+  padding: 14px 22px 2px;
   border-bottom: 0;
 }
 
@@ -2069,9 +2069,9 @@ p {
 }
 
 .welcomeLogo {
-  width: min(920px, 100%);
-  height: clamp(180px, 24dvh, 320px);
-  background-position: center top;
+  width: min(360px, 100%);
+  height: clamp(82px, 12dvh, 150px);
+  background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
   filter:
@@ -2093,14 +2093,16 @@ p {
 
 .welcomeBody {
   display: grid;
-  gap: 16px;
+  gap: 11px;
   text-align: center;
   justify-items: center;
-  padding: 12px 24px 32px;
+  padding: 6px 22px 18px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .authModal {
-  width: min(680px, 100%);
+  width: min(460px, 92vw);
 }
 
 .authBody {
