@@ -4,7 +4,7 @@
 - Phase: `Phase 1 fake-money prototype`
 - Owner: `Principal Engineer / Game Systems Architect / Product Owner`
 - Source of truth: `This file`
-- Last updated: `2026-03-30`
+- Last updated: `2026-06-01`
 
 ## Product Summary
 `The Eye in the Sky` is a browser-playable fake-money slot prototype with a dark celestial horror identity. It uses a `6x5` board, `pay-anywhere / cluster-style` wins, `cascades`, `random and persistent multipliers`, and a `free spins bonus` mode called `Sky Opens`.
@@ -57,11 +57,49 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - If chunk 404/runtime loader errors appear, stop dev, delete `apps/player-web/.next`, and restart dev.
 - Build safety is enforced by `apps/player-web/scripts/guard-no-dev-server.cjs`.
 - Container startup scripts must be POSIX-`sh` compatible when the image entrypoint uses `/bin/sh` (Alpine). Do not use bash-only syntax such as here-strings (`<<<`) in entrypoint scripts.
+- On Windows, `player-web` standalone build can compile successfully and then fail during `.next/standalone` trace copy if symlink creation is blocked (`EPERM`). Treat this as an environment signoff issue and rerun in an environment that permits symlinks instead of disabling `output: "standalone"`.
+
+## Auth And Guest Session Contract
+- Auth API errors use `{ code, message, fieldErrors? }` so the player UI can map failures to exact form fields.
+- Public auth codes include `EMAIL_NOT_FOUND`, `WRONG_PASSWORD`, `VALIDATION_FAILED`, `PASSWORD_REUSE`, `INVALID_RESET_TOKEN`, and `RESET_TOKEN_EXPIRED`.
+- Password change requires an authenticated session and keeps existing sessions valid.
+- Password reset uses a one-time `PasswordResetToken`, rejects reused/current passwords, and invalidates all sessions for the user after a successful reset.
+- Non-production forgot-password responses may include the raw reset token for local dev verification; production must deliver the token out of band and must not echo it to the caller.
+- Guest mode is client-only, backed by `sessionStorage`, and must not call wallet, round-persistence, welcome-bonus, or bootstrap write endpoints.
+- Guest mode may reuse the internal `simulator` runtime branch, but user-facing copy must say `Guest` and persisted guest wallet state must not be stored in localStorage.
 
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
+- Spin CTA identity layers should remain mounted across pulse effects; remount only transient pulse/ripple layers, not the persistent ouroboros ring.
+
+## Wake Lock Control Contract
+- The player shell owns one `useScreenWakeLock()` controller instance and passes it into UI controls that need to reflect or change wake-lock state.
+- The toggle must expose `aria-pressed` and visibly different active/inactive icons.
+- Native Screen Wake Lock is preferred when available; requestAnimationFrame fallback stays available and visible through the same toggle when native support is missing or denied.
+
+## Responsive Shell Contract
+- `player-web` viewport bands are `phone <768`, `tablet 768-1023`, `laptop 1024-1439`, `desktop 1440-1919`, and `wide >=1920`.
+- The `useViewport()` hook is the React source of truth for viewport band and orientation; CSS must stay aligned with these bands and may read `data-viewport-band` / `data-orientation` from `.slotViewport`.
+- The hook must render the same default viewport on server and first client render, then update after mount, so responsive data attributes do not create React hydration mismatches.
+- Phone landscape keeps only the center board plus compact floating dock; side rails are hidden in that band to keep the board visible.
+- Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
+- Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
+
+## Olamov Embed Contract
+- `player-web` supports iframe mode through `?embed=1`; this trims the shell by hiding the right branding rail while keeping board, left support rail, floating dock, and auth flows active.
+- The browser API path remains `/_api`; iframe mode must not bypass the Next proxy or change the session model.
+- The player shell sends `frame-ancestors 'self' https://olamov.com https://*.olamov.com` by default. Use `PLAYER_FRAME_ANCESTORS` only for staging parent origins.
+- When `COOKIE_SECURE=true`, API auth cookies must be emitted as `SameSite=None; Secure` for third-party iframe login. Default local cookies remain `SameSite=Lax`.
+- Safari and Chrome third-party-cookie blocking remains an integration risk; fallback should be top-level login handoff or platform token exchange, not weakening cookie security.
+
+## Repo Hygiene Contract
+- PostgreSQL is the active database in current setup docs, env examples, Docker Compose, and Prisma schema.
+- Committed env examples must use placeholders only. Real `.env` files remain ignored.
+- `docs/` is trackable; only local analysis cache files such as `docs/notes.md` stay ignored.
+- Local screenshots, test-results, `.codex/`, `graphify-out/`, and credential reference files remain ignored.
+- Documentation links should be repo-relative, not machine-local absolute paths.
 
 ## Delivery Logging Protocol
 - Every change touching board presentation, spin flow, or animation timing must be recorded in `docs/tasks.md` Change Log the same day.
@@ -731,7 +769,7 @@ and not only on naive width breakpoints.
   - Documented the board-frame isolation findings: the intrusive inset frame was the Pixi `runeLayer` inner rounded-rectangle/corner-stroke pass, while the CSS `boardFrame`, CSS `boardFrame::after`, CSS `boardStageHalo`, and the larger Pixi `frame` mapped to other accepted shell layers
 
 ## Board Frame Layer Findings
-- The unwanted inner/inset frame was not a CSS shell selector. It was the Pixi `runeLayer` pass inside [pixi-temple-board.tsx](/c:/Projects/MyTests/Tsogos/apps/player-web/components/board/pixi-temple-board.tsx), which draws:
+- The unwanted inner/inset frame was not a CSS shell selector. It was the Pixi `runeLayer` pass inside [pixi-temple-board.tsx](../apps/player-web/components/board/pixi-temple-board.tsx), which draws:
   - one inner rounded rectangle
   - four short corner lines
 - The larger Pixi `frame` in the same file is a different layer. In screenshot isolation it mapped to the accepted outer/yellow frame, not the intrusive inset frame.

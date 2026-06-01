@@ -2,8 +2,36 @@
 Purpose: centralized responsive ownership for player-web shell.
 Scope: split by responsibility for maintainability.
 Order: desktop -> portrait -> mobile fallback.
+Bands: phone <768, tablet 768-1023, laptop 1024-1439, desktop 1440-1919, wide >=1920.
+These bands must stay aligned with `hooks/useViewport.ts`.
 */
 
 @import "./responsive-desktop.css";
 @import "./responsive-portrait.css";
 @import "./responsive-mobile.css";
+
+.slotViewport.is-embed-mode {
+  --machine-stage-columns: clamp(168px, 18vw, 232px) minmax(0, 1fr);
+  --machine-stage-gap: clamp(6px, 0.7vw, 10px);
+  --right-rail-max-width: 0px;
+  --board-inline-breathe: 4px;
+  padding: clamp(6px, 0.7dvh, 10px);
+}
+
+.slotViewport.is-embed-mode .gameArea.machineStage {
+  grid-template-columns: var(--machine-stage-columns);
+}
+
+.slotViewport.is-embed-mode .brandingRail {
+  display: none !important;
+}
+
+.slotViewport.is-embed-mode .boardMetaRow {
+  top: 1px;
+}
+
+@media (orientation: portrait) and (min-width: 768px) {
+  .slotViewport.is-embed-mode[data-orientation="portrait"] {
+    --portrait-dock-footprint: clamp(160px, 24vw, 204px);
+  }
+}

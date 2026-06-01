@@ -11,20 +11,6 @@
     --board-frame-margin-bottom: -64px;
     --machine-footer-gap: 6px;
   }
-
-  .topHud {
-    grid-template-columns:
-      minmax(300px, 2fr)
-      minmax(240px, 1.34fr)
-      minmax(208px, 1.08fr)
-      minmax(196px, 1fr)
-      minmax(170px, 0.88fr)
-      minmax(136px, 0.7fr);
-  }
-
-  .controlsDock {
-    width: min(100%, 820px);
-  }
 }
 
 @media (max-width: 1366px), (max-height: 768px) {
@@ -51,55 +37,6 @@
   .slotBackdrop {
     background-position: 54% 24%;
   }
-
-  .topHud {
-    grid-template-columns:
-      minmax(280px, 2.08fr)
-      minmax(234px, 1.34fr)
-      minmax(214px, 1.16fr)
-      minmax(206px, 1.12fr)
-      minmax(140px, 0.84fr)
-      minmax(134px, 0.76fr);
-    gap: 6px;
-  }
-
-  .logoChip,
-  .statChip,
-  .meterChip,
-  .iconChip {
-    padding: 7px 9px;
-  }
-
-  .logoChip {
-    grid-template-columns: 46px minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .logoMark {
-    width: 46px;
-    height: 46px;
-  }
-
-  .logoChipHero {
-    grid-template-columns: 1fr;
-    padding: 8px 14px 6px;
-  }
-
-  .logoMarkHero {
-    height: clamp(52px, 6.8dvh, 74px);
-  }
-
-  .compactControlStrip {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .summaryZone {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(2, minmax(0, auto));
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .formGrid {
     grid-template-columns: 1fr;
   }
@@ -111,34 +48,6 @@
     --stage-status-width: min(100%, 640px);
     --board-frame-fit-height: calc(100dvh - 112px);
   }
-
-  .topHud {
-    grid-template-columns:
-      minmax(240px, 1.8fr)
-      minmax(212px, 1.25fr)
-      minmax(198px, 1.1fr)
-      minmax(194px, 1.06fr)
-      minmax(132px, 0.8fr)
-      minmax(124px, 0.72fr);
-  }
-
-  .betInlineControls {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .betManualGroup {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .phaseBadge {
-    max-width: 58%;
-  }
-
-  .phaseBadge span {
-    font-size: 0.7rem;
-  }
-
   .slotBackdrop {
     opacity: 0.48;
   }
@@ -148,17 +57,6 @@
   .slotViewport {
     --machine-stage-columns: minmax(0, 1fr) 210px;
   }
-
-  .topHud {
-    grid-template-columns:
-      minmax(220px, 1.8fr)
-      minmax(198px, 1.2fr)
-      minmax(188px, 1.08fr)
-      minmax(180px, 1fr)
-      minmax(124px, 0.72fr)
-      minmax(118px, 0.68fr);
-  }
-
   .leftRail {
     display: none;
   }
@@ -169,46 +67,10 @@
     --machine-stage-columns: 1fr;
     --board-frame-fit-height: calc(100dvh - 210px);
   }
-
-  .topHud {
-    grid-template-columns: 1.5fr 1fr 1fr;
-  }
-
-  .walletGroup,
-  .statPairGroup,
-  .meterGroup,
-  .systemGroup {
-    grid-column: span 1;
-  }
-
   .roundChips,
   .leftRail,
   .rightRail {
     display: none;
-  }
-
-  .controlStripMain {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .compactControlStrip {
-    grid-template-columns: 1fr;
-    justify-items: stretch;
-  }
-
-  .summaryZone {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .betZoneHeader,
-  .summaryStat {
-    text-align: left;
-  }
-
-  .compactControlMeta {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 
@@ -236,8 +98,7 @@
   }
 
   .floatingGameDock .ouroborosRing {
-    width: clamp(49px, 3.9vw, 60px);
-    height: clamp(49px, 3.9vw, 60px);
+    inset: 0;
   }
 
   .dockStopButton {

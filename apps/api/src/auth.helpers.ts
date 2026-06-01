@@ -57,3 +57,6 @@ export const isSecureRequest = (request: RequestWithAuth) => {
   if (override === "false") return false;
   return request.secure === true || proto === "https";
 };
+
+export const getSessionCookieSameSite = () =>
+  process.env.COOKIE_SECURE === "true" ? "none" : "lax";

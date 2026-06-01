@@ -1,7 +1,9 @@
 /*
-Purpose: renders the main spin CTA with ouroboros ring styling
+Purpose: renders the main spin CTA with the gold ouroboros ring asset
 Layer: frontend (player-web)
 Uses: presentation spin-state-machine labels
+Note: the serpent is a transparent-center PNG (original artwork) pinned/centered
+around the Spin core. It rotates while spinning, slow drift otherwise.
 */
 
 import { type SpinPhase } from "@/lib/presentation/spin-state-machine";
@@ -52,10 +54,9 @@ export function SpinButton({
       type="button"
     >
       <span className="spinRipple" key={pulseKey} />
-      <span aria-hidden="true" className="ouroborosRing" key={`ouroboros-${pulseKey}`}>
-        <span className="ouroborosBody" />
-        <span className="ouroborosHead" />
-        <span className="ouroborosEye" />
+      <span aria-hidden="true" className="ouroborosRing">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="ouroborosArt" src="/assets/ui/ouroboros-ring.png" alt="" draggable={false} />
       </span>
       <span className="spinCore">
         <span className="spinText">Spin</span>

@@ -26,14 +26,19 @@ apps/api/.runtime-api*.log
 # Local editor-only settings
 .vscode/settings.json
 
-# Dev tooling — not needed for app to function
+# Dev tooling - not needed for app to function
 .claude/
+.codex/
 CLAUDE.md
 graphify-out/
+
+# Local visual/test artifacts
+apps/player-web/screenshots/
+apps/player-web/test-results/
 
 # Local editor workspaces
 .obsidian/
 .idea/
 
-# Local analysis cache (skill output — never commit)
-docs/
+# Local analysis cache (skill output - never commit)
+docs/notes.md

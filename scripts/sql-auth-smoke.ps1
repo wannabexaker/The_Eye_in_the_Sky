@@ -6,6 +6,11 @@ if ([string]::IsNullOrWhiteSpace($base)) {
 $playerSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $playerSessionB = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $adminSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$adminEmail = $env:SMOKE_ADMIN_EMAIL
+$adminPassword = $env:SMOKE_ADMIN_PASSWORD
+if ([string]::IsNullOrWhiteSpace($adminEmail) -or [string]::IsNullOrWhiteSpace($adminPassword)) {
+  throw "Set SMOKE_ADMIN_EMAIL and SMOKE_ADMIN_PASSWORD in your local environment before running this smoke test."
+}
 $email = "player+a$([guid]::NewGuid().ToString('N').Substring(0,8))@example.com"
 $emailB = "player+b$([guid]::NewGuid().ToString('N').Substring(0,8))@example.com"
 $password = "Player123!"
@@ -85,8 +90,8 @@ try {
 }
 
 $null = Invoke-RestMethod -Uri "$base/auth/login" -WebSession $adminSession -Method Post -ContentType "application/json" -Body (@{
-  email = "admin@example.com"
-  password = "ChangeMe123!"
+  email = $adminEmail
+  password = $adminPassword
 } | ConvertTo-Json)
 $adminSessionDto = Invoke-RestMethod -Uri "$base/auth/me" -WebSession $adminSession -Method Get
 $adminSelect = Invoke-RestMethod -Uri "$base/game-config/select" -WebSession $adminSession -Method Post -ContentType "application/json" -Body (@{

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SymbolId } from "@eye/game-engine";
 import type { AuthUserDto } from "@eye/shared-types";
 import { AuthOverlay } from "@/components/auth/auth-overlay";
+import { ChangePasswordModal } from "@/components/auth/change-password-modal";
 import { PixiTempleBoard } from "@/components/board/pixi-temple-board";
 import { ControlPanel } from "@/components/controls/control-panel";
 import { WakeLockToggle } from "@/components/controls/wake-lock-toggle";
@@ -28,21 +29,27 @@ import { SessionAnalyticsOverlay } from "@/components/analytics/session-analytic
 import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { useRuntimeGameConfig } from "@/hooks/use-runtime-game-config";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
+import { useViewport } from "@/hooks/useViewport";
 import {
+  changePlayerPassword,
   claimPlayerWelcomeBonus,
   depositPlayerWallet,
   exchangePlatformToken,
   fetchAuthMode,
   fetchAuthSession,
   fetchPlayerBootstrap,
+  forgotPlayerPassword,
   loginPlayer,
   logoutPlayer,
+  PlayerApiError,
   persistPlayerRound,
   registerPlayer,
+  resetPlayerPassword,
   withdrawPlayerWallet,
   type AuthModePublicConfig
 } from "@/lib/api/player-api";
 import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
+import { ensureGuestSession, loadGuestSession } from "@/lib/identity/guest-session";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
@@ -66,6 +73,14 @@ const formatMoneyCompactEur = (value: number) =>
   }).format(value);
 
 const formatBalanceRoundedEur = (value: number) => `€${Math.round(value)}`;
+
+const readEmbedMode = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return new URLSearchParams(window.location.search).get("embed") === "1";
+};
 
 const symbolLabels: Record<string, string> = {
   ashen_sigil: "Ashen Sigil",
@@ -91,11 +106,17 @@ export default function HomePage() {
   const bonusExitTimerRef = useRef<number | null>(null);
   const persistedRoundIdRef = useRef<string | null>(null);
   const [fullscreenEnabled, setFullscreenEnabled] = useState(false);
+  const [embedMode, setEmbedMode] = useState(false);
   const [bonusEnterCinematic, setBonusEnterCinematic] = useState(false);
   const [bonusExitCinematic, setBonusExitCinematic] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authErrorCode, setAuthErrorCode] = useState<string | undefined>();
+  const [authFieldErrors, setAuthFieldErrors] = useState<Record<string, string>>({});
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [changePasswordBusy, setChangePasswordBusy] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState<PlayerApiError | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUserDto | null>(null);
   const [authMode, setAuthMode] = useState<AuthModePublicConfig | null>(null);
@@ -103,7 +124,26 @@ export default function HomePage() {
   const [authModeBlocked, setAuthModeBlocked] = useState(false);
 
   // Keep screen awake while game is active
-  useScreenWakeLock();
+  const wakeLock = useScreenWakeLock();
+
+  const clearAuthError = useCallback(() => {
+    setAuthError("");
+    setAuthErrorCode(undefined);
+    setAuthFieldErrors({});
+  }, []);
+
+  const applyAuthError = useCallback((error: unknown, fallback: string) => {
+    if (error instanceof PlayerApiError) {
+      setAuthError(error.message);
+      setAuthErrorCode(error.code);
+      setAuthFieldErrors(error.fieldErrors);
+      return;
+    }
+
+    setAuthError(error instanceof Error ? error.message : fallback);
+    setAuthErrorCode(undefined);
+    setAuthFieldErrors({});
+  }, []);
 
   const {
     hasHydrated,
@@ -122,6 +162,7 @@ export default function HomePage() {
     walletTransactions,
     roundsLog,
     runtimeMode,
+    guestDisplayName,
     applyServerSnapshot,
     claimWelcomeBonus,
     completeDeposit,
@@ -135,11 +176,13 @@ export default function HomePage() {
     toggleSound,
     toggleModal,
     setAutoContinueNeverStop,
+    setGuestDisplayName,
     finishDepositProcessing,
     finishWithdrawalProcessing
   } = usePlayerUiStore();
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
+  const viewport = useViewport();
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
   const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
@@ -154,16 +197,16 @@ export default function HomePage() {
     [inputAllowed, slot.bonusAnnouncement, slot.bonusSummary, slot.canSpin, slot.winPresentation]
   );
   const sessionCardTitle = isSimulatorMode
-    ? "Local simulator session. Wallet persists only in browser storage."
+    ? "Guest session. Wallet is stored only in this tab session."
     : authUser
-      ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on SQL.`
-      : "Login is required to restore SQL-backed wallet and round state.";
+      ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on PostgreSQL.`
+      : "Login is required to restore PostgreSQL-backed wallet and round state.";
 
   const refreshServerBackedPlayerState = useCallback(async () => {
     const session = await fetchAuthSession();
     const authenticated = Boolean(session.authenticated && session.user);
     setIsAuthenticated(authenticated);
-    setAuthError("");
+    clearAuthError();
     setAuthUser(session.user);
 
     if (!authenticated) {
@@ -174,7 +217,7 @@ export default function HomePage() {
     const snapshot = await fetchPlayerBootstrap();
     applyServerSnapshot(snapshot);
     setAuthUser(snapshot.user);
-  }, [applyServerSnapshot]);
+  }, [applyServerSnapshot, clearAuthError]);
 
   const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
   const paytableThresholds = Array.from(
@@ -298,6 +341,14 @@ export default function HomePage() {
   const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
 
   useEffect(() => {
+    const syncEmbedMode = () => setEmbedMode(readEmbedMode());
+
+    syncEmbedMode();
+    window.addEventListener("popstate", syncEmbedMode);
+    return () => window.removeEventListener("popstate", syncEmbedMode);
+  }, []);
+
+  useEffect(() => {
     const wasBonusModeActive = previousBonusModeRef.current;
 
     if (!wasBonusModeActive && bonusModeActive) {
@@ -360,9 +411,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (runtimeMode === "simulator") {
+      if (!loadGuestSession()) {
+        exitSimulatorMode();
+        return;
+      }
+
       setAuthLoading(false);
       setAuthBusy(false);
-      setAuthError("");
+      clearAuthError();
       setIsAuthenticated(false);
       setAuthUser(null);
       setAuthModeBlocked(false);
@@ -374,7 +430,7 @@ export default function HomePage() {
     const bootstrapAuth = async () => {
       try {
         setAuthLoading(true);
-        setAuthError("");
+        clearAuthError();
         setAuthModeBlocked(false);
 
         // Step 1: Fetch auth mode (non-fatal — defaults to INTERNAL_ONLY on failure)
@@ -435,14 +491,14 @@ export default function HomePage() {
             if (disposed) return;
             const msg = exchangeError instanceof Error ? exchangeError.message : "Platform login failed.";
             if (mode.mode === "EXTERNAL_ONLY") {
-              // Hard block — no fallback available
+              // Hard block - no fallback available
               setAuthModeBlocked(true);
-              setAuthError(msg);
+              applyAuthError(exchangeError, msg);
               setIsAuthenticated(false);
               setAuthUser(null);
             } else {
-              // HYBRID — fall back to internal login overlay
-              setAuthError(msg);
+              // HYBRID - fall back to internal login overlay
+              applyAuthError(exchangeError, msg);
               setIsAuthenticated(false);
               setAuthUser(null);
             }
@@ -453,7 +509,10 @@ export default function HomePage() {
             setAuthModeBlocked(true);
             setIsAuthenticated(false);
             setAuthUser(null);
-            setAuthError("This game requires a platform launch link. Please return via the platform portal.");
+            applyAuthError(
+              new Error("This game requires a platform launch link. Please return via the platform portal."),
+              "This game requires a platform launch link. Please return via the platform portal."
+            );
           }
         } else {
           // HYBRID with no assertion — fall through to login overlay
@@ -466,7 +525,7 @@ export default function HomePage() {
         if (!disposed) {
           setIsAuthenticated(false);
           setAuthUser(null);
-          setAuthError(error instanceof Error ? error.message : "Authentication bootstrap failed.");
+          applyAuthError(error, "Authentication bootstrap failed.");
         }
       } finally {
         if (!disposed) {
@@ -480,7 +539,7 @@ export default function HomePage() {
     return () => {
       disposed = true;
     };
-  }, [refreshServerBackedPlayerState, runtimeMode]);
+  }, [applyAuthError, clearAuthError, exitSimulatorMode, refreshServerBackedPlayerState, runtimeMode]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -669,41 +728,75 @@ export default function HomePage() {
   const handleLogin = useCallback(
     async (payload: { email: string; password: string }) => {
       setAuthBusy(true);
-      setAuthError("");
+      clearAuthError();
       try {
         exitSimulatorMode();
         persistedRoundIdRef.current = null;
         await loginPlayer(payload);
         await refreshServerBackedPlayerState();
       } catch (error) {
-        setAuthError(error instanceof Error ? error.message : "Login failed.");
+        applyAuthError(error, "Login failed.");
         throw error;
       } finally {
         setAuthBusy(false);
         setAuthLoading(false);
       }
     },
-    [exitSimulatorMode, refreshServerBackedPlayerState]
+    [applyAuthError, clearAuthError, exitSimulatorMode, refreshServerBackedPlayerState]
   );
 
   const handleRegister = useCallback(
     async (payload: { email: string; password: string; displayName: string }) => {
       setAuthBusy(true);
-      setAuthError("");
+      clearAuthError();
       try {
         exitSimulatorMode();
         persistedRoundIdRef.current = null;
         await registerPlayer(payload);
         await refreshServerBackedPlayerState();
       } catch (error) {
-        setAuthError(error instanceof Error ? error.message : "Registration failed.");
+        applyAuthError(error, "Registration failed.");
         throw error;
       } finally {
         setAuthBusy(false);
         setAuthLoading(false);
       }
     },
-    [exitSimulatorMode, refreshServerBackedPlayerState]
+    [applyAuthError, clearAuthError, exitSimulatorMode, refreshServerBackedPlayerState]
+  );
+
+  const handleForgotPassword = useCallback(
+    async (payload: { email: string }) => {
+      setAuthBusy(true);
+      clearAuthError();
+      try {
+        return await forgotPlayerPassword(payload);
+      } catch (error) {
+        applyAuthError(error, "Password reset request failed.");
+        throw error;
+      } finally {
+        setAuthBusy(false);
+        setAuthLoading(false);
+      }
+    },
+    [applyAuthError, clearAuthError]
+  );
+
+  const handleResetPassword = useCallback(
+    async (payload: { token: string; newPassword: string }) => {
+      setAuthBusy(true);
+      clearAuthError();
+      try {
+        await resetPlayerPassword(payload);
+      } catch (error) {
+        applyAuthError(error, "Password reset failed.");
+        throw error;
+      } finally {
+        setAuthBusy(false);
+        setAuthLoading(false);
+      }
+    },
+    [applyAuthError, clearAuthError]
   );
 
   const handleSkipLogin = useCallback(() => {
@@ -711,15 +804,16 @@ export default function HomePage() {
       return;
     }
 
+    ensureGuestSession();
     persistedRoundIdRef.current = null;
     enterSimulatorMode();
     slot.reset();
     setAuthBusy(false);
     setAuthLoading(false);
-    setAuthError("");
+    clearAuthError();
     setIsAuthenticated(false);
     setAuthUser(null);
-  }, [allowSkipLogin, enterSimulatorMode, slot]);
+  }, [allowSkipLogin, clearAuthError, enterSimulatorMode, slot]);
 
   const handleSwitchToLogin = useCallback(() => {
     persistedRoundIdRef.current = null;
@@ -727,19 +821,19 @@ export default function HomePage() {
     slot.reset();
     setAuthBusy(false);
     setAuthLoading(false);
-    setAuthError("");
+    clearAuthError();
     setIsAuthenticated(false);
     setAuthUser(null);
-  }, [exitSimulatorMode, slot]);
+  }, [clearAuthError, exitSimulatorMode, slot]);
 
   const handleLogout = useCallback(async () => {
     setAuthBusy(true);
-    setAuthError("");
+    clearAuthError();
 
     try {
       await logoutPlayer();
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : "Logout failed.");
+      applyAuthError(error, "Logout failed.");
     } finally {
       persistedRoundIdRef.current = null;
       slot.reset();
@@ -748,7 +842,37 @@ export default function HomePage() {
       setAuthBusy(false);
       setAuthLoading(false);
     }
-  }, [slot]);
+  }, [applyAuthError, clearAuthError, slot]);
+
+  const handleChangePassword = useCallback(
+    async (payload: { currentPassword: string; newPassword: string }) => {
+      setChangePasswordBusy(true);
+      setChangePasswordError(null);
+
+      try {
+        await changePlayerPassword(payload);
+      } catch (error) {
+        setChangePasswordError(
+          error instanceof PlayerApiError
+            ? error
+            : new PlayerApiError(error instanceof Error ? error.message : "Password change failed.", 0)
+        );
+        throw error;
+      } finally {
+        setChangePasswordBusy(false);
+      }
+    },
+    []
+  );
+
+  const handleRenameGuest = useCallback(() => {
+    const nextName = window.prompt("Guest display name", guestDisplayName);
+    if (nextName === null) {
+      return;
+    }
+
+    setGuestDisplayName(nextName);
+  }, [guestDisplayName, setGuestDisplayName]);
 
   const startWelcomeFlow = useCallback(async () => {
     if (isSimulatorMode) {
@@ -757,16 +881,16 @@ export default function HomePage() {
     }
 
     setAuthBusy(true);
-    setAuthError("");
+    clearAuthError();
     try {
       const snapshot = await claimPlayerWelcomeBonus();
       applyServerSnapshot(snapshot);
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : "Welcome bonus claim failed.");
+      applyAuthError(error, "Welcome bonus claim failed.");
     } finally {
       setAuthBusy(false);
     }
-  }, [applyServerSnapshot, claimWelcomeBonus, isSimulatorMode]);
+  }, [applyAuthError, applyServerSnapshot, claimWelcomeBonus, clearAuthError, isSimulatorMode]);
 
   const handleConfirmDeposit = useCallback(
     async (amount: number) => {
@@ -841,9 +965,12 @@ export default function HomePage() {
 
   return (
     <main
-      className={`slotViewport ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
+      className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
+      data-embed={embedMode ? "true" : "false"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
       data-math-profile={activeGameConfigProfile.profileId}
+      data-orientation={viewport.orientation}
+      data-viewport-band={viewport.band}
       ref={shellRef}
     >
       <div
@@ -1053,29 +1180,44 @@ export default function HomePage() {
           <p className="eyebrow">Session</p>
           <div className="menuSessionCard" title={sessionCardTitle}>
             <div className="menuSessionMeta">
-              <strong>{isSimulatorMode ? "Local Simulator" : authUser?.displayName ?? "Player Session"}</strong>
+              <strong>{isSimulatorMode ? guestDisplayName || "Guest" : authUser?.displayName ?? "Player Session"}</strong>
               <span>
                 {isSimulatorMode
-                  ? "Skip Login is active. SQL save is disabled in this dev-only mode."
+                  ? "Guest mode is active. Server writes are disabled and this tab owns the session."
                   : authUser
-                    ? `${authUser.email} · Wallet, rounds, and bonus state are restored from SQL.`
-                    : "Login is required for SQL-backed wallet and round restore."}
+                    ? `${authUser.email} | Wallet, rounds, and bonus state are restored from PostgreSQL.`
+                    : "Login is required for PostgreSQL-backed wallet and round restore."}
               </span>
             </div>
             <div className="menuSessionActions">
               {isSimulatorMode ? (
-                <button className="welcomeButton compactPrimary" onClick={handleSwitchToLogin} type="button">
-                  Switch to Login
-                </button>
+                <>
+                  <button className="welcomeButton compactPrimary" onClick={handleRenameGuest} type="button">
+                    Rename Guest
+                  </button>
+                  <button className="welcomeButton compactPrimary" onClick={handleSwitchToLogin} type="button">
+                    Create Account
+                  </button>
+                </>
               ) : authUser ? (
-                <button
-                  className="welcomeButton compactPrimary"
-                  disabled={authBusy}
-                  onClick={() => void handleLogout()}
-                  type="button"
-                >
-                  {authBusy ? "Signing Out..." : "Logout"}
-                </button>
+                <>
+                  <button
+                    className="welcomeButton compactPrimary"
+                    disabled={authBusy}
+                    onClick={() => setChangePasswordOpen(true)}
+                    type="button"
+                  >
+                    Change Password
+                  </button>
+                  <button
+                    className="welcomeButton compactPrimary"
+                    disabled={authBusy}
+                    onClick={() => void handleLogout()}
+                    type="button"
+                  >
+                    {authBusy ? "Signing Out..." : "Logout"}
+                  </button>
+                </>
               ) : null}
             </div>
           </div>
@@ -1165,7 +1307,7 @@ export default function HomePage() {
             Keep the screen awake during gameplay on supported devices.
           </p>
           <div className="chipRow">
-            <WakeLockToggle />
+            <WakeLockToggle {...wakeLock} />
           </div>
         </section>
 
@@ -1285,7 +1427,17 @@ export default function HomePage() {
         onStart={startWelcomeFlow}
         open={hasHydrated && canPlayWithoutAuth && welcomeOpen}
       />
-      {/* EXTERNAL_ONLY mode: platform exchange failed or no assertion — hard blocked */}
+      <ChangePasswordModal
+        busy={changePasswordBusy}
+        error={changePasswordError}
+        onClose={() => {
+          setChangePasswordOpen(false);
+          setChangePasswordError(null);
+        }}
+        onSubmit={handleChangePassword}
+        open={changePasswordOpen}
+      />
+      {/* EXTERNAL_ONLY mode: platform exchange failed or no assertion - hard blocked */}
       {!authLoading && authModeBlocked ? (
         <div className="overlayBackdrop welcomeBackdrop" role="alertdialog" aria-label="Access blocked">
           <section className="overlayModal welcomeModal" style={{ textAlign: "center", padding: "2.5rem 2rem" }}>
@@ -1306,8 +1458,12 @@ export default function HomePage() {
           allowSkipLogin={allowSkipLogin}
           busy={authBusy}
           error={authError}
+          errorCode={authErrorCode}
+          fieldErrors={authFieldErrors}
+          onForgotPassword={handleForgotPassword}
           onLogin={handleLogin}
           onRegister={handleRegister}
+          onResetPassword={handleResetPassword}
           onSkipLogin={handleSkipLogin}
         />
       ) : null}

@@ -35,6 +35,6 @@ public/assets/
 ```
 
 ## Entry Points
-- [page.tsx](/c:/Projects/MyTests/Tsogos/apps/player-web/app/page.tsx): shell composition
-- [globals.css](/c:/Projects/MyTests/Tsogos/apps/player-web/app/globals.css): active shell styling
-- [use-slot-machine.ts](/c:/Projects/MyTests/Tsogos/apps/player-web/hooks/gameplay/use-slot-machine.ts): gameplay controller
+- [page.tsx](app/page.tsx): shell composition
+- [globals.css](app/globals.css): active shell styling
+- [use-slot-machine.ts](hooks/gameplay/use-slot-machine.ts): gameplay controller

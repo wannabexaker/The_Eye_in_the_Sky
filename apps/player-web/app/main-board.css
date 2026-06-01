@@ -94,7 +94,7 @@ Board atmosphere and frame art
   content: "";
   position: absolute;
   inset: 0;
-  z-index: calc(var(--z-board-frame) + 1);
+  z-index: var(--z-board-frame-shade);
   pointer-events: none;
   background:
     radial-gradient(circle at center, transparent 48%, rgba(6, 6, 8, 0.06) 100%),
@@ -237,7 +237,7 @@ Board stage and Pixi shell
   display: block;
   min-height: 0;
   padding-top: 0;
-  z-index: calc(var(--z-surface) + 4);
+  z-index: var(--z-center-stage);
   height: 100%;
   overflow: visible;
 }
@@ -250,7 +250,7 @@ Board stage and Pixi shell
   right: auto;
   width: 100%;
   transform: translateX(-50%);
-  z-index: calc(var(--z-surface) + 9);
+  z-index: var(--z-board-meta);
   display: grid;
   justify-content: center;
   pointer-events: none;
@@ -281,13 +281,13 @@ Board stage and Pixi shell
   padding-top: 0;
   margin-top: 0;
   min-height: 0;
-  z-index: calc(var(--z-surface) + 6);
+  z-index: var(--z-board-shell);
 }
 
 .boardFrameMain {
   /* Main board footprint: width is derived from the available viewport height. */
   position: relative;
-  z-index: calc(var(--z-surface) + 10);
+  z-index: var(--z-board-main);
   width: auto;
   max-width: calc(100% - var(--board-inline-breathe));
   height: min(100%, var(--board-frame-fit-height));
@@ -325,7 +325,7 @@ Board stage and Pixi shell
 .symbolTooltip {
   /* Symbol-name hover tooltip above tiles. */
   position: absolute;
-  z-index: calc(var(--z-board-overlay) + 2);
+  z-index: var(--z-symbol-tooltip);
   pointer-events: none;
   transform: translate(-50%, -100%);
   padding: 4px 8px;
@@ -812,7 +812,7 @@ Portrait: board fits full center-stage width without crop.
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
-  z-index: calc(var(--z-dropdown) + 4);
+  z-index: var(--z-autoplay-popover);
   width: clamp(176px, 18vw, 228px);
   transform: translate(-50%, 10px);
   opacity: 0;
