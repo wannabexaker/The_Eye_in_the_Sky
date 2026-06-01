@@ -28,6 +28,7 @@ apps/api/.runtime-api*.log
 
 # Dev tooling — not needed for app to function
 .claude/
+.codex/
 CLAUDE.md
 graphify-out/
 

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Cinzel, Spectral } from "next/font/google";
 import "./globals.css";
 import "./main-board.css";
+// responsive-views.css is the aggregator: it @imports desktop -> portrait -> mobile
+// in that order so smaller-viewport rules win. Importing desktop again here would
+// re-append it after mobile and break that cascade, so it must NOT be re-imported.
 import "./styles/responsive-views.css";
-import "./styles/responsive-desktop.css";
 
 const displayFont = Cinzel({
   subsets: ["latin"],
