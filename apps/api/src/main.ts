@@ -44,6 +44,13 @@ const isAllowedOrigin = (origin: string | undefined) => {
       return true;
     }
 
+    if (
+      parsed.protocol === "https:" &&
+      (hostname === "olamov.com" || hostname === "eye.olamov.com")
+    ) {
+      return true;
+    }
+
     const extraOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
       .split(",")
       .map((value) => value.trim())

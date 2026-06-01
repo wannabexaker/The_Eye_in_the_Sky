@@ -189,6 +189,141 @@ p {
   filter: saturate(1.08) brightness(0.88) contrast(1.08);
 }
 
+.slotViewport[data-embed="1"] {
+  --machine-stage-columns:
+    clamp(148px, 10.2vw, 238px)
+    minmax(0, 1fr);
+  --right-rail-max-width: 0px;
+}
+
+.slotViewport[data-embed="1"] .brandingRail {
+  display: none !important;
+}
+
+.slotViewport[data-embed="1"] .gameArea.machineStage {
+  grid-template-columns: var(--machine-stage-columns);
+}
+
+/* Guest session indicator: corner-anchored, discreet, collapsible.
+   Collapsed state is the small `.guestSessionChip`; expanded is `.guestSessionBadge`. */
+.guestSessionBadge {
+  position: fixed;
+  top: clamp(10px, 1.4dvh, 18px);
+  right: clamp(10px, 1.6vw, 22px);
+  z-index: calc(var(--z-button) + 4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(calc(100vw - 24px), 360px);
+  padding: 6px 8px;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(14, 14, 18, 0.78), rgba(10, 10, 13, 0.82));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.guestSessionChip {
+  position: fixed;
+  top: clamp(10px, 1.4dvh, 18px);
+  right: clamp(10px, 1.6vw, 22px);
+  z-index: calc(var(--z-button) + 4);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  border-radius: 999px;
+  background: rgba(12, 12, 16, 0.6);
+  color: rgba(244, 239, 230, 0.7);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.guestSessionChip:hover {
+  background: rgba(18, 18, 24, 0.78);
+  border-color: rgba(226, 190, 112, 0.3);
+  color: rgba(244, 239, 230, 0.92);
+}
+
+.guestSessionChipDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  box-shadow: 0 0 8px rgba(226, 190, 112, 0.6);
+}
+
+.guestBadgeIdentity,
+.guestRenameEditor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.guestBadgeIdentity strong {
+  color: var(--gold-bright);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.8rem;
+  line-height: 1;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guestBadgeIconButton {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+.guestBadgeCollapseButton {
+  opacity: 0.7;
+}
+
+.guestBadgeCollapseButton:hover {
+  opacity: 1;
+}
+
+.guestRenameEditor input {
+  width: min(200px, 42vw);
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.guestSaveCta {
+  border: 1px solid rgba(226, 190, 112, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(244, 239, 230, 0.72);
+  cursor: pointer;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  padding: 6px 11px;
+  white-space: nowrap;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.guestSaveCta:hover {
+  background: rgba(226, 190, 112, 0.1);
+  border-color: rgba(226, 190, 112, 0.3);
+  color: rgba(244, 239, 230, 0.95);
+}
+
 .slotViewport.is-bonus-active .slotBackdropBonus {
   filter: saturate(1.14) brightness(0.92) contrast(1.12);
 }
@@ -1965,6 +2100,8 @@ p {
 .menuSessionActions {
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .modalFeedback {
@@ -2289,6 +2426,7 @@ p {
 .welcomeModal {
   width: min(640px, 100%);
   max-height: none;
+  --welcome-logo-size: clamp(72px, 18dvh, 160px);
 }
 
 .welcomeHeader {
@@ -2306,7 +2444,7 @@ p {
 
 .welcomeLogo {
   width: min(920px, 100%);
-  height: clamp(180px, 24dvh, 320px);
+  height: var(--welcome-logo-size);
   background-position: center top;
   background-repeat: no-repeat;
   background-size: contain;
@@ -2329,18 +2467,23 @@ p {
 
 .welcomeBody {
   display: grid;
-  gap: 16px;
+  gap: clamp(10px, 1.6dvh, 16px);
   text-align: center;
   justify-items: center;
   padding: 12px 24px 32px;
 }
 
 .authModal {
-  width: min(680px, 100%);
+  --welcome-logo-size: clamp(56px, 12vw, 96px);
+  width: min(420px, 92vw);
+  max-width: 92vw;
+  max-height: min(640px, 90dvh);
+  overflow-y: auto;
 }
 
 .authBody {
   align-content: start;
+  overflow: visible;
 }
 
 .authToggleRow {
@@ -2350,8 +2493,82 @@ p {
 
 .authFormGrid {
   display: grid;
-  gap: 12px;
+  gap: clamp(10px, 1.4dvh, 14px);
   width: min(420px, 100%);
+}
+
+.authDisplayNameRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+  align-items: center;
+}
+
+.authIconButton,
+.guestBadgeIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(226, 190, 112, 0.18);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(244, 239, 230, 0.86);
+  cursor: pointer;
+}
+
+.authIconButton {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.authIconButton svg,
+.guestBadgeIconButton svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.authIconButton circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.authFieldError,
+.authDevHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f0b18a;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.authDevHint {
+  color: rgba(226, 190, 112, 0.72);
+}
+
+.authInlineAction,
+.authForgotLink {
+  border: 0;
+  background: transparent;
+  color: var(--gold-bright);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.authForgotLink {
+  justify-self: start;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .authPasswordField {
@@ -4716,6 +4933,14 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   border-color: rgba(226, 190, 112, 0.34);
   color: #171210;
   font-weight: 600;
+}
+
+.wakeLockIcon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .dockSmallButton.is-active:hover:not(:disabled) {

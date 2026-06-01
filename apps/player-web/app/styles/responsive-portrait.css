@@ -1,6 +1,10 @@
 /* Portrait-specific responsive ownership (phone portrait + vertical monitor portrait lock). */
 
 @media (orientation: portrait) and (max-aspect-ratio: 10/16) {
+  .authModal {
+    max-width: 92vw;
+  }
+
   .slotViewport {
     --machine-stage-columns: 1fr;
     --machine-footer-columns: 1fr;

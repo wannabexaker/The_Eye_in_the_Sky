@@ -19,6 +19,7 @@ model User {
   updatedAt           DateTime          @updatedAt
   authSessions        AuthSession[]
   externalIdentities  ExternalIdentity[]
+  passwordResetTokens PasswordResetToken[]
   wallet              Wallet?
   gameSessions        GameSession[]
   rounds              Round[]
@@ -45,6 +46,20 @@ model AuthSession {
   @@index([userId])
   @@index([expiresAt])
   @@index([authSource])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  playerId  String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  player    User      @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([playerId])
+  @@index([expiresAt])
+  @@index([usedAt])
 }
 
 model Wallet {

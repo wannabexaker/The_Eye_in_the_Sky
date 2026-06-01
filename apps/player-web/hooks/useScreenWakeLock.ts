@@ -18,13 +18,16 @@ export function useScreenWakeLock() {
   const animationFrameRef = useRef<number | null>(null);
   const isAcquiredRef = useRef(false);
   const hasSupport = useRef(false);
+  const [hasNativeSupport, setHasNativeSupport] = useState(false);
   const [manualToggleAvailable, setManualToggleAvailable] = useState(false);
+  const [isAcquired, setIsAcquired] = useState(false);
 
   // Check if wake lock is supported
   useEffect(() => {
     const nav = navigator as any;
     hasSupport.current = !!(nav && nav.wakeLock);
-    setManualToggleAvailable(hasSupport.current);
+    setHasNativeSupport(hasSupport.current);
+    setManualToggleAvailable(true);
   }, []);
 
   const requestWakeLock = async () => {
@@ -38,6 +41,7 @@ export function useScreenWakeLock() {
         try {
           wakeLockRef.current = await nav.wakeLock.request('screen');
           isAcquiredRef.current = true;
+          setIsAcquired(true);
           console.log('[useScreenWakeLock] Wake lock acquired');
         } catch (lockErr) {
           // Permission denied or user dismissed
@@ -69,10 +73,11 @@ export function useScreenWakeLock() {
         const x = body.scrollLeft;
         lastTime = now;
       }
-      animationFrameRef.current = requestAnimationFrame(keepAlive);
+    animationFrameRef.current = requestAnimationFrame(keepAlive);
     };
     keepAlive();
     isAcquiredRef.current = true;
+    setIsAcquired(true);
     console.log('[useScreenWakeLock] Using requestAnimationFrame fallback');
   };
 
@@ -88,6 +93,7 @@ export function useScreenWakeLock() {
         animationFrameRef.current = null;
       }
       isAcquiredRef.current = false;
+      setIsAcquired(false);
     } catch (err) {
       console.warn('[useScreenWakeLock] Release error:', err);
     }
@@ -128,8 +134,8 @@ export function useScreenWakeLock() {
   return {
     requestWakeLock,
     releaseWakeLock,
-    isAcquired: isAcquiredRef.current,
-    hasSupport: hasSupport.current,
+    isAcquired,
+    hasSupport: hasNativeSupport,
     manualToggleAvailable
   };
 }

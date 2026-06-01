@@ -15,7 +15,12 @@ import {
   DEFAULT_SPIN_ANIMATION_SPEED,
   type SpinAnimationSpeed
 } from "@/lib/presentation/spin-state-machine";
+import {
+  clearGuestModeStorageFlag,
+  setGuestModeStorageFlag
+} from "@/lib/identity/guest-session";
 import { create } from "zustand";
+import type { StateStorage } from "zustand/middleware";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
 
@@ -79,7 +84,7 @@ export type PaymentMethod = {
   last4?: string;
 };
 
-export type PlayerRuntimeMode = "authenticated" | "simulator";
+export type PlayerRuntimeMode = "authenticated" | "simulator" | "guest";
 
 export type PlayerAuthSource = "internal" | "external" | null;
 
@@ -119,6 +124,8 @@ type PaymentMethodDraft = {
 type PlayerUiState = {
   runtimeMode: PlayerRuntimeMode;
   authSource: PlayerAuthSource;
+  guestId: string | null;
+  guestDisplayName: string | null;
   hasHydrated: boolean;
   soundEnabled: boolean;
   spinAnimationSpeed: SpinAnimationSpeed;
@@ -175,7 +182,9 @@ type PlayerUiState = {
   applyRoundResult: (result: SpinResult) => void;
   applyServerSnapshot: (snapshot: PlayerSnapshotDto) => void;
   enterSimulatorMode: () => void;
+  enterGuestMode: (payload: { guestId: string; displayName: string }) => void;
   exitSimulatorMode: () => void;
+  renameGuest: (displayName: string) => void;
   setAuthSource: (source: PlayerAuthSource) => void;
   resetSession: () => void;
 };
@@ -204,6 +213,49 @@ const clearRoundsLogStorage = () => {
     // localStorage unavailable — non-critical
   }
 };
+
+const createPlayerStateStorage = (): StateStorage => ({
+  getItem: (name) => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return window.sessionStorage.getItem(name) ?? window.localStorage.getItem(name);
+  },
+  setItem: (name, value) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let runtimeMode: string | undefined;
+    try {
+      const parsed = JSON.parse(value) as { state?: { runtimeMode?: string } };
+      runtimeMode = parsed.state?.runtimeMode;
+    } catch {
+      runtimeMode = undefined;
+    }
+
+    if (runtimeMode === "guest") {
+      window.sessionStorage.setItem(name, value);
+      window.localStorage.removeItem(name);
+      setGuestModeStorageFlag();
+      return;
+    }
+
+    window.localStorage.setItem(name, value);
+    window.sessionStorage.removeItem(name);
+    clearGuestModeStorageFlag();
+  },
+  removeItem: (name) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.removeItem(name);
+    window.sessionStorage.removeItem(name);
+    clearGuestModeStorageFlag();
+  }
+});
 
 const baseDepositDraft = (): DepositDraft => ({
   amount: 100,
@@ -322,6 +374,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
     (set, get) => ({
       runtimeMode: "authenticated",
       authSource: null,
+      guestId: null,
+      guestDisplayName: null,
       soundEnabled: false,
       hasHydrated: false,
       spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
@@ -683,7 +737,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balanceAfter: result.balanceAfter
           };
 
-          const shouldTrackAnalytics = state.runtimeMode !== "simulator";
+          const shouldTrackAnalytics = state.runtimeMode === "authenticated";
           const previousEntry = state.roundsLog[state.roundsLog.length - 1];
           const nextRoundsLog =
             shouldTrackAnalytics && previousEntry?.id !== analyticsEntry.id
@@ -780,10 +834,13 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         set((state) => {
           clearRoundsLogStorage();
           initializeAnalyticsService([]);
+          clearGuestModeStorageFlag();
 
           return {
             runtimeMode: "simulator",
             authSource: null,
+            guestId: null,
+            guestDisplayName: null,
             wallet: state.simulatorWallet,
             totalDeposited: state.simulatorTotalDeposited,
             totalWithdrawn: state.simulatorTotalWithdrawn,
@@ -805,10 +862,56 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             historyOpen: false
           };
         }),
-      exitSimulatorMode: () =>
+      enterGuestMode: ({ guestId, displayName }) =>
+        set(() => {
+          clearRoundsLogStorage();
+          initializeAnalyticsService([]);
+          setGuestModeStorageFlag();
+          const transaction: WalletTransaction = {
+            id: createTransactionId(),
+            timestamp: nowIso(),
+            type: "welcome_bonus",
+            amount: welcomeCredits,
+            balanceAfter: welcomeCredits,
+            label: "Guest Welcome Bonus"
+          };
+
+          return {
+            runtimeMode: "guest",
+            authSource: null,
+            guestId,
+            guestDisplayName: displayName,
+            wallet: {
+              balance: welcomeCredits,
+              currency: "EUR"
+            },
+            totalDeposited: 0,
+            totalWithdrawn: 0,
+            welcomeClaimed: true,
+            welcomeOpen: false,
+            samsaraExpiryAt: null,
+            gameStateSnapshot: null,
+            roundsLog: [],
+            walletTransactions: [transaction],
+            paymentMethods: basePaymentMethods(),
+            depositDraft: baseDepositDraft(),
+            withdrawalDraft: baseWithdrawalDraft(),
+            paymentMethodDraft: basePaymentMethodDraft(),
+            depositOpen: false,
+            withdrawOpen: false,
+            paymentMethodsOpen: false,
+            walletHistoryOpen: false,
+            analyticsOpen: false,
+            historyOpen: false
+          };
+        }),
+      exitSimulatorMode: () => {
+        clearGuestModeStorageFlag();
         set({
           runtimeMode: "authenticated",
           authSource: null,
+          guestId: null,
+          guestDisplayName: null,
           wallet: {
             balance: 0,
             currency: "EUR"
@@ -831,21 +934,31 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           walletHistoryOpen: false,
           analyticsOpen: false,
           historyOpen: false
-        }),
+        });
+      },
+      renameGuest: (displayName) =>
+        set((state) => ({
+          guestDisplayName:
+            state.runtimeMode === "guest" && displayName.trim()
+              ? displayName.trim()
+              : state.guestDisplayName
+        })),
       resetSession: () =>
         set((state) => ({
           authSource: null,
           wallet:
             state.runtimeMode === "simulator"
               ? state.simulatorWallet
+              : state.runtimeMode === "guest"
+                ? state.wallet
               : {
                   balance: 0,
                   currency: "EUR"
                 },
           totalDeposited:
-            state.runtimeMode === "simulator" ? state.simulatorTotalDeposited : 0,
+            state.runtimeMode === "simulator" ? state.simulatorTotalDeposited : state.runtimeMode === "guest" ? state.totalDeposited : 0,
           totalWithdrawn:
-            state.runtimeMode === "simulator" ? state.simulatorTotalWithdrawn : 0,
+            state.runtimeMode === "simulator" ? state.simulatorTotalWithdrawn : state.runtimeMode === "guest" ? state.totalWithdrawn : 0,
           samsaraExpiryAt: null,
           gameStateSnapshot: null,
           roundsLog: [],
@@ -868,13 +981,13 @@ export const usePlayerUiStore = create<PlayerUiState>()(
     }),
     {
       name: PLAYER_STORE_PERSIST_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(createPlayerStateStorage),
       onRehydrateStorage: () => (state) => {
         const runtimeMode = state?.runtimeMode ?? "authenticated";
         const persistedRoundsLog =
-          runtimeMode === "simulator" ? [] : loadRoundsLogFromStorage();
+          runtimeMode === "simulator" || runtimeMode === "guest" ? [] : loadRoundsLogFromStorage();
         const roundsLog =
-          runtimeMode === "simulator"
+          runtimeMode === "simulator" || runtimeMode === "guest"
             ? []
             : persistedRoundsLog.length > 0
               ? persistedRoundsLog
@@ -899,7 +1012,12 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         const samsaraStillValid =
           persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
         const mergedSamsaraExpiryAt = samsaraStillValid ? persistedSamsaraExpiryAt : null;
-        const runtimeMode = persisted.runtimeMode === "simulator" ? "simulator" : "authenticated";
+        const runtimeMode =
+          persisted.runtimeMode === "simulator"
+            ? "simulator"
+            : persisted.runtimeMode === "guest"
+              ? "guest"
+              : "authenticated";
         const simulatorWallet = persisted.simulatorWallet ?? {
           balance: 0,
           currency: "EUR"
@@ -912,6 +1030,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           runtimeMode,
+          guestId: runtimeMode === "guest" ? persisted.guestId ?? null : null,
+          guestDisplayName: runtimeMode === "guest" ? persisted.guestDisplayName ?? null : null,
           wallet: runtimeMode === "simulator" ? simulatorWallet : persisted.wallet ?? currentState.wallet,
           totalDeposited:
             runtimeMode === "simulator"
@@ -934,11 +1054,11 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           simulatorTotalDeposited,
           simulatorTotalWithdrawn,
           paymentMethods,
-          samsaraExpiryAt: runtimeMode === "simulator" ? null : mergedSamsaraExpiryAt,
-          gameStateSnapshot: runtimeMode === "simulator" ? null : mergedGameStateSnapshot,
+          samsaraExpiryAt: runtimeMode === "simulator" || runtimeMode === "guest" ? null : mergedSamsaraExpiryAt,
+          gameStateSnapshot: runtimeMode === "simulator" || runtimeMode === "guest" ? null : mergedGameStateSnapshot,
           // roundsLog is loaded from its own localStorage key in onRehydrateStorage
           roundsLog:
-            runtimeMode === "simulator"
+            runtimeMode === "simulator" || runtimeMode === "guest"
               ? []
               : Array.isArray(persisted.roundsLog)
                 ? persisted.roundsLog
@@ -957,6 +1077,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       },
       partialize: (state) => ({
         runtimeMode: state.runtimeMode,
+        guestId: state.guestId,
+        guestDisplayName: state.guestDisplayName,
         soundEnabled: state.soundEnabled,
         spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,
@@ -964,7 +1086,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         simulatorTotalDeposited: state.simulatorTotalDeposited,
         simulatorTotalWithdrawn: state.simulatorTotalWithdrawn,
         simulatorWelcomeClaimed: state.simulatorWelcomeClaimed,
-        ...(state.runtimeMode === "simulator"
+        ...(state.runtimeMode === "simulator" || state.runtimeMode === "guest"
           ? {
               welcomeOpen: state.welcomeOpen,
               welcomeClaimed: state.welcomeClaimed,

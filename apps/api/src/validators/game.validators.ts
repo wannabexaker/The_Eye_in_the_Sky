@@ -35,12 +35,33 @@ export const validators = {
   money: moneySchema,
   authRegister: z.object({
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),
-    password: z.string().min(8).max(100),
-    displayName: z.string().trim().min(2).max(50).regex(/^[\p{L}\p{N}_\s-]+$/u, "Invalid display name")
+    password: z.string().min(8, "Min 8 characters.").max(100),
+    displayName: z
+      .string()
+      .trim()
+      .min(2, "Display name must be at least 2 characters.")
+      .max(50)
+      .regex(/^[\p{L}\p{N}_\s-]+$/u, "Invalid display name")
   }),
   authLogin: z.object({
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),
     password: z.string().min(1).max(100)
+  }),
+  authChangePassword: z
+    .object({
+      currentPassword: z.string().min(1).max(100),
+      newPassword: z.string().min(8, "Min 8 characters.").max(100)
+    })
+    .refine((value) => value.currentPassword !== value.newPassword, {
+      path: ["newPassword"],
+      message: "New password must differ from current password."
+    }),
+  authForgotPassword: z.object({
+    email: z.email().max(255).transform((value) => value.trim().toLowerCase())
+  }),
+  authResetPassword: z.object({
+    token: z.string().trim().min(16).max(300),
+    newPassword: z.string().min(8, "Min 8 characters.").max(100)
   }),
   authPlatformExchange: z.object({
     platformAssertion: z.string().trim().min(20).max(10000),

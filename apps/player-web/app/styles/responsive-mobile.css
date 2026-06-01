@@ -28,3 +28,58 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .overlayBackdrop.welcomeBackdrop {
+    padding: 0;
+  }
+
+  .authModal {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .authModal .welcomeHeader {
+    padding: 14px 16px 6px;
+  }
+
+  .authModal .welcomeBody {
+    width: 100%;
+    padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  }
+
+  .authFormGrid,
+  .authFeedback {
+    width: 100%;
+    max-width: none;
+  }
+
+  .authToggleRow,
+  .welcomeButton,
+  .authSecondaryAction {
+    width: 100%;
+  }
+
+  .authToggleRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .welcomeButton,
+  .authSecondaryAction {
+    justify-content: center;
+  }
+
+  .guestSessionBadge {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .guestSessionChip {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 8px;
+  }
+}
