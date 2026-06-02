@@ -112,6 +112,12 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-02` **Task 2 landscape phone dock and wallet readout**
+  - Intent: make phone landscape usable by separating Spin from bet/autoplay controls and restoring visible wallet context.
+  - Hypothesis: the landscape-only spin transform pushed the button over the dock controls, while hiding the whole support rail removed the only readable Balance/Bet panel.
+  - Code change: replaced the landscape dock override with a two-column cluster (`bet/autoplay` column left, Spin right), removed the negative spin offset, increased board side breathing slightly, kept horizontal overflow hidden, and exposed only the existing `supportBalanceBlock` as a compact fixed top-left Balance/Bet readout.
+  - Verification: host Playwright guest-mode smoke passed at `844x390`, `932x430`, and `740x360`; checks confirmed no spin/bet/autoplay overlap, no horizontal scroll, visible Balance/Bet readout, board within viewport, and enabled spin/autoplay with a funded guest session. Screenshots saved under `apps/player-web/screenshots/mobile-fixes/`.
+  - Rollback note: revert this task commit if landscape board space becomes too constrained; do not reintroduce translated spin offsets over dock controls.
 - `2026-06-02` **Task 1 wake lock opt-in**
   - Intent: stop Brave Android from showing the unprompted Screen Wake Lock permission prompt on every fresh player visit.
   - Hypothesis: `useScreenWakeLock()` requested native wake lock from its mount effect, so permission surfaced before the player touched the existing wake-lock toggle.
