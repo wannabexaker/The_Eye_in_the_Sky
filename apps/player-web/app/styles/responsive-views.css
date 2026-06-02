@@ -10,6 +10,356 @@ These bands must stay aligned with `hooks/useViewport.ts`.
 @import "./responsive-portrait.css";
 @import "./responsive-mobile.css";
 
+/*
+Annotation-driven viewport locks.
+These sit after the split responsive files so narrow phone, portrait tablet,
+and 1024-class laptop geometry cannot inherit incompatible desktop/mobile rules.
+*/
+
+@media (orientation: portrait) and (max-width: 480px) and (max-height: 740px) {
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] {
+    --portrait-dock-height: 96px;
+    --portrait-dock-width: min(calc(100vw - 22px), 296px);
+    --portrait-rail-bottom: calc(var(--portrait-bottom-safe) + var(--portrait-dock-height) + 16px);
+    --portrait-rail-max-height: 154px;
+    --portrait-rail-width: min(calc(100vw - 18px), 360px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .boardFrameMain {
+    width: min(calc(100vw - 44px), 326px) !important;
+    max-width: min(calc(100vw - 44px), 326px) !important;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait {
+    grid-template-rows: 36px 42px 38px 20px;
+    gap: 5px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait .supportBlock {
+    padding: 4px 6px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait .supportHistoryBlock {
+    min-height: 38px;
+    max-height: 38px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait .supportHistoryRow {
+    min-height: 16px;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 390px) and (max-width: 480px) and (min-height: 820px) {
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] {
+    --portrait-rail-max-height: clamp(224px, 27dvh, 250px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait {
+    grid-template-rows: 50px 58px minmax(66px, 82px) 26px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="phone"] .supportRail.is-handheld-portrait .supportHistoryBlock {
+    min-height: 66px;
+    max-height: 82px;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 768px) and (max-width: 1023px) {
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] {
+    --machine-stage-columns: 1fr;
+    --machine-stage-gap: 0;
+    --tablet-portrait-board-width: min(calc(100vw - 48px), 740px);
+    --tablet-portrait-dock-height: 108px;
+    --tablet-portrait-rail-width: min(calc(100vw - 40px), 760px);
+    padding: clamp(8px, 1.4vw, 14px);
+    overflow: hidden;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .gameArea.machineStage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .brandingRail,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .rightRail,
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .boardMetaRow {
+    display: none !important;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .centerStage {
+    height: 100%;
+    overflow: visible !important;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .boardShell {
+    inset: 0 !important;
+    place-items: start center;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .boardFrameMain {
+    width: var(--tablet-portrait-board-width) !important;
+    max-width: var(--tablet-portrait-board-width) !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail {
+    display: grid !important;
+    position: fixed;
+    left: 50%;
+    top: clamp(636px, 56dvh, 720px);
+    bottom: auto;
+    transform: translateX(-50%);
+    z-index: var(--z-portrait-rail);
+    width: var(--tablet-portrait-rail-width) !important;
+    max-width: var(--tablet-portrait-rail-width) !important;
+    height: auto !important;
+    max-height: none !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: 64px 96px 26px;
+    grid-template-areas:
+      "treasury balance status"
+      "meter history history"
+      "utility utility utility";
+    gap: 8px;
+    align-content: end;
+    padding: 0;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportBlock {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding: 8px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .treasuryBlock {
+    grid-area: treasury;
+    transform: none;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportBalanceBlock {
+    grid-area: balance;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportStatusBlock {
+    grid-area: status;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportMeterBlock {
+    grid-area: meter;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportHistoryBlock {
+    grid-area: history;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .treasuryBlock .supportActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportBalanceZone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 100%;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportStatusBlock.is-handheld-hidden {
+    display: block;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportHistoryBlock {
+    min-height: 96px;
+    max-height: 96px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportHistory {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .supportRail .supportRailUtilityBar {
+    grid-area: utility;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock {
+    right: calc(env(safe-area-inset-right, 0px) + 18px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    width: 318px;
+    transform: none;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDockInner {
+    min-height: var(--tablet-portrait-dock-height);
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-areas: "spin controls";
+    align-items: center;
+    column-gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock .dockTopRow {
+    grid-area: spin;
+    display: flex;
+    justify-content: center;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock .dockBottomRow {
+    grid-area: controls;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, max-content);
+    justify-items: end;
+    gap: 5px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock .dockSpinWrapper {
+    width: 96px;
+    min-width: 96px;
+    height: 96px;
+    min-height: 96px;
+    transform: none;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .floatingGameDock .spinCta {
+    --spin-cta-size: 94px;
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .winPresentationLayer {
+    place-items: start center;
+    padding: clamp(210px, 22dvh, 260px) 24px 24px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .winPresentationCard {
+    min-width: 0;
+    width: min(520px, calc(100vw - 96px));
+    max-width: min(520px, calc(100vw - 96px));
+    max-height: min(360px, 36dvh);
+    gap: 7px;
+    padding: 18px 22px;
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .winPresentationHero {
+    min-height: clamp(92px, 13dvh, 132px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .simpleWinGlowPlate {
+    width: min(520px, 118%);
+    height: clamp(132px, 20dvh, 190px);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .winPresentationAmount {
+    font-size: clamp(2.6rem, 6vw, 4rem);
+  }
+
+  .slotViewport[data-orientation="portrait"][data-viewport-band="tablet"] .winPresentationDetails {
+    max-height: 82px;
+    gap: 4px;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 901px) and (max-width: 1180px) and (max-height: 820px) {
+  .slotViewport[data-orientation="landscape"] {
+    --machine-stage-columns: 176px minmax(0, 1fr);
+    --machine-stage-gap: 8px;
+    --stage-status-width: min(100%, 300px);
+    --small-laptop-board-height: min(calc(100dvh - 132px), 612px);
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .slotViewport[data-orientation="landscape"] .gameArea.machineStage {
+    grid-template-columns: var(--machine-stage-columns);
+    gap: var(--machine-stage-gap);
+  }
+
+  .slotViewport[data-orientation="landscape"] .brandingRail,
+  .slotViewport[data-orientation="landscape"] .rightRail,
+  .slotViewport[data-orientation="landscape"] .boardMetaRow {
+    display: none !important;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail {
+    display: flex !important;
+    position: relative;
+    left: auto;
+    top: auto;
+    bottom: auto;
+    transform: none;
+    width: 100%;
+    max-width: 176px;
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow: hidden;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .supportBlock {
+    padding: 7px;
+    border-radius: 12px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .treasuryBlock .supportActions {
+    grid-template-columns: 1fr;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .supportBalanceZone {
+    grid-template-columns: 1fr;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .supportBalanceZone::after {
+    display: none;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .supportHistoryBlock {
+    min-height: 132px;
+    max-height: 168px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slotViewport[data-orientation="landscape"] .supportRail .supportHistory {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .slotViewport[data-orientation="landscape"] .centerStage {
+    overflow: visible !important;
+  }
+
+  .slotViewport[data-orientation="landscape"] .boardShell {
+    inset: 0 !important;
+    place-items: start center;
+  }
+
+  .slotViewport[data-orientation="landscape"] .boardFrameMain {
+    height: var(--small-laptop-board-height) !important;
+    max-height: var(--small-laptop-board-height) !important;
+    width: auto !important;
+    max-width: min(calc(100% - 18px), 724px) !important;
+    transform: none !important;
+  }
+
+  .slotViewport[data-orientation="landscape"] .floatingGameDock {
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}
+
 .slotViewport.is-embed-mode {
   --machine-stage-columns: clamp(168px, 18vw, 232px) minmax(0, 1fr);
   --machine-stage-gap: clamp(6px, 0.7vw, 10px);
