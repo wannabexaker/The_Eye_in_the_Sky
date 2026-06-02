@@ -93,7 +93,7 @@
   .supportRail .treasuryBlock {
     grid-area: treasury;
     align-self: end;
-    transform: translateY(125px);
+    transform: none;
   }
 
   .supportRail .supportBalanceBlock {
@@ -176,33 +176,41 @@
   }
 
   .supportRail.is-handheld-portrait {
+    left: 50%;
+    bottom: calc(var(--portrait-bottom-safe) + var(--portrait-dock-footprint) + 96px);
+    transform: translateX(-50%);
+    width: min(calc(100vw - 20px), 392px);
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(42px, auto) minmax(60px, auto) minmax(78px, auto) minmax(26px, auto);
     grid-template-areas:
-      "history balance"
-      "history meter"
-      "utility meter";
+      "treasury balance"
+      "status meter"
+      "history history"
+      "utility utility";
+    gap: 5px;
+    align-content: end;
   }
 
   .supportRail.is-handheld-portrait .treasuryBlock {
-    grid-area: meter;
-    position: relative;
-    right: auto;
-    bottom: auto;
     width: 100%;
     min-width: 0;
-    max-width: 144px;
-    justify-self: end;
+    max-width: none;
+    justify-self: stretch;
+    align-self: stretch;
     transform: none;
     margin: 0;
     box-sizing: border-box;
-    padding: 7px;
+    padding: 6px;
     overflow: hidden;
   }
 
   .supportRail.is-handheld-portrait .supportBalanceBlock {
     width: 100%;
-    max-width: 168px;
-    justify-self: end;
-    transform: translateY(20px);
+    max-width: none;
+    justify-self: stretch;
+    align-self: stretch;
+    transform: none;
   }
 
   .supportRail.is-handheld-portrait .supportBalanceZone {
@@ -211,8 +219,8 @@
   }
 
   .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat {
-    min-height: 34px;
-    padding: 4px 6px;
+    min-height: 32px;
+    padding: 4px 5px;
     display: grid;
     gap: 2px;
     justify-items: center;
@@ -228,17 +236,53 @@
     line-height: 1;
   }
 
+  .supportRail.is-handheld-portrait .supportHistoryBlock {
+    width: 100%;
+    min-height: 76px;
+    max-height: 92px;
+    justify-self: stretch;
+    align-self: stretch;
+    padding: 6px;
+  }
+
+  .supportRail.is-handheld-portrait .supportHistoryBlock .panelHeader {
+    margin-bottom: 0;
+  }
+
+  .supportRail.is-handheld-portrait .supportEmotion {
+    min-height: 26px;
+    padding: 4px 6px;
+  }
+
+  .supportRail.is-handheld-portrait .supportEmotion strong {
+    font-size: 0.68rem;
+  }
+
+  .supportRail.is-handheld-portrait .supportEmotionHint {
+    display: none;
+  }
+
+  .supportRail.is-handheld-portrait .supportHistory {
+    gap: 3px;
+    margin-top: 3px;
+  }
+
+  .supportRail.is-handheld-portrait .supportHistoryRow {
+    min-height: 21px;
+    padding: 3px 5px;
+  }
+
   .supportRail.is-handheld-portrait .supportMeterBlock {
-    position: fixed;
-    right: clamp(10px, 3vw, 18px);
-    bottom: var(--portrait-bottom-safe);
-    width: 144px;
-    min-width: 144px;
-    max-width: 144px;
-    z-index: var(--z-portrait-meter);
-    justify-self: auto;
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    z-index: auto;
+    justify-self: stretch;
+    align-self: stretch;
     margin: 0;
     box-sizing: border-box;
+    padding: 6px;
   }
 
   .supportRail.is-handheld-portrait .treasuryBlock .supportActions {
@@ -254,7 +298,11 @@
   }
 
   .supportRail.is-handheld-portrait .supportStatusBlock.is-handheld-hidden {
-    display: none;
+    display: block;
+    width: 100%;
+    justify-self: stretch;
+    align-self: stretch;
+    padding: 6px;
   }
 
   .supportRail.is-handheld-portrait .supportStatusStrip {
@@ -266,13 +314,13 @@
   }
 
   .supportRail.is-handheld-portrait .supportMiniStat {
-    min-height: 54px;
-    padding: 5px 6px;
+    min-height: 34px;
+    padding: 4px 5px;
     gap: 1px;
   }
 
   .supportRail.is-handheld-portrait .supportMiniStatRound {
-    min-height: 62px;
+    min-height: 36px;
   }
 
   .supportRail.is-handheld-portrait .supportMiniStat span {
@@ -286,7 +334,7 @@
   }
 
   .supportRail.is-handheld-portrait .supportMiniStat strong {
-    font-size: 0.92rem;
+    font-size: 0.78rem;
   }
 
   .supportRail.is-handheld-portrait .supportMeterBlock {
@@ -316,7 +364,7 @@
   .supportRail.is-handheld-portrait .supportRailUtilityBar {
     position: relative;
     grid-area: utility;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 3px;
     padding-top: 0;
   }
@@ -421,6 +469,7 @@
     .slotViewport {
       --portrait-spin-size: 112px;
       --portrait-dock-footprint: clamp(148px, 39vw, 178px);
+      --portrait-dock-width: clamp(236px, 64vw, 260px);
     }
 
     .floatingGameDock {
@@ -429,8 +478,8 @@
     }
 
     .floatingGameDockInner {
-      width: var(--portrait-dock-footprint);
-      min-width: var(--portrait-dock-footprint);
+      width: var(--portrait-dock-width);
+      min-width: var(--portrait-dock-width);
       grid-template-columns: 1fr;
       grid-template-rows: auto auto;
       justify-items: center;
@@ -446,8 +495,9 @@
     }
 
     .floatingGameDock .dockSpinWrapper {
-      width: 100%;
-      min-width: 0;
+      width: var(--portrait-dock-width);
+      min-width: var(--portrait-dock-width);
+      max-width: var(--portrait-dock-width);
       height: 0;
       min-height: 0;
       justify-self: center;
@@ -471,15 +521,15 @@
     .floatingGameDock .spinCta {
       top: 0;
       overflow: visible;
-      transform: translate(-50%, calc(-50% - 8px));
+      transform: translateX(-50%) translateY(calc(-50% - 8px));
     }
 
     .floatingGameDock .spinCta:hover {
-      transform: translate(-50%, calc(-50% - 8px)) scale(1.05);
+      transform: translateX(-50%) translateY(calc(-50% - 8px)) scale(1.05);
     }
 
     .floatingGameDock .spinCta:active:not(:disabled) {
-      transform: translate(-50%, calc(-50% - 8px)) scale(0.97);
+      transform: translateX(-50%) translateY(calc(-50% - 8px)) scale(0.97);
     }
 
     .floatingGameDock .dockSmallButton {

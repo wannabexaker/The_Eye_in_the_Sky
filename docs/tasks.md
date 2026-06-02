@@ -112,6 +112,12 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-02` **Task 3 handheld portrait panel grid**
+  - Intent: restore all phone-portrait support panels, especially Round Status, without bottom clipping or overlap with the spin dock.
+  - Hypothesis: the handheld grid omitted the `status` area and then compensated with translate/fixed-position hacks, causing the Round/Cascade/Spins panel to disappear and lower panels to drift into each other.
+  - Code change: replaced the handheld portrait grid with a four-row, two-column area map for `Treasury`, `Balance/Bet`, `Round Status`, `Samsara`, `Ritual Log`, and utility buttons; removed handheld translate offsets, made the Samsara block participate in grid flow instead of fixed positioning, compacted the ritual/status panels, and separated dock width from vertical dock footprint so the spin ring stays inside the viewport.
+  - Verification: host Playwright guest-mode smoke passed at `360x800`, `390x844`, and `412x915`; checks confirmed all five panels visible with required text, no panel overlaps, no support/dock overlap, no clipping, no horizontal scroll, and refreshed screenshots under `apps/player-web/screenshots/mobile-fixes/`.
+  - Rollback note: revert this task commit if portrait board visibility needs a different lower-zone composition; keep `status` in the handheld grid in any replacement.
 - `2026-06-02` **Task 2 landscape phone dock and wallet readout**
   - Intent: make phone landscape usable by separating Spin from bet/autoplay controls and restoring visible wallet context.
   - Hypothesis: the landscape-only spin transform pushed the button over the dock controls, while hiding the whole support rail removed the only readable Balance/Bet panel.
