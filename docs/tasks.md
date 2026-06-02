@@ -609,3 +609,9 @@
     - Code change: added `POST /admin/simulate` and `GET /admin/simulate/:jobId` behind `AdminGuard` + throttling; capped jobs at 1,000,000 spins and two active workers; added an admin-web Simulation Runner panel with profile/spins/bet/seed inputs, status polling, progress, and RTP/hit/bonus/volatility result cards.
     - Verification: `corepack pnpm --filter api lint` passed; `corepack pnpm --filter admin-web lint` passed; `corepack pnpm --filter api test` passed 59/59; `corepack pnpm --filter api test:e2e` passed 38/38; direct service smoke completed a 1,000-spin worker job with progress 100. `corepack pnpm --filter admin-web build` compiled successfully but failed on the known Windows standalone symlink `EPERM` copy step.
     - Rollback: remove `apps/api/src/admin-simulation.*`, unregister them from `apps/api/src/app.module.ts`, and remove `apps/admin-web/components/simulation-runner.tsx` plus its admin page section.
+  - Olamov iframe embed finish:
+    - Intent: finish the iframe deployment defaults for olamov.com without changing the proxy/session model.
+    - Hypothesis: trust-proxy and embed CSS were already present, but production compose still defaulted secure cookies off and the shell exposed boolean-ish `data-embed` values instead of the documented `1/0` flag.
+    - Code change: set `COOKIE_SECURE` default to `true` in `docker-compose.prod.yml`; changed player shell `data-embed` to `1`/`0` while keeping `.is-embed-mode` for the CSS that hides the branding rail/right scene.
+    - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed; `corepack pnpm --filter player-web lint` passed with existing warnings; `docker compose -f docker-compose.prod.yml config` passed and resolves `COOKIE_SECURE: "true"`.
+    - Rollback: restore `COOKIE_SECURE: ${COOKIE_SECURE:-false}` and `data-embed={embedMode ? "true" : "false"}`.

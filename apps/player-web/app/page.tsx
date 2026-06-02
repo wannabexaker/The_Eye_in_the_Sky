@@ -966,7 +966,7 @@ export default function HomePage() {
   return (
     <main
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
-      data-embed={embedMode ? "true" : "false"}
+      data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}
