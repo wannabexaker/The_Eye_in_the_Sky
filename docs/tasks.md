@@ -615,3 +615,9 @@
     - Code change: set `COOKIE_SECURE` default to `true` in `docker-compose.prod.yml`; changed player shell `data-embed` to `1`/`0` while keeping `.is-embed-mode` for the CSS that hides the branding rail/right scene.
     - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed; `corepack pnpm --filter player-web lint` passed with existing warnings; `docker compose -f docker-compose.prod.yml config` passed and resolves `COOKIE_SECURE: "true"`.
     - Rollback: restore `COOKIE_SECURE: ${COOKIE_SECURE:-false}` and `data-embed={embedMode ? "true" : "false"}`.
+  - GitHub Actions CI gate:
+    - Intent: add a Linux CI gate that catches type, lint, unit/e2e, and build regressions before merges.
+    - Hypothesis: the repo already has Docker image publishing, but no general PR/push verification workflow; running the build on Linux also avoids the Windows standalone symlink `EPERM` caveat.
+    - Code change: added `.github/workflows/ci.yml` with Node 22, pnpm 10.6.3 via corepack, frozen install, API Prisma generation, recursive typecheck/lint/tests, API e2e tests, and recursive build.
+    - Verification: `git diff --check -- .github/workflows/ci.yml docs/tasks.md` passed; `corepack pnpm -r --if-present typecheck` passed as the current no-op contract; `corepack pnpm -r lint` passed with existing player-web warnings; `corepack pnpm -r --if-present test` passed; `corepack pnpm --filter api test:e2e` passed 38/38. Local `corepack pnpm --filter api prisma:generate` was blocked by Windows `EPERM` renaming Prisma's query-engine DLL, consistent with an active local process/file lock; the workflow runs this step on Ubuntu. Local recursive build left to CI/Linux because Windows standalone symlink behavior is the known caveat.
+    - Rollback: delete `.github/workflows/ci.yml`.
