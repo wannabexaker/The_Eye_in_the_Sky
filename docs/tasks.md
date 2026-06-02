@@ -112,6 +112,12 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-02` **Task 1 wake lock opt-in**
+  - Intent: stop Brave Android from showing the unprompted Screen Wake Lock permission prompt on every fresh player visit.
+  - Hypothesis: `useScreenWakeLock()` requested native wake lock from its mount effect, so permission surfaced before the player touched the existing wake-lock toggle.
+  - Code change: removed mount-time native/fallback acquisition, split explicit user request from internal re-acquire, added an `enabledByUser` ref, and kept visibility re-acquire gated behind prior user enablement while still releasing active locks when the page hides.
+  - Verification: pending full mobile Playwright screenshot pass after responsive tasks; TypeScript/lint will run after all three task commits.
+  - Rollback note: revert this task commit if a target browser stops honoring explicit wake-lock toggle acquisition; do not restore mount-time wake-lock requests.
 - `2026-06-01` **WO-0 baseline and local artifact protection**
   - Intent: start the hardening pass from a known baseline without accidentally committing local Codex screenshots or generated test output.
   - Hypothesis: the pasted work order described an older dirty tracked tree; the current checkout has no tracked diffs and only local untracked artifacts.

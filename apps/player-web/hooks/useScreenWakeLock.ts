@@ -27,6 +27,7 @@ export function useScreenWakeLock(): ScreenWakeLockControls {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const modeRef = useRef<WakeLockMode>(null);
+  const enabledByUserRef = useRef(false);
   const [mode, setMode] = useState<WakeLockMode>(null);
   const [hasSupport, setHasSupport] = useState(false);
   const [manualToggleAvailable, setManualToggleAvailable] = useState(false);
@@ -62,7 +63,7 @@ export function useScreenWakeLock(): ScreenWakeLockControls {
     setActiveMode("fallback");
   }, [setActiveMode]);
 
-  const requestWakeLock = useCallback(async () => {
+  const acquireWakeLock = useCallback(async () => {
     if (typeof window === "undefined" || document.hidden) {
       return;
     }
@@ -88,7 +89,7 @@ export function useScreenWakeLock(): ScreenWakeLockControls {
     }
   }, [setActiveMode, startRAFKeepalive, stopRAFKeepalive]);
 
-  const releaseWakeLock = useCallback(async () => {
+  const releaseActiveWakeLock = useCallback(async () => {
     const activeWakeLock = wakeLockRef.current;
     wakeLockRef.current = null;
 
@@ -104,45 +105,44 @@ export function useScreenWakeLock(): ScreenWakeLockControls {
     setActiveMode(null);
   }, [setActiveMode, stopRAFKeepalive]);
 
+  const requestWakeLock = useCallback(async () => {
+    enabledByUserRef.current = true;
+    await acquireWakeLock();
+  }, [acquireWakeLock]);
+
+  const releaseWakeLock = useCallback(async () => {
+    enabledByUserRef.current = false;
+    await releaseActiveWakeLock();
+  }, [releaseActiveWakeLock]);
+
   useEffect(() => {
     const nav = navigator as NavigatorWithWakeLock;
     const nativeSupport = Boolean(nav.wakeLock);
     setHasSupport(nativeSupport);
     setManualToggleAvailable(typeof window.requestAnimationFrame === "function");
 
-    startRAFKeepalive();
-
-    if (!nativeSupport) {
-      return () => {
-        void releaseWakeLock();
-      };
-    }
-
-    const timer = window.setTimeout(() => {
-      void requestWakeLock();
-    }, 500);
-
     return () => {
-      window.clearTimeout(timer);
-      void releaseWakeLock();
+      void releaseActiveWakeLock();
     };
-  }, [releaseWakeLock, requestWakeLock, startRAFKeepalive]);
+  }, [releaseActiveWakeLock]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        void releaseWakeLock();
+        void releaseActiveWakeLock();
         return;
       }
 
-      void requestWakeLock();
+      if (enabledByUserRef.current) {
+        void acquireWakeLock();
+      }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [releaseWakeLock, requestWakeLock]);
+  }, [acquireWakeLock, releaseActiveWakeLock]);
 
   return {
     requestWakeLock,
