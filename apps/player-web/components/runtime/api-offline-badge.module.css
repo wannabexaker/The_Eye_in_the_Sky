@@ -1,0 +1,40 @@
+.badge {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: calc(var(--z-modal, 100) + 80);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.3);
+  border-radius: 999px;
+  background: rgba(7, 9, 12, 0.86);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+  color: #f4efe6;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #e2be70;
+  box-shadow: 0 0 12px rgba(226, 190, 112, 0.6);
+}
+
+@media (max-width: 767px) {
+  .badge {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    min-height: 24px;
+    padding: 5px 8px;
+    font-size: 0.58rem;
+  }
+}
