@@ -343,6 +343,12 @@ Board stage and Pixi shell
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
+@media (max-width: 11in) {
+  .symbolTooltip {
+    display: none;
+  }
+}
+
 /*
 Board responsive variables and local overrides
 */

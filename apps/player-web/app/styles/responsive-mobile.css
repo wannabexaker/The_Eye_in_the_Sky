@@ -34,8 +34,8 @@
     --machine-stage-columns: 1fr;
     --machine-stage-gap: 0;
     --stage-status-width: min(100%, 292px);
-    --board-frame-fit-height: calc(100dvh - 12px);
-    --board-inline-breathe: clamp(112px, 24vw, 190px);
+    --board-frame-fit-height: calc(100dvh - 68px);
+    --board-inline-breathe: clamp(128px, 27vw, 212px);
     --board-frame-radius: clamp(10px, 2vh, 14px);
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
@@ -121,7 +121,10 @@
   }
 
   .slotViewport[data-orientation="landscape"] .boardFrameMain {
+    height: min(100%, var(--board-frame-fit-height)) !important;
+    max-height: min(100%, var(--board-frame-fit-height)) !important;
     max-width: calc(100vw - var(--board-inline-breathe)) !important;
+    transform: translateX(clamp(-20px, -2.4vw, -14px)) !important;
   }
 
   .slotViewport[data-orientation="landscape"] .floatingGameDock {
@@ -196,6 +199,17 @@
   .slotViewport[data-orientation="landscape"] .dockSmallButton {
     min-width: 26px;
     padding: 2px 4px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .dockSpeedCycleButton {
+    width: 54px;
+    min-width: 54px;
+    max-width: 54px;
+  }
+
+  .slotViewport[data-orientation="landscape"] .dockSpeedCycleValue {
+    font-size: 0.43rem;
+    letter-spacing: 0.02em;
   }
 
   .slotViewport[data-orientation="landscape"] .dockBetInput {

@@ -578,3 +578,10 @@
     - decide later whether round persistence remains client-resolved or moves to server-authoritative spin resolution
     - clean up the API runtime path so local smoke no longer needs the `corepack pnpm --filter api exec node --import tsx dist/apps/api/src/main.js` workspace-loader workaround
 
+- `2026-06-02`
+  - Mobile UI corrective pass after interaction QA:
+    - Intent: remove real phone portrait and landscape overlaps after screenshots showed the board, support panels, spin dock, bet controls, autoplay controls, and menu states fighting for the same pixels.
+    - Hypothesis: the remaining breakage came from fragile handheld portrait translate/offset rules plus a landscape board height model that did not reserve enough room for the fixed dock.
+    - Code change: rebuilt handheld portrait placement around one compact support-rail grid with real `treasury`, `balance`, `status`, `meter`, `history`, and `utility` cells; replaced the portrait spin dock with a two-column spin/control tray; tightened landscape board height/inline breathing, widened speed labels so `NORMAL` remains readable, and hid hover-only symbol tooltips on mobile viewports so they cannot clip over the board.
+    - Verification: ran Playwright interaction QA in guest mode, opened the deposit modal, confirmed a deposit, executed three spins, opened the menu, and resized through 360x800, 390x844, 412x915, 740x360, 844x390, and 932x430. Final audit showed no horizontal scroll and zero measured overlap for rail/board, dock/board, dock/rail, spin/bet, and spin/autoplay on settled viewport states.
+    - Rollback: revert `apps/player-web/app/styles/responsive-portrait.css` and `apps/player-web/app/styles/responsive-mobile.css` to restore the previous mobile layout rules.
