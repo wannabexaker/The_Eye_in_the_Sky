@@ -621,3 +621,9 @@
     - Code change: added `.github/workflows/ci.yml` with Node 22, pnpm 10.6.3 via corepack, frozen install, API Prisma generation, recursive typecheck/lint/tests, API e2e tests, and recursive build.
     - Verification: `git diff --check -- .github/workflows/ci.yml docs/tasks.md` passed; `corepack pnpm -r --if-present typecheck` passed as the current no-op contract; `corepack pnpm -r lint` passed with existing player-web warnings; `corepack pnpm -r --if-present test` passed; `corepack pnpm --filter api test:e2e` passed 38/38. Local `corepack pnpm --filter api prisma:generate` was blocked by Windows `EPERM` renaming Prisma's query-engine DLL, consistent with an active local process/file lock; the workflow runs this step on Ubuntu. Local recursive build left to CI/Linux because Windows standalone symlink behavior is the known caveat.
     - Rollback: delete `.github/workflows/ci.yml`.
+  - README dev/build caveats:
+    - Intent: document the new full local startup path and the Windows standalone build requirement so setup does not depend on oral context.
+    - Hypothesis: root scripts already expose `dev:full`, but README still showed only three-terminal startup and did not say Developer Mode/Docker is the correct Windows build fix.
+    - Code change: added `corepack pnpm dev:full` to Development and expanded the Windows `EPERM` note to require Developer Mode or Docker/WSL/Linux instead of removing standalone output.
+    - Verification: `git diff --check -- README.md docs/tasks.md` passed; reviewed README diff for scoped `dev:full` and Windows build caveat changes.
+    - Rollback: remove the `dev:full` block and restore the shorter Windows `EPERM` note.

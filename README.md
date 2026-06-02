@@ -74,6 +74,14 @@ corepack pnpm --filter api prisma:seed
 
 ## Development
 
+Fast local path when Docker is available:
+
+```bash
+corepack pnpm dev:full
+```
+
+This starts PostgreSQL, generates the Prisma client, applies migrations, seeds configured local accounts, and runs the API, player, and admin apps together.
+
 ```bash
 # Terminal 1 - API
 corepack pnpm dev:api
@@ -106,5 +114,5 @@ corepack pnpm build
 ## Notes
 
 - Do not run `pnpm build` while `pnpm dev:*` is active. The player build guard aborts when port `3000` is busy to avoid `.next` cache corruption.
-- On Windows, standalone Next builds may compile and then fail on symlink creation with `EPERM`; rerun build signoff in an environment that permits symlinks.
+- On Windows, standalone Next builds may compile and then fail on symlink creation with `EPERM`. Enable Windows Developer Mode or run build signoff in Docker/WSL/Linux; do not remove `output: "standalone"` to work around it.
 - Seed credentials are local-only. Keep `PLAYER_SEED_*` and `ADMIN_SEED_*` blank in committed examples and set them only in ignored local env files.
