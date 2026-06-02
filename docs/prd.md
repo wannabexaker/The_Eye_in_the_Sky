@@ -598,6 +598,7 @@ and not only on naive width breakpoints.
     - Phase 1: local in-app retention and filtering
     - Phase 2: API-backed PostgreSQL persistence with the same query/store contract
   - Fixed integration blocker after abstraction rollout: corrected player-web analytics service import path so `hooks/use-analytics-service.ts` resolves the local storage implementation from `lib/analytics` during Next build/runtime.
+  - Completed the frontend API-backed analytics service bridge: authenticated runtime uses the existing `/analytics/*` API contract with local offline fallback, while guest/simulator mode stays client-local and non-blocking.
   - Locked the first explicit balancing contract for the simple `Constellation` sub-variant in `docs/variant-simple.md`.
   - Product/math direction for `Constellation` is now:
     - same shell and brand family as the main game

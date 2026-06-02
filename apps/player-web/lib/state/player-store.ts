@@ -17,7 +17,10 @@ import {
 } from "@/lib/presentation/spin-state-machine";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
+import {
+  initializeAnalyticsService,
+  storeAnalyticsRoundForRuntime
+} from "../../hooks/use-analytics-service";
 import {
   clearGuestSession,
   ensureGuestSession,
@@ -765,6 +768,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           // Write rounds log asynchronously in its own key — never blocks the spin
           if (shouldTrackAnalytics) {
             scheduleRoundsLogFlush(trimmedRoundsLog);
+            void storeAnalyticsRoundForRuntime(analyticsEntry, state.runtimeMode);
           }
 
           const simulatorWallet =
