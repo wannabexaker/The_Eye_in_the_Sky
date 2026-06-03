@@ -3,7 +3,7 @@ import { Cinzel, Spectral } from "next/font/google";
 import { ApiOfflineBadge } from "@/components/runtime/api-offline-badge";
 import "./globals.css";
 import "./main-board.css";
-import "./styles/responsive-views.css";
+import "./fluid-shell.css";
 
 const displayFont = Cinzel({
   subsets: ["latin"],

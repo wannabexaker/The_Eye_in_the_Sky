@@ -763,50 +763,6 @@ Plan 3 controls: keep spin anchored and tighten spin/bet/autoplay/stop into one 
   opacity: 0.45;
 }
 
-/*
-Hard geometry locks to avoid regressions from cross-file responsive overrides.
-Landscape: board fits full center-stage height without crop.
-Portrait: board fits full center-stage width without crop.
-*/
-
-@media (orientation: landscape) {
-  .centerStage {
-    overflow: visible !important;
-  }
-
-  .boardShell {
-    inset: 0 !important;
-  }
-
-  .boardFrameMain {
-    height: 100% !important;
-    max-height: 100% !important;
-    width: auto !important;
-    max-width: none !important;
-    margin-bottom: 0 !important;
-    transform: translateY(0) !important;
-  }
-}
-
-@media (orientation: portrait) {
-  .centerStage {
-    overflow: visible !important;
-  }
-
-  .boardShell {
-    inset: 0 !important;
-  }
-
-  .boardFrameMain {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    margin-bottom: 0 !important;
-    transform: translateY(0) !important;
-  }
-}
-
 .autoplayActionIcon,
 .nonstopIcon {
   width: 13px;

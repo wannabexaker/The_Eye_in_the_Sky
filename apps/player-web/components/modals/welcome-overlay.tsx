@@ -4,15 +4,19 @@ Layer: frontend (player-web)
 Uses: player store welcome state and wallet bonus action
 */
 
-import { shellAssets } from "@/lib/assets/asset-manifest";
-
 type WelcomeOverlayProps = {
   open: boolean;
   onStart: () => void | Promise<void>;
   busy?: boolean;
+  logoSrc?: string;
 };
 
-export function WelcomeOverlay({ open, onStart, busy = false }: WelcomeOverlayProps) {
+export function WelcomeOverlay({
+  open,
+  onStart,
+  busy = false,
+  logoSrc = "/assets/ui/logo-eye-in-the-sky.png"
+}: WelcomeOverlayProps) {
   if (!open) {
     return null;
   }
@@ -25,7 +29,7 @@ export function WelcomeOverlay({ open, onStart, busy = false }: WelcomeOverlayPr
             <div
               aria-hidden="true"
               className="welcomeLogo"
-              style={{ backgroundImage: `url(${shellAssets.logo})` }}
+              style={{ backgroundImage: `url(${logoSrc})` }}
             />
             <div className="overlayTitleBlock welcomeTitleBlock">
               <h2>Begin the Ritual</h2>

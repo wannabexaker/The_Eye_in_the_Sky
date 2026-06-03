@@ -9,6 +9,7 @@ import type {
   BonusSummaryEntry,
   WinPresentationEntry
 } from "@/lib/presentation/win-presentation-types";
+import type { ShellAssets } from "@/lib/assets/asset-manifest";
 import { BonusSummaryOverlay } from "@/components/presentation/bonus-summary-overlay";
 import { BonusWinOverlay } from "@/components/presentation/bonus-win-overlay";
 import { WinPresentationOverlay } from "@/components/presentation/win-presentation-overlay";
@@ -19,6 +20,7 @@ type WinPresentationControllerProps = {
   bonusSummary: BonusSummaryEntry | null;
   bonusSummaryLocked: boolean;
   winPresentation: WinPresentationEntry | null;
+  shellAssets: ShellAssets;
   onDismissBonusAnnouncement: () => void;
   onDismissBonusSummary: () => void;
   onDismissWinPresentation: () => void;
@@ -30,6 +32,7 @@ export function WinPresentationController({
   bonusSummary,
   bonusSummaryLocked,
   winPresentation,
+  shellAssets,
   onDismissBonusAnnouncement,
   onDismissBonusSummary,
   onDismissWinPresentation
@@ -49,6 +52,7 @@ export function WinPresentationController({
       <WinPresentationOverlay
         onContinue={onDismissWinPresentation}
         presentation={winPresentation}
+        shellAssets={shellAssets}
       />
     </>
   );

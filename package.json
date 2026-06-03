@@ -8,11 +8,20 @@
     "dev:player": "corepack pnpm --filter player-web dev",
     "dev:player:clean": "corepack pnpm --filter player-web dev:clean",
     "dev:admin": "corepack pnpm --filter admin-web dev",
+    "predev:api": "corepack pnpm --filter @eye/game-engine build",
     "dev:api": "corepack pnpm --filter api start:dev",
     "dev:apps": "corepack pnpm --filter player-web --filter admin-web --parallel dev",
+    "dev:all": "corepack pnpm --filter api --filter player-web --filter admin-web --parallel dev",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose stop postgres",
+    "db:setup": "corepack pnpm --filter api prisma:generate && corepack pnpm --filter api exec prisma migrate deploy && corepack pnpm --filter api prisma:seed",
+    "db:reset": "docker compose down -v postgres && corepack pnpm db:up && corepack pnpm db:setup",
+    "predev:full": "corepack pnpm --filter @eye/game-engine build",
+    "dev:full": "corepack pnpm db:up && corepack pnpm db:setup && corepack pnpm dev:all",
     "build": "corepack pnpm -r build",
     "build:player:clean": "corepack pnpm --filter player-web build:clean",
     "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm -r --if-present typecheck",
     "simulate": "corepack pnpm --filter @eye/game-engine simulate"
   }
 }

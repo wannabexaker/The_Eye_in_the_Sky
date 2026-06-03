@@ -2358,32 +2358,36 @@ p {
   order: 1;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionSession {
+.overlayModal[aria-label="Menu"] .menuSectionGraphics {
   order: 2;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionAnalytics {
+.overlayModal[aria-label="Menu"] .menuSectionSession {
   order: 3;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+.overlayModal[aria-label="Menu"] .menuSectionAnalytics {
   order: 4;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionVariant {
+.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
   order: 5;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionRules {
+.overlayModal[aria-label="Menu"] .menuSectionVariant {
   order: 6;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionSymbols {
+.overlayModal[aria-label="Menu"] .menuSectionRules {
   order: 7;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+.overlayModal[aria-label="Menu"] .menuSectionSymbols {
   order: 8;
+}
+
+.overlayModal[aria-label="Menu"] .menuSectionPaytable {
+  order: 9;
 }
 
 .compactModalPanel {
@@ -4296,12 +4300,12 @@ Keep the old center-board geometry out of `globals.css` so Full HD tuning happen
   column-gap: clamp(4px, 0.6vw, 8px);
   row-gap: clamp(2px, 0.35vh, 4px);
   padding: clamp(5px, 0.5vh, 7px) clamp(5px, 0.45vw, 7px) clamp(14px, 1.4vh, 17px);
-  border-radius: 16px;
+  border-radius: 1000px;
   border: 1px solid rgba(226, 190, 112, 0.12);
   background:
-    linear-gradient(180deg, rgba(14, 14, 18, 0.88), rgba(10, 10, 13, 0.92)),
-    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.08), transparent 28%);
-  backdrop-filter: blur(16px) saturate(0.92);
+    linear-gradient(180deg, rgba(14, 14, 18, 0.28), rgba(10, 10, 13, 0.32)),
+    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.18), transparent 30%);
+  backdrop-filter: blur(16px) saturate(0.22);
   box-shadow:
     0 -16px 38px rgba(0, 0, 0, 0.26),
     0 0 1px rgba(226, 190, 112, 0.12),

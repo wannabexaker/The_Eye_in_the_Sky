@@ -18,7 +18,6 @@ import {
   Text
 } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { symbolAssetSources } from "@/lib/assets/asset-manifest";
 import {
   getFloatingTextAlpha,
   shouldSuppressBoardDropAnimation
@@ -144,6 +143,7 @@ type Props = {
   presentationTimings: SpinPresentationTimings;
   floatingTextHoldMs: number;
   floatingTextFadeMs: number;
+  symbolAssetSources: Record<SymbolId, readonly string[]>;
 };
 
 const drawSymbolIcon = (graphics: Graphics, symbol: SymbolId, accent: number) => {
@@ -227,7 +227,8 @@ export function PixiTempleBoard({
   bonusActive,
   presentationTimings,
   floatingTextHoldMs,
-  floatingTextFadeMs
+  floatingTextFadeMs,
+  symbolAssetSources
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -1326,7 +1327,7 @@ export function PixiTempleBoard({
       floatingTextLayerRef.current = null;
       particleSystemRef.current = null;
     };
-  }, [paintBoardCells, safeDestroyApplication]);
+  }, [paintBoardCells, safeDestroyApplication, symbolAssetSources]);
 
   useEffect(() => {
     if (!paintBoardCells()) {

@@ -48,7 +48,13 @@ import {
   withdrawPlayerWallet,
   type AuthModePublicConfig
 } from "@/lib/api/player-api";
-import { shellAssets, symbolAssetSources } from "@/lib/assets/asset-manifest";
+import {
+  getOuroborosRingAsset,
+  getShellAssetSources,
+  getShellAssets,
+  getSymbolAssetSources,
+  type GraphicsQuality
+} from "@/lib/assets/asset-manifest";
 import { ensureGuestSession, loadGuestSession } from "@/lib/identity/guest-session";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
@@ -95,6 +101,13 @@ const symbolLabels: Record<string, string> = {
   samsara: "Samsara",
   ouroboros: "Ouroboros",
   panepoptis_ophthalmos: "Panepoptis Ophthalmos"
+};
+
+const graphicsQualityOptions: readonly GraphicsQuality[] = ["high", "low"];
+
+const graphicsQualityLabels: Record<GraphicsQuality, string> = {
+  high: "High",
+  low: "Low"
 };
 
 export default function HomePage() {
@@ -157,6 +170,7 @@ export default function HomePage() {
     analyticsOpen,
     welcomeOpen,
     soundEnabled,
+    graphicsQuality,
     autoContinueNeverStop,
     wallet,
     walletTransactions,
@@ -175,6 +189,7 @@ export default function HomePage() {
     toggleSettings,
     toggleSound,
     toggleModal,
+    setGraphicsQuality,
     setAutoContinueNeverStop,
     setGuestDisplayName,
     finishDepositProcessing,
@@ -183,6 +198,22 @@ export default function HomePage() {
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
   const viewport = useViewport();
+  const activeShellAssets = useMemo(
+    () => getShellAssets(graphicsQuality),
+    [graphicsQuality]
+  );
+  const activeShellAssetSources = useMemo(
+    () => getShellAssetSources(graphicsQuality),
+    [graphicsQuality]
+  );
+  const activeSymbolAssetSources = useMemo(
+    () => getSymbolAssetSources(graphicsQuality),
+    [graphicsQuality]
+  );
+  const ouroborosRingAsset = useMemo(
+    () => getOuroborosRingAsset(graphicsQuality),
+    [graphicsQuality]
+  );
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
   const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
@@ -338,7 +369,9 @@ export default function HomePage() {
     !bonusAnnouncementVisible;
   const visibleBonusSpins = bonusModeActive ? slot.activeBonusSpins : 0;
   const bonusFrameActive = bonusModeActive;
-  const boardFrameBackground = bonusFrameActive ? shellAssets.bonusOverlay : shellAssets.boardFrame;
+  const boardFrameBackground = bonusFrameActive
+    ? activeShellAssets.bonusOverlay
+    : activeShellAssets.boardFrame;
 
   useEffect(() => {
     const syncEmbedMode = () => setEmbedMode(readEmbedMode());
@@ -968,6 +1001,7 @@ export default function HomePage() {
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
+      data-graphics-quality={graphicsQuality}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}
       data-viewport-band={viewport.band}
@@ -977,7 +1011,7 @@ export default function HomePage() {
         aria-hidden="true"
         className="slotBackdrop slotBackdropBase"
         style={{
-          backgroundImage: `url(${shellAssets.mainBackground})`,
+          backgroundImage: `url(${activeShellAssets.mainBackground})`,
           opacity: bonusModeActive ? 0.28 : 0.82
         }}
       />
@@ -985,57 +1019,28 @@ export default function HomePage() {
         aria-hidden="true"
         className="slotBackdrop slotBackdropBonus"
         style={{
-          backgroundImage: `url(${shellAssets.bonusOverlay})`,
+          backgroundImage: `url(${activeShellAssets.bonusOverlay})`,
           opacity: bonusModeActive ? 0.82 : 0
         }}
       />
 
-      <section className={`gameArea machineStage ${isConstellationVariant ? "is-constellation-stage" : "is-main-cluster-stage"}`}>
+      <section
+        className={`gameArea machineStage fluidShell ${isConstellationVariant ? "is-constellation-stage" : "is-main-cluster-stage"}`}
+      >
         {isConstellationVariant ? (
-          <ConstellationSupportRail
+          <ConstellationRightRail
             activeBonusSpins={visibleBonusSpins}
-            balance={formatBalanceRoundedEur(wallet.balance)}
-            balanceExact={formatMoneyCompactEur(wallet.balance)}
             bonusActive={bonusModeActive}
-            cascades={latestRound?.cascades.length ?? 0}
-            currentBet={formatMoneyCompactEur(slot.bet)}
-            freeSpins={visibleBonusSpins}
-            history={slot.history}
-            onDeposit={() => toggleModal("depositOpen")}
-            onToggleFullscreen={toggleFullscreen}
-            onToggleHistory={toggleHistory}
-            onToggleSettings={toggleSettings}
-            onToggleSound={toggleSound}
-            onWithdraw={() => toggleModal("withdrawOpen")}
-            roundWin={latestRound?.totalWin ?? 0}
-            scatterRewards={activeGameConfig.scatterRewards}
-            fullscreenEnabled={fullscreenEnabled}
-            soundEnabled={soundEnabled}
+            shellAssetSources={activeShellAssetSources}
+            shellAssets={activeShellAssets}
           />
         ) : (
-          <LeftSupportRail
+          <RightOperatorRail
             activeBonusSpins={visibleBonusSpins}
-            balance={formatBalanceRoundedEur(wallet.balance)}
-            balanceExact={formatMoneyCompactEur(wallet.balance)}
             bonusActive={bonusModeActive}
-            cascades={latestRound?.cascades.length ?? 0}
-            currentBet={formatMoneyCompactEur(slot.bet)}
-            freeSpins={visibleBonusSpins}
-            history={slot.history}
-            meterCollected={slot.samsaraCollectedBets}
-            meterContributionLog={slot.samsaraContributionLog}
-            meterCurrent={slot.gameState.bonusMeter}
-            meterRatio={slot.meterRatio}
-            meterTarget={activeGameConfig.bonusMeterTarget}
-            onDeposit={() => toggleModal("depositOpen")}
-            onToggleFullscreen={toggleFullscreen}
-            onToggleHistory={toggleHistory}
-            onToggleSettings={toggleSettings}
-            onToggleSound={toggleSound}
-            onWithdraw={() => toggleModal("withdrawOpen")}
-            roundWin={latestRound?.totalWin ?? 0}
-            fullscreenEnabled={fullscreenEnabled}
-            soundEnabled={soundEnabled}
+            shellAssetSources={activeShellAssetSources}
+            shellAssets={activeShellAssets}
+            variantId={activeGameConfig.variantId}
           />
         )}
 
@@ -1054,61 +1059,101 @@ export default function HomePage() {
                 bonusActive={bonusModeActive}
                 floatingTextFadeMs={slot.floatingTextFadeMs}
                 floatingTextHoldMs={slot.floatingTextHoldMs}
+                key={graphicsQuality}
                 phaseMessage={slot.phaseMessage}
                 presentationTimings={slot.presentationTimings}
                 result={slot.lastResult}
                 spinPhase={slot.spinPhase}
+                symbolAssetSources={activeSymbolAssetSources}
               />
             </div>
           </div>
         </div>
 
         {isConstellationVariant ? (
-          <ConstellationRightRail
+          <ConstellationSupportRail
             activeBonusSpins={visibleBonusSpins}
+            balance={formatBalanceRoundedEur(wallet.balance)}
+            balanceExact={formatMoneyCompactEur(wallet.balance)}
             bonusActive={bonusModeActive}
+            cascades={latestRound?.cascades.length ?? 0}
+            currentBet={formatMoneyCompactEur(slot.bet)}
+            freeSpins={visibleBonusSpins}
+            history={slot.history}
+            onDeposit={() => toggleModal("depositOpen")}
+            onToggleFullscreen={toggleFullscreen}
+            onToggleHistory={toggleHistory}
+            onToggleSettings={toggleSettings}
+            onToggleSound={toggleSound}
+            onWithdraw={() => toggleModal("withdrawOpen")}
+            roundWin={latestRound?.totalWin ?? 0}
+            scatterRewards={activeGameConfig.scatterRewards}
+            symbolAssetSources={activeSymbolAssetSources}
+            fullscreenEnabled={fullscreenEnabled}
+            soundEnabled={soundEnabled}
           />
         ) : (
-          <RightOperatorRail
+          <LeftSupportRail
             activeBonusSpins={visibleBonusSpins}
+            balance={formatBalanceRoundedEur(wallet.balance)}
+            balanceExact={formatMoneyCompactEur(wallet.balance)}
             bonusActive={bonusModeActive}
-            variantId={activeGameConfig.variantId}
+            cascades={latestRound?.cascades.length ?? 0}
+            currentBet={formatMoneyCompactEur(slot.bet)}
+            freeSpins={visibleBonusSpins}
+            history={slot.history}
+            meterCollected={slot.samsaraCollectedBets}
+            meterContributionLog={slot.samsaraContributionLog}
+            meterCurrent={slot.gameState.bonusMeter}
+            meterEyeSrc={activeShellAssets.meterEye}
+            meterRatio={slot.meterRatio}
+            meterTarget={activeGameConfig.bonusMeterTarget}
+            onDeposit={() => toggleModal("depositOpen")}
+            onToggleFullscreen={toggleFullscreen}
+            onToggleHistory={toggleHistory}
+            onToggleSettings={toggleSettings}
+            onToggleSound={toggleSound}
+            onWithdraw={() => toggleModal("withdrawOpen")}
+            roundWin={latestRound?.totalWin ?? 0}
+            fullscreenEnabled={fullscreenEnabled}
+            soundEnabled={soundEnabled}
           />
         )}
-      </section>
 
-      <ControlPanel
-        autospinCountInput={slot.autospinCountInput}
-        autospinRemaining={slot.autospinRemaining}
-        autospinStopRequested={slot.autospinStopRequested}
-        autospinValidationMessage={slot.autospinValidationMessage}
-        autoContinueNeverStop={autoContinueNeverStop}
-        areBetControlsLocked={slot.areBetControlsLocked}
-        betInput={slot.betInput}
-        betRiskMessage={slot.betRiskMessage}
-        betRiskTooltip={slot.betRiskTooltip}
-        betValidationMessage={slot.betValidationMessage}
-        betValidationTooltip={slot.betValidationTooltip}
-        canSpin={spinInteractionAllowed}
-        canStartAutospin={inputAllowed && slot.canStartAutospin}
-        isAutospinActive={slot.isAutospinActive}
-        onCommitBetInput={slot.applyManualBet}
-        onCommitAutospinInput={slot.applyManualAutospinCount}
-        onAutospinInputChange={slot.setAutospinCountInput}
-        onBetInputChange={slot.setBetInput}
-        onDecreaseBet={slot.decrementBetByStep}
-        onIncreaseBet={slot.incrementBetByStep}
-        onSpin={spinFromInputIntent}
-        onSpinSpeedChange={slot.setSpinAnimationSpeed}
-        onStartAutospin={slot.startAutoSpin}
-        onStartAutospinInfinite={slot.startAutoSpinInfinite}
-        onStopAutoSpin={slot.stopAutoSpin}
-        onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
-        spinAnimationSpeed={slot.spinAnimationSpeed}
-        spinPhase={slot.spinPhase}
-        spinPulseKey={slot.spinPulseKey}
-        spinSpeedOptions={slot.spinSpeedOptions}
-      />
+        <ControlPanel
+          autospinCountInput={slot.autospinCountInput}
+          autospinRemaining={slot.autospinRemaining}
+          autospinStopRequested={slot.autospinStopRequested}
+          autospinValidationMessage={slot.autospinValidationMessage}
+          autoContinueNeverStop={autoContinueNeverStop}
+          areBetControlsLocked={slot.areBetControlsLocked}
+          betInput={slot.betInput}
+          betRiskMessage={slot.betRiskMessage}
+          betRiskTooltip={slot.betRiskTooltip}
+          betValidationMessage={slot.betValidationMessage}
+          betValidationTooltip={slot.betValidationTooltip}
+          canSpin={spinInteractionAllowed}
+          canStartAutospin={inputAllowed && slot.canStartAutospin}
+          isAutospinActive={slot.isAutospinActive}
+          ouroborosRingSrc={ouroborosRingAsset}
+          onCommitBetInput={slot.applyManualBet}
+          onCommitAutospinInput={slot.applyManualAutospinCount}
+          onAutospinInputChange={slot.setAutospinCountInput}
+          onBetInputChange={slot.setBetInput}
+          onDecreaseBet={slot.decrementBetByStep}
+          onIncreaseBet={slot.incrementBetByStep}
+          onSpin={spinFromInputIntent}
+          onSpinSpeedChange={slot.setSpinAnimationSpeed}
+          onStartAutospin={slot.startAutoSpin}
+          onStartAutospinInfinite={slot.startAutoSpinInfinite}
+          onStopAutoSpin={slot.stopAutoSpin}
+          onToggleAutoContinueNeverStop={() => setAutoContinueNeverStop(!autoContinueNeverStop)}
+          spinAnimationSpeed={slot.spinAnimationSpeed}
+          spinPhase={slot.spinPhase}
+          spinPulseKey={slot.spinPulseKey}
+          spinSpeedOptions={slot.spinSpeedOptions}
+        />
+      </section>
 
       {presentationBlocked || authLoading ? (
         <div aria-hidden="true" className="slotInputLockLayer" />
@@ -1171,6 +1216,23 @@ export default function HomePage() {
                 type="button"
               >
                 x{option}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="modalSection menuSectionGraphics">
+          <p className="eyebrow">Graphics</p>
+          <div aria-label="Graphics quality" className="chipRow" role="group">
+            {graphicsQualityOptions.map((quality) => (
+              <button
+                aria-pressed={graphicsQuality === quality}
+                className={`controlChip ${graphicsQuality === quality ? "is-active" : ""}`}
+                key={quality}
+                onClick={() => setGraphicsQuality(quality)}
+                type="button"
+              >
+                {graphicsQualityLabels[quality]}
               </button>
             ))}
           </div>
@@ -1258,7 +1320,7 @@ export default function HomePage() {
                         alt=""
                         aria-hidden="true"
                         className="paytableSymbolIcon"
-                        src={symbolAssetSources[entry.symbol][0]}
+                        src={activeSymbolAssetSources[entry.symbol][0]}
                       />
                       <span>{symbolLabels[entry.symbol] ?? entry.symbol}</span>
                     </th>
@@ -1320,7 +1382,7 @@ export default function HomePage() {
                   alt=""
                   aria-hidden="true"
                   className="menuVariantIcon"
-                  src={symbolAssetSources.samsara[0]}
+                  src={activeSymbolAssetSources.samsara[0]}
                 />
                 <div>
                   <strong>Constellation Simple</strong>
@@ -1348,7 +1410,7 @@ export default function HomePage() {
                     alt=""
                     aria-hidden="true"
                     className="symbolRuleIcon"
-                    src={symbolAssetSources[row.symbol][0]}
+                    src={activeSymbolAssetSources[row.symbol][0]}
                   />
                   <strong>{symbolLabels[row.symbol] ?? row.symbol}</strong>
                 </div>
@@ -1361,7 +1423,7 @@ export default function HomePage() {
                   alt=""
                   aria-hidden="true"
                   className="symbolRuleIcon"
-                  src={symbolAssetSources.samsara[0]}
+                  src={activeSymbolAssetSources.samsara[0]}
                 />
                 <strong>Sky Opens Bonus</strong>
               </div>
@@ -1419,11 +1481,13 @@ export default function HomePage() {
         onDismissBonusAnnouncement={slot.dismissBonusAnnouncement}
         onDismissBonusSummary={slot.dismissBonusSummary}
         onDismissWinPresentation={slot.dismissWinPresentation}
+        shellAssets={activeShellAssets}
         winPresentation={slot.winPresentation}
       />
 
       <WelcomeOverlay
         busy={authBusy}
+        logoSrc={activeShellAssets.logo}
         onStart={startWelcomeFlow}
         open={hasHydrated && canPlayWithoutAuth && welcomeOpen}
       />
@@ -1460,6 +1524,7 @@ export default function HomePage() {
           error={authError}
           errorCode={authErrorCode}
           fieldErrors={authFieldErrors}
+          logoSrc={activeShellAssets.logo}
           onForgotPassword={handleForgotPassword}
           onLogin={handleLogin}
           onRegister={handleRegister}

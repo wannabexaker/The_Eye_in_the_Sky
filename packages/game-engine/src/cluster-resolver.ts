@@ -32,7 +32,7 @@ const payoutForThreshold = (config: GameConfig, symbol: SymbolId, size: number):
     }
   }
 
-  return payout;
+  return payout * (config.payoutScale ?? 1);
 };
 
 const resolveClusterWins = (

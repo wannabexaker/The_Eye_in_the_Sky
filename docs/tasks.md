@@ -112,6 +112,13 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-02` **Math RTP regression fix (game-engine)**
+  - Intent: bring two live math profiles back into the professional RTP band.
+  - Found via simulation (1M spins): `math_base_v2_0` (the seeded/default profile) at **100.47%** RTP and `legacy_v1_3` at **104.31%** RTP; `constellation_simple_v0_1` was correct at 95.24%.
+  - Hypothesis: paytable/cascade tuning drifted above 100% and was never caught because the only RTP test used a useless `0.88-1.20` band.
+  - Code change: added an optional `payoutScale` knob to `GameConfig` (`types.ts`), applied once in `cluster-resolver.ts` `payoutForThreshold` so it scales base + cascade + bonus wins linearly. Set `math_base_v2_0` = `0.9475`, `legacy_v1_3` = `0.9127` in `config.ts`. `constellation` untouched.
+  - Verification (1M spins, seed 1337): `math_base_v2_0` → **95.11%**, `legacy_v1_3` → **95.26%**; hit rate (49.1% / 47.9%) and bonus cadence (0.32% / 0.34%) unchanged. Replaced the loose RTP test with a per-profile RTP/hit/bonus band guard — 15/15 engine tests pass.
+  - Rollback: delete the `payoutScale` fields from the two profiles (reverts to the prior 100%+ RTP).
 - `2026-06-02` **Task 3 handheld portrait panel grid**
   - Intent: restore all phone-portrait support panels, especially Round Status, without bottom clipping or overlap with the spin dock.
   - Hypothesis: the handheld grid omitted the `status` area and then compensated with translate/fixed-position hacks, causing the Round/Cascade/Spins panel to disappear and lower panels to drift into each other.

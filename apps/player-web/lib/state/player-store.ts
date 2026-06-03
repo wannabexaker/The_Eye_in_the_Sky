@@ -15,6 +15,7 @@ import {
   DEFAULT_SPIN_ANIMATION_SPEED,
   type SpinAnimationSpeed
 } from "@/lib/presentation/spin-state-machine";
+import type { GraphicsQuality } from "@/lib/assets/asset-manifest";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
@@ -130,6 +131,7 @@ type PlayerUiState = {
   authSource: PlayerAuthSource;
   hasHydrated: boolean;
   soundEnabled: boolean;
+  graphicsQuality: GraphicsQuality;
   spinAnimationSpeed: SpinAnimationSpeed;
   autoContinueNeverStop: boolean;
   debugPanelOpen: boolean;
@@ -159,6 +161,7 @@ type PlayerUiState = {
   withdrawalDraft: WithdrawalDraft;
   paymentMethodDraft: PaymentMethodDraft;
   toggleSound: () => void;
+  setGraphicsQuality: (quality: GraphicsQuality) => void;
   setSpinAnimationSpeed: (speed: SpinAnimationSpeed) => void;
   setAutoContinueNeverStop: (value: boolean) => void;
   toggleModal: (key: ModalKey) => void;
@@ -355,6 +358,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       runtimeMode: "authenticated",
       authSource: null,
       soundEnabled: false,
+      graphicsQuality: "high",
       hasHydrated: false,
       spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
       autoContinueNeverStop: false,
@@ -391,6 +395,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       withdrawalDraft: baseWithdrawalDraft(),
       paymentMethodDraft: basePaymentMethodDraft(),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setGraphicsQuality: (quality) =>
+        set({ graphicsQuality: quality === "low" ? "low" : "high" }),
       setSpinAnimationSpeed: (speed) => set({ spinAnimationSpeed: speed }),
       setAutoContinueNeverStop: (value) => set({ autoContinueNeverStop: value }),
       toggleModal: (key) => set((state) => ({ [key]: !state[key] }) as Pick<PlayerUiState, ModalKey>),
@@ -1025,6 +1031,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           runtimeMode,
+          graphicsQuality: persisted.graphicsQuality === "low" ? "low" : "high",
           authSource: runtimeMode === "simulator" ? null : persisted.authSource ?? currentState.authSource,
           guestDisplayName: guestSession?.displayName ?? "",
           wallet: runtimeMode === "simulator" ? simulatorWallet : persisted.wallet ?? currentState.wallet,
@@ -1079,6 +1086,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       partialize: (state) => ({
         runtimeMode: state.runtimeMode,
         soundEnabled: state.soundEnabled,
+        graphicsQuality: state.graphicsQuality,
         spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,
         ...(state.runtimeMode === "simulator"

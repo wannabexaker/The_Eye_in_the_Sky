@@ -1,12 +1,11 @@
 /*
 Purpose: shows the bonus meter state in the HUD
 Layer: frontend (player-web)
-Uses: shared shell asset manifest for the eye core icon
+Uses: caller-provided eye core asset
 */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type SamsaraMeterProps = {
   meterRatio: number;
@@ -15,6 +14,7 @@ type SamsaraMeterProps = {
   collectedBets?: number;
   contributionLog?: number[];
   bonusActive?: boolean;
+  meterEyeSrc?: string;
 };
 
 type ContextPlacement = "up" | "down";
@@ -32,7 +32,8 @@ export function SamsaraMeter({
   target,
   collectedBets = 0,
   contributionLog = [],
-  bonusActive = false
+  bonusActive = false,
+  meterEyeSrc = "/assets/ui/meter-eye-core.png"
 }: SamsaraMeterProps) {
   const [meterProgressed, setMeterProgressed] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
@@ -225,7 +226,7 @@ export function SamsaraMeter({
           className={`samsaraEye ${clamped >= 1 ? "is-critical" : ""} ${bonusActive ? "is-cursed" : ""} ${meterProgressed ? "is-progressed" : ""}`}
           onClick={() => setContextOpen((currentOpen) => !currentOpen)}
           ref={eyeButtonRef}
-          style={{ backgroundImage: `url(${shellAssets.meterEye})` }}
+          style={{ backgroundImage: `url(${meterEyeSrc})` }}
           title={collectedTitle}
           type="button"
         />

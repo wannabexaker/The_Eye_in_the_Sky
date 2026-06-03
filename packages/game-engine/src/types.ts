@@ -61,6 +61,10 @@ export type GameConfig = {
   version: string;
   variantId: GameVariantId;
   targetRtp: number;
+  /** Linear RTP trim applied to every resolved payout (base + cascade + bonus).
+   *  Defaults to 1 when omitted. Lets a profile be re-tuned to its target RTP
+   *  with a single auditable knob instead of editing every paytable value. */
+  payoutScale?: number;
   volatility: VolatilityLabel;
   rows: number;
   cols: number;

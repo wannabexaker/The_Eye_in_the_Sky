@@ -25,6 +25,7 @@ type LeftSupportRailProps = {
   meterCollected: number;
   meterContributionLog: number[];
   meterTarget: number;
+  meterEyeSrc: string;
   history: SpinResult[];
   soundEnabled: boolean;
   fullscreenEnabled: boolean;
@@ -45,10 +46,7 @@ const formatWin = (result: SpinResult) =>
     : "LOSS";
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
-const DESKTOP_VISIBLE_ENTRIES = 5;
-const COMPACT_VISIBLE_ENTRIES = 3;
-const PORTRAIT_VISIBLE_ENTRIES = 10;
-const HANDHELD_PORTRAIT_VISIBLE_ENTRIES = 11;
+const DEFAULT_VISIBLE_ENTRIES = 2;
 
 export function LeftSupportRail({
   balance,
@@ -64,6 +62,7 @@ export function LeftSupportRail({
   meterCollected,
   meterContributionLog,
   meterTarget,
+  meterEyeSrc,
   history,
   soundEnabled,
   fullscreenEnabled,
@@ -79,7 +78,6 @@ export function LeftSupportRail({
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
   const viewport = useViewport();
-  const compactView = (viewport.band !== "desktop" && viewport.band !== "wide") || viewport.height <= 900;
   const portraitView =
     viewport.orientation === "portrait" && viewport.width / Math.max(viewport.height, 1) <= 10 / 16;
   const handheldPortraitView = portraitView && viewport.band === "phone";
@@ -91,13 +89,7 @@ export function LeftSupportRail({
   }, [handheldPortraitView]);
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = handheldPortraitView
-    ? HANDHELD_PORTRAIT_VISIBLE_ENTRIES
-    : portraitView
-      ? PORTRAIT_VISIBLE_ENTRIES
-      : compactView
-        ? COMPACT_VISIBLE_ENTRIES
-        : DESKTOP_VISIBLE_ENTRIES;
+  const defaultVisibleEntries = DEFAULT_VISIBLE_ENTRIES;
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
   const historyToggleTitle = showMore ? "Collapse ritual log" : "Expand ritual log";
@@ -263,6 +255,7 @@ export function LeftSupportRail({
           collectedBets={meterCollected}
           contributionLog={meterContributionLog}
           current={meterCurrent}
+          meterEyeSrc={meterEyeSrc}
           meterRatio={meterRatio}
           target={meterTarget}
         />
@@ -272,22 +265,24 @@ export function LeftSupportRail({
         className="compactPanel supportBlock supportHistoryBlock"
         title="Recent ritual outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
       >
-        <div className="panelHeader">
-          <p className="eyebrow">Ritual Log</p>
-          {canToggleHistory ? (
-            <button
-              className="supportToggle"
-              onClick={() => setShowMore((current) => !current)}
-              aria-expanded={showMore}
-              aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
-              title={historyToggleTitle}
-              type="button"
-            >
-              <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-          ) : null}
+        <div className="panelHeader supportHistoryHeader">
+          <button
+            aria-expanded={showMore}
+            aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
+            className="supportHistoryHeaderButton"
+            disabled={!canToggleHistory}
+            onClick={() => setShowMore((current) => !current)}
+            title={historyToggleTitle}
+            type="button"
+          >
+            <span className="eyebrow">Ritual Log</span>
+            <span className="supportHistoryHeaderHint">
+              {canToggleHistory ? (showMore ? "Collapse" : "Full history") : "Recent"}
+            </span>
+            <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </div>
         <div className={`supportEmotion supportEmotion--${emotionVariant}`} title={emotionHint}>
           <span aria-hidden="true" className="supportEmotionPulse" />
