@@ -46,7 +46,8 @@ const formatWin = (result: SpinResult) =>
     : "LOSS";
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
-const DEFAULT_VISIBLE_ENTRIES = 2;
+const MIN_VISIBLE_ENTRIES = 2;
+const FALLBACK_HISTORY_ROW_HEIGHT = 26;
 
 export function LeftSupportRail({
   balance,
@@ -76,6 +77,7 @@ export function LeftSupportRail({
   const [showMore, setShowMore] = useState(false);
   const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
+  const [adaptiveVisibleEntries, setAdaptiveVisibleEntries] = useState(MIN_VISIBLE_ENTRIES);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
   const viewport = useViewport();
   const portraitView =
@@ -89,7 +91,7 @@ export function LeftSupportRail({
   }, [handheldPortraitView]);
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = DEFAULT_VISIBLE_ENTRIES;
+  const defaultVisibleEntries = Math.max(MIN_VISIBLE_ENTRIES, adaptiveVisibleEntries);
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
   const historyToggleTitle = showMore ? "Collapse ritual log" : "Expand ritual log";
@@ -129,6 +131,49 @@ export function LeftSupportRail({
       setShowMore(false);
     }
   }, [defaultVisibleEntries, ritualEntries.length, showMore]);
+
+  useEffect(() => {
+    const historyElement = supportHistoryRef.current;
+
+    if (!historyElement) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateVisibleEntries = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const rowElement = historyElement.querySelector<HTMLElement>(".supportHistoryRow");
+        const historyStyles = window.getComputedStyle(historyElement);
+        const rowGap = Number.parseFloat(historyStyles.rowGap || historyStyles.gap || "0") || 0;
+        const rowHeight = rowElement?.getBoundingClientRect().height ?? FALLBACK_HISTORY_ROW_HEIGHT;
+        const availableHeight = historyElement.getBoundingClientRect().height;
+        const nextVisibleEntries = Math.max(
+          MIN_VISIBLE_ENTRIES,
+          Math.floor((availableHeight + rowGap) / Math.max(1, rowHeight + rowGap))
+        );
+
+        setAdaptiveVisibleEntries((current) => (
+          current === nextVisibleEntries ? current : nextVisibleEntries
+        ));
+      });
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateVisibleEntries);
+    resizeObserver?.observe(historyElement);
+
+    updateVisibleEntries();
+    window.addEventListener("resize", updateVisibleEntries);
+    window.addEventListener("orientationchange", updateVisibleEntries);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateVisibleEntries);
+      window.removeEventListener("orientationchange", updateVisibleEntries);
+      resizeObserver?.disconnect();
+    };
+  }, [ritualEntries.length]);
 
   useEffect(() => {
     if (!showMore) {
