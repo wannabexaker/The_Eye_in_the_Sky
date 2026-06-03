@@ -696,7 +696,8 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
 @media (min-width: 900px), (orientation: landscape) {
   .slotViewport {
-    --dock-board-overlap: clamp(30px, 5dvh, 46px);
+    --fluid-gap: clamp(6px, 0.7vw, 9px);
+    --dock-board-overlap: clamp(38px, 6dvh, 56px);
     --dock-x-balance: 5px;
   }
 
@@ -758,7 +759,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     --fluid-brand-width: clamp(58px, 9vw, 92px);
     --fluid-info-panel-padding: 5px;
     --fluid-deck-max-width: min(100%, 480px);
-    --dock-board-overlap: clamp(8px, 2.6dvh, 14px);
+    --dock-board-overlap: clamp(12px, 3dvh, 18px);
     --dock-bar-height: 36px;
     --dock-crown-overhang: 28px;
     --dock-control-size: 28px;
