@@ -62,6 +62,13 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-04` **Premium spin dock polish checkpoint**
+  - Intent: preserve the approved premium spin dock state, then make the requested polish fixes without losing the current layout.
+  - Hypothesis: the dock only needed scoped visual refinement: clearer hover/active feedback, a narrower SVG silhouette, slightly tighter board contact, and an adaptive Ritual Log row count based on available space.
+  - Code change: added stronger gold/copper hover and pressed states for dock buttons; reduced the dock max width and balanced its center offset; increased the wide-layout board/dock contact by tightening the gap and overlap; replaced the fixed two-row Ritual Log preview with a ResizeObserver-based row count in both support rails.
+  - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm -r --if-present typecheck`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, `corepack pnpm --filter api test:e2e`, and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed. Host Playwright guest-mode flow verified deposit, nonstop, repeated spins, hover/active states, autoplay popovers, no horizontal scroll, visible panels, and screenshots under `apps/player-web/screenshots/spin-polish-final/`.
+  - Build caveat: local Windows `corepack pnpm -r build` and `corepack pnpm --filter player-web build:clean` compile successfully and generate pages, then fail only at Next standalone traced-file symlink creation with `EPERM`; final build signoff still belongs on Linux/Docker/WSL or Windows Developer Mode.
+  - Rollback note: revert the four polish commits in order (`Adapt ritual log density to available space`, `Grow board contact with spin dock`, `Tighten spin dock silhouette width`, `Polish spin dock button feedback`) to return to the saved checkpoint branch `codex/backup-spin-turret-good-20260603-171601`.
 - `done` Create root workspace and initial player-web prototype
 - `done` Add first game-engine implementation
 - `done` Add fake balance, spin, history, reset balance
