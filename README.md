@@ -9,6 +9,7 @@ The project is built for math validation, engine development, and full-cycle gam
 ## Features
 
 - Playable PixiJS slot board in a Next.js player shell.
+- Fully responsive player shell (phone → tablet → desktop) with an adaptive luxury spin dock and ritual log.
 - Runtime-selectable math profiles backed by API settings.
 - Session-based auth with role-based player/admin access.
 - Server-side wallet, ledger, round, and bonus-state persistence.
@@ -110,6 +111,16 @@ Run the full build only after stopping dev servers:
 ```bash
 corepack pnpm build
 ```
+
+## Testing
+
+| Command | Scope |
+|---|---|
+| `corepack pnpm -r --if-present test` | Unit tests (game-engine RTP regression bands, API validators) |
+| `corepack pnpm --filter api test:e2e` | API end-to-end (auth, security, sessions) |
+| `corepack pnpm --filter player-web exec playwright test` | Player UI end-to-end (auth flow, fluid responsive shell) |
+
+CI (`.github/workflows/ci.yml`) runs typecheck, lint, unit tests, API e2e, and build on every push and pull request.
 
 ## Notes
 
