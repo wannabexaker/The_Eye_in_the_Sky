@@ -362,9 +362,9 @@ export function ControlPanel({
         >
           <defs>
             <linearGradient id={silhouetteGradientId} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" stopColor="#2a231d" />
-              <stop offset="0.5" stopColor="#0d0c0d" />
-              <stop offset="1" stopColor="#070708" />
+              <stop offset="0" stopColor="#2a231d" stopOpacity="0.6" />
+              <stop offset="0.5" stopColor="#0d0c0d" stopOpacity="0.58" />
+              <stop offset="1" stopColor="#070708" stopOpacity="0.62" />
             </linearGradient>
             <filter id={silhouetteFilterId} x="-4%" y="-18%" width="108%" height="136%">
               <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="rgba(0,0,0,0.34)" />
@@ -374,7 +374,7 @@ export function ControlPanel({
             d={dockSilhouette.path}
             fill={`url(#${silhouetteGradientId})`}
             filter={`url(#${silhouetteFilterId})`}
-            stroke="rgba(226,190,112,0.32)"
+            stroke="rgba(226,190,112,0.18)"
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
