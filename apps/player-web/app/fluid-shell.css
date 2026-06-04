@@ -864,10 +864,97 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
 @media (orientation: portrait) and (max-width: 430px) {
   .slotViewport {
-    --dock-bar-height: 38px;
-    --dock-crown-overhang: 30px;
+    --fluid-gap: 4px;
+    --fluid-info-panel-padding: 4px;
+    --fluid-panel-radius: 9px;
+    --dock-bar-height: 36px;
+    --dock-crown-overhang: 24px;
     --dock-control-size: 28px;
-    --dock-spin-size: 82px;
+    --dock-spin-size: 72px;
+  }
+
+  .fluidShell {
+    padding: calc(2px + env(safe-area-inset-top, 0px))
+      env(safe-area-inset-right, 0px)
+      calc(4px + env(safe-area-inset-bottom, 0px))
+      env(safe-area-inset-left, 0px);
+  }
+
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(120px, 36vw, 140px));
+  }
+
+  .fluidShell .supportRail {
+    grid-template-rows: repeat(4, min-content);
+    grid-template-areas:
+      "treasury history"
+      "balance history"
+      "meter history"
+      "status utility";
+    gap: 4px;
+    align-content: start;
+    max-height: min(192px, 30dvh);
+  }
+
+  .fluidShell .supportRail .panelHeader {
+    min-height: 10px;
+    margin-bottom: 2px;
+  }
+
+  .fluidShell .supportRail .supportBlock,
+  .fluidShell .supportRail .compactPanel {
+    padding: var(--fluid-info-panel-padding);
+  }
+
+  .fluidShell .supportActions {
+    gap: 4px;
+  }
+
+  .fluidShell .walletAction {
+    min-height: 20px;
+    padding: 2px 8px;
+  }
+
+  .fluidShell .supportEmotion {
+    display: none;
+  }
+
+  .fluidShell .supportBalanceZone,
+  .fluidShell .supportRail .bottomBarStat {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportMeterBlock .samsaraMeter,
+  .fluidShell .constellationTriggerBlock {
+    min-height: 28px;
+  }
+
+  .fluidShell .samsaraEye {
+    width: 18px;
+    height: 18px;
+  }
+
+  .fluidShell .samsaraTrack {
+    height: 6px;
+  }
+
+  .fluidShell .supportMiniStat {
+    min-height: 22px;
+    padding: 2px 5px;
+  }
+
+  .fluidShell .supportHistory {
+    gap: 2px;
+  }
+
+  .fluidShell .supportHistoryRow {
+    min-height: 15px;
+    padding: 2px 5px;
+  }
+
+  .fluidShell .supportRailUtilityBar {
+    min-height: 22px;
+    align-self: end;
   }
 
   .fluidShell .floatingGameDockInner {
