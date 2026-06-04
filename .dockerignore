@@ -10,6 +10,9 @@
 node_modules
 dist
 .next
+**/.next
+out
+**/out
 .cache
 coverage
 .turbo
@@ -47,6 +50,19 @@ CREDENTIALS-LOCAL-REFERENCE.md
 # Test files (unit tests stay, e2e may be excluded)
 test
 *.spec.ts
+*.test.ts
+**/*.spec.ts
+**/*.test.ts
+playwright.config.*
+**/playwright.config.*
+playwright-report
+**/playwright-report
+test-results
+**/test-results
+e2e
+**/e2e
+tests-e2e
+**/tests-e2e
 
 # Temporary
 tmp

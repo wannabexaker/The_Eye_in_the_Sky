@@ -1,0 +1,291 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      rebuild_all:
+        description: "Rebuild all app images regardless of changed paths"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  AUTH_MODE: INTERNAL_ONLY
+  COOKIE_SECURE: "false"
+  DATABASE_URL: postgresql://app_user:app_password@localhost:5432/eye_db?schema=public
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  OWNER: wannabexaker
+  PNPM_VERSION: "10.6.3"
+  REGISTRY: ghcr.io
+
+jobs:
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      admin_web_selected: ${{ steps.matrix.outputs.admin_web_selected }}
+      api_selected: ${{ steps.matrix.outputs.api_selected }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      player_web_selected: ${{ steps.matrix.outputs.player_web_selected }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect path changes
+        id: filter
+        if: ${{ github.ref_type != 'tag' && (github.event_name != 'workflow_dispatch' || !inputs.rebuild_all) }}
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+            player_web:
+              - 'apps/player-web/**'
+            admin_web:
+              - 'apps/admin-web/**'
+            shared:
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'tsconfig.base.json'
+              - '.dockerignore'
+              - '.github/workflows/**'
+              - 'docker-compose*.yml'
+
+      - name: Build app matrix
+        id: matrix
+        env:
+          ADMIN_WEB_CHANGED: ${{ steps.filter.outputs.admin_web || 'false' }}
+          API_CHANGED: ${{ steps.filter.outputs.api || 'false' }}
+          PLAYER_WEB_CHANGED: ${{ steps.filter.outputs.player_web || 'false' }}
+          REBUILD_ALL: ${{ github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.rebuild_all) }}
+          SHARED_CHANGED: ${{ steps.filter.outputs.shared || 'false' }}
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+
+          const appDefs = {
+            api: {
+              app: "api",
+              cacheScope: "api",
+              dockerfile: "apps/api/Dockerfile",
+              image: "tsogos-api",
+            },
+            player_web: {
+              app: "player-web",
+              cacheScope: "player-web",
+              dockerfile: "apps/player-web/Dockerfile",
+              image: "tsogos-player-web",
+            },
+            admin_web: {
+              app: "admin-web",
+              cacheScope: "admin-web",
+              dockerfile: "apps/admin-web/Dockerfile",
+              image: "tsogos-admin-web",
+            },
+          };
+
+          const all = process.env.REBUILD_ALL === "true" || process.env.SHARED_CHANGED === "true";
+          const selected = {
+            api: all || process.env.API_CHANGED === "true",
+            player_web: all || process.env.PLAYER_WEB_CHANGED === "true",
+            admin_web: all || process.env.ADMIN_WEB_CHANGED === "true",
+          };
+          const include = Object.entries(selected)
+            .filter(([, enabled]) => enabled)
+            .map(([key]) => appDefs[key]);
+
+          const output = [
+            `matrix=${JSON.stringify({ include })}`,
+            `has_changes=${include.length > 0}`,
+            `api_selected=${selected.api}`,
+            `player_web_selected=${selected.player_web}`,
+            `admin_web_selected=${selected.admin_web}`,
+          ].join("\n");
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${output}\n`);
+          NODE
+
+  lint-test:
+    name: Lint, typecheck, and test
+    needs: changes
+    if: ${{ needs.changes.outputs.has_changes == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: eye_db
+          POSTGRES_PASSWORD: app_password
+          POSTGRES_USER: app_user
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app_user -d eye_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@${PNPM_VERSION} --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter api prisma:generate
+
+      - name: Typecheck
+        run: |
+          pnpm --filter @eye/game-engine lint
+          pnpm --filter @eye/shared-types lint
+          pnpm --filter @eye/ui lint
+          pnpm --filter api lint
+          pnpm --filter player-web exec tsc -p tsconfig.json --noEmit
+          pnpm --filter admin-web exec tsc -p tsconfig.json --noEmit
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Unit tests
+        run: pnpm -r --if-present test
+
+      - name: API e2e tests
+        run: pnpm --filter api test:e2e
+
+      # TODO: make this a hard gate after it is proven stable on GitHub-hosted runners.
+      - name: Player Playwright e2e
+        if: ${{ needs.changes.outputs.player_web_selected == 'true' }}
+        continue-on-error: true
+        run: |
+          pnpm --filter player-web exec playwright install --with-deps chromium
+          pnpm --filter player-web exec playwright test
+
+  build-and-push:
+    name: Build ${{ matrix.app }} image
+    needs:
+      - changes
+      - lint-test
+    if: ${{ always() && needs.changes.outputs.has_changes == 'true' && needs.lint-test.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changes.outputs.matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+
+      - name: Prepare image metadata
+        id: meta
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          SHA: ${{ github.sha }}
+        run: |
+          short_sha="${SHA::12}"
+          created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          {
+            echo "tags<<EOF"
+            echo "${IMAGE}:latest"
+            echo "${IMAGE}:sha-${SHA}"
+            echo "${IMAGE}:sha-short-${short_sha}"
+            if [[ "${REF_TYPE}" == "tag" && "${REF_NAME}" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              echo "${IMAGE}:${REF_NAME}"
+              echo "${IMAGE}:v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+              echo "${IMAGE}:v${BASH_REMATCH[1]}"
+            fi
+            echo "EOF"
+            echo "created=${created}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and optionally push image
+        uses: docker/build-push-action@v6
+        with:
+          cache-from: type=gha,scope=${{ matrix.cacheScope }}
+          cache-to: type=gha,scope=${{ matrix.cacheScope }},mode=max
+          context: .
+          file: ${{ matrix.dockerfile }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/wannabexaker/tsogos
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+            org.opencontainers.image.title=${{ matrix.image }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+
+  verify-live:
+    name: Verify live site
+    needs: build-and-push
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build-and-push.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Check eye.olamov.com
+        run: |
+          for attempt in {1..6}; do
+            status="$(curl -L -sS -o /dev/null -w '%{http_code}' https://eye.olamov.com || true)"
+            if [[ "${status}" == "200" ]]; then
+              echo "eye.olamov.com returned HTTP 200"
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/6 returned HTTP ${status}; retrying in 10s"
+            sleep 10
+          done
+
+          echo "::error::eye.olamov.com did not return HTTP 200 within 60s"
+          exit 1
