@@ -648,6 +648,15 @@ export function PixiTempleBoard({
     return true;
   }, [presentationTimings.boardDrop, presentationTimings.cascadeDrop, presentationTimings.spinStart]);
 
+  // Stable ref to the latest paintBoardCells. The Pixi init effect repaints through
+  // this ref WITHOUT listing paintBoardCells as a dependency, so a spin-speed /
+  // presentationTimings change no longer tears down and rebuilds the whole Pixi
+  // Application (the teardown raced and threw "Cannot read properties of null").
+  const paintBoardCellsRef = useRef(paintBoardCells);
+  useEffect(() => {
+    paintBoardCellsRef.current = paintBoardCells;
+  }, [paintBoardCells]);
+
   useEffect(() => {
     if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
       suppressDropAnimationRef.current = true;
@@ -1272,7 +1281,7 @@ export function PixiTempleBoard({
         resizeStage();
 
         // paint the board immediately after the async Pixi init completes
-        paintBoardCells();
+        paintBoardCellsRef.current();
         
         // Restart ticker after scene tree is fully constructed
         app.ticker.start();
@@ -1327,7 +1336,9 @@ export function PixiTempleBoard({
       floatingTextLayerRef.current = null;
       particleSystemRef.current = null;
     };
-  }, [paintBoardCells, safeDestroyApplication, symbolAssetSources]);
+    // paintBoardCells intentionally omitted: the init effect repaints via
+    // paintBoardCellsRef so timings/speed changes don't rebuild the Application.
+  }, [safeDestroyApplication, symbolAssetSources]);
 
   useEffect(() => {
     if (!paintBoardCells()) {
