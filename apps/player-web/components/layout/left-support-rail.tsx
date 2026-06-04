@@ -38,12 +38,26 @@ type LeftSupportRailProps = {
 };
 
 const formatWin = (result: SpinResult) =>
-  result.totalWin > 0
-    ? `+${new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(result.totalWin)}`
-    : "LOSS";
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(result.totalWin);
+
+const formatRitualPayout = (result: SpinResult) =>
+  result.totalWin > 0 ? `+${formatWin(result)}` : "0.00";
+
+const getRitualModeLabel = (result: SpinResult) =>
+  result.mode === "bonus" ? "Sky Opens" : "Temple Watch";
+
+const getRitualTooltip = (result: SpinResult) => {
+  if (result.totalWin > 0) {
+    return result.mode === "bonus"
+      ? `+${formatWin(result)} · the Sky rewards the watch`
+      : `+${formatWin(result)} · the Eye favors you`;
+  }
+
+  return result.mode === "bonus" ? "the Sky holds its gifts" : "the omen passes";
+};
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
 const MIN_VISIBLE_ENTRIES = 2;
@@ -348,12 +362,13 @@ export function LeftSupportRail({
           ) : (
             visibleEntries.map((result, index) => (
               <div
-                className="supportHistoryRow"
+                className={`supportHistoryRow ${result.totalWin > 0 ? "is-win" : "is-loss"}`}
                 key={`${result.roundSummary.roundId}-${index}`}
-                title={`Round ${result.roundSummary.roundId} - ${result.mode === "bonus" ? "Bonus" : "Base"} - ${formatWin(result)}`}
+                title={getRitualTooltip(result)}
               >
-                <strong>{formatWin(result)}</strong>
-                <span>{result.mode === "bonus" ? "bonus" : "base"}</span>
+                <span aria-hidden="true" className="supportHistoryDot" />
+                <strong className="supportHistoryPayout">{formatRitualPayout(result)}</strong>
+                <span className="supportHistoryMode">{getRitualModeLabel(result)}</span>
               </div>
             ))
           )}

@@ -478,10 +478,53 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   min-height: 18px;
   padding: 4px 7px;
   border-radius: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.fluidShell .supportHistoryRow strong,
-.fluidShell .supportHistoryRow span,
+.fluidShell .supportHistoryDot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  border-radius: 999px;
+  background: rgba(244, 239, 230, 0.32);
+  box-shadow: 0 0 8px rgba(244, 239, 230, 0.1);
+}
+
+.fluidShell .supportHistoryRow.is-win .supportHistoryDot {
+  background: #e2be70;
+  box-shadow: 0 0 10px rgba(226, 190, 112, 0.42);
+}
+
+.fluidShell .supportHistoryPayout {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(244, 239, 230, 0.82);
+}
+
+.fluidShell .supportHistoryRow.is-win .supportHistoryPayout {
+  color: rgba(247, 207, 94, 0.98);
+}
+
+.fluidShell .supportHistoryMode {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 58%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  color: rgba(244, 239, 230, 0.52);
+  font-size: clamp(0.48rem, 1.35vw, 0.56rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fluidShell .supportHistoryPayout,
 .fluidShell .supportMuted {
   font-size: clamp(0.54rem, 1.5vw, 0.66rem);
 }
