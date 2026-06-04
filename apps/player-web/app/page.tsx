@@ -192,6 +192,7 @@ export default function HomePage() {
     setGraphicsQuality,
     setAutoContinueNeverStop,
     setGuestDisplayName,
+    setAuthenticatedUserId,
     finishDepositProcessing,
     finishWithdrawalProcessing
   } = usePlayerUiStore();
@@ -232,6 +233,10 @@ export default function HomePage() {
     : authUser
       ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on PostgreSQL.`
       : "Login is required to restore PostgreSQL-backed wallet and round state.";
+
+  useEffect(() => {
+    setAuthenticatedUserId(isAuthenticated && authUser ? authUser.id : null);
+  }, [authUser, isAuthenticated, setAuthenticatedUserId]);
 
   const refreshServerBackedPlayerState = useCallback(async () => {
     const session = await fetchAuthSession();
