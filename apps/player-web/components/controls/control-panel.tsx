@@ -479,7 +479,7 @@ export function ControlPanel({
                         ? "Close autoplay presets"
                         : "Autoplay"
                 }
-                className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
+                className={`dockSmallButton autoplayButton ${isAutospinActive ? "is-active" : ""} ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
                 disabled={autoplayDisabled}
                 onContextMenu={(e) => e.preventDefault()}
                 onMouseDown={suppressSelectionOnPointerDown}
