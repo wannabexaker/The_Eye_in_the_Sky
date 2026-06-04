@@ -6,6 +6,8 @@ import { GameConfigController } from "./game-config.controller";
 import { GameConfigService } from "./game-config.service";
 import { AnalyticsController } from "./analytics.controller";
 import { AnalyticsService } from "./analytics.service";
+import { AdminSimulationController } from "./admin-simulation.controller";
+import { AdminSimulationService } from "./admin-simulation.service";
 import { AppController } from "./app.controller";
 import { PrismaService } from "./prisma.service";
 import { BootstrapService } from "./bootstrap.service";
@@ -35,13 +37,15 @@ import { PlayerService } from "./player.service";
     AuthController,
     PlayerController,
     GameConfigController,
-    AnalyticsController
+    AnalyticsController,
+    AdminSimulationController
   ],
   providers: [
     PrismaService,
     BootstrapService,
     GameConfigService,
     AnalyticsService,
+    AdminSimulationService,
     AuthService,
     AuthModeService,
     PlatformExchangeValidatorService,

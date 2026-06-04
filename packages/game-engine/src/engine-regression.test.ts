@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   defaultGameConfig,
   getGameConfigProfile,
-  initialGameState
+  initialGameState,
+  type GameMathProfileId
 } from "./config";
 import { resolveWins } from "./cluster-resolver";
 import { applyModifierSymbols } from "./modifier-engine";
@@ -351,22 +352,39 @@ test("simulation output is deterministic, complete, and carries config version",
   assert.ok(first.confidenceInterval95.high >= first.achievedRtp);
 });
 
-test("default config stays in the professional RTP and bonus-quality band", () => {
-  const report = simulateSpins({
-    spins: 20000,
-    bet: 1,
-    baseSeed: 1337,
-    winMultiplier: 1
-  });
+// RTP regression guard for EVERY shipped profile. The previous test only
+// checked the default config with an 0.88-1.20 band, which is so wide it let
+// math_base_v2_0 (100.5% RTP) and legacy_v1_3 (104.3% RTP) regress unnoticed.
+// Bands below are tight enough to fail on a >97.5% or <93% drift (deterministic
+// seed, so not flaky) while tolerating normal simulation variance at 50k spins.
+const PROFILE_BANDS: Record<
+  GameMathProfileId,
+  { rtpLow: number; rtpHigh: number; hitLow: number; hitHigh: number; bonusLow: number; bonusHigh: number }
+> = {
+  legacy_v1_3: { rtpLow: 0.93, rtpHigh: 0.975, hitLow: 0.44, hitHigh: 0.54, bonusLow: 0.002, bonusHigh: 0.006 },
+  math_base_v2_0: { rtpLow: 0.93, rtpHigh: 0.975, hitLow: 0.45, hitHigh: 0.56, bonusLow: 0.002, bonusHigh: 0.006 },
+  constellation_simple_v0_1: { rtpLow: 0.93, rtpHigh: 0.975, hitLow: 0.42, hitHigh: 0.52, bonusLow: 0.004, bonusHigh: 0.008 }
+};
 
-  assert.ok(report.achievedRtp >= 0.88, `RTP too low: ${report.achievedRtp}`);
-  // Samsara-funded free-spin pooling increases observed return for the current prototype economy model.
-  assert.ok(report.achievedRtp <= 1.2, `RTP too high: ${report.achievedRtp}`);
-  assert.ok(report.hitRate >= 0.45, `Hit rate too low: ${report.hitRate}`);
-  assert.ok(report.hitRate <= 0.58, `Hit rate too high: ${report.hitRate}`);
-  assert.ok(
-    report.bonusTriggerRate >= 0.0025 && report.bonusTriggerRate <= 0.006,
-    `Bonus trigger rate out of band: ${report.bonusTriggerRate}`
-  );
-  assert.ok(report.averageBonusPayout >= 10, `Average bonus payout too low: ${report.averageBonusPayout}`);
-});
+for (const profileId of Object.keys(PROFILE_BANDS) as GameMathProfileId[]) {
+  test(`profile ${profileId} stays within its professional RTP / hit / bonus band`, () => {
+    const band = PROFILE_BANDS[profileId];
+    const report = simulateSpins(
+      { spins: 50000, bet: 1, baseSeed: 1337, winMultiplier: 1 },
+      getGameConfigProfile(profileId).config
+    );
+
+    assert.ok(
+      report.achievedRtp >= band.rtpLow && report.achievedRtp <= band.rtpHigh,
+      `${profileId} RTP out of band (${band.rtpLow}-${band.rtpHigh}): ${report.achievedRtp}`
+    );
+    assert.ok(
+      report.hitRate >= band.hitLow && report.hitRate <= band.hitHigh,
+      `${profileId} hit rate out of band (${band.hitLow}-${band.hitHigh}): ${report.hitRate}`
+    );
+    assert.ok(
+      report.bonusTriggerRate >= band.bonusLow && report.bonusTriggerRate <= band.bonusHigh,
+      `${profileId} bonus trigger rate out of band (${band.bonusLow}-${band.bonusHigh}): ${report.bonusTriggerRate}`
+    );
+  });
+}

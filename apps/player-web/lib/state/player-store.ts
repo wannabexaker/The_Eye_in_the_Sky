@@ -15,9 +15,13 @@ import {
   DEFAULT_SPIN_ANIMATION_SPEED,
   type SpinAnimationSpeed
 } from "@/lib/presentation/spin-state-machine";
+import type { GraphicsQuality } from "@/lib/assets/asset-manifest";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { initializeAnalyticsService } from "../../hooks/use-analytics-service";
+import {
+  initializeAnalyticsService,
+  storeAnalyticsRoundForRuntime
+} from "../../hooks/use-analytics-service";
 import {
   clearGuestSession,
   ensureGuestSession,
@@ -125,8 +129,10 @@ type PaymentMethodDraft = {
 type PlayerUiState = {
   runtimeMode: PlayerRuntimeMode;
   authSource: PlayerAuthSource;
+  authenticatedUserId: string | null;
   hasHydrated: boolean;
   soundEnabled: boolean;
+  graphicsQuality: GraphicsQuality;
   spinAnimationSpeed: SpinAnimationSpeed;
   autoContinueNeverStop: boolean;
   debugPanelOpen: boolean;
@@ -142,6 +148,7 @@ type PlayerUiState = {
   wallet: Wallet;
   totalDeposited: number;
   totalWithdrawn: number;
+  samsaraOwnerId: string | null;
   samsaraExpiryAt: number | null;
   gameStateSnapshot: GameState | null;
   roundsLog: RoundAnalyticsEntry[];
@@ -156,6 +163,7 @@ type PlayerUiState = {
   withdrawalDraft: WithdrawalDraft;
   paymentMethodDraft: PaymentMethodDraft;
   toggleSound: () => void;
+  setGraphicsQuality: (quality: GraphicsQuality) => void;
   setSpinAnimationSpeed: (speed: SpinAnimationSpeed) => void;
   setAutoContinueNeverStop: (value: boolean) => void;
   toggleModal: (key: ModalKey) => void;
@@ -185,6 +193,7 @@ type PlayerUiState = {
   exitSimulatorMode: () => void;
   setGuestDisplayName: (displayName: string) => void;
   setAuthSource: (source: PlayerAuthSource) => void;
+  setAuthenticatedUserId: (userId: string | null) => void;
   resetSession: () => void;
 };
 
@@ -334,7 +343,13 @@ const sanitizeSamsaraSnapshot = (
       : null
   };
 
-  if (parsedExpiry === null || Date.now() <= parsedExpiry) {
+  const hasProgress =
+    normalizedSnapshot.bonusMeter > 0 ||
+    normalizedSnapshot.samsaraCollectedBets > 0 ||
+    normalizedSnapshot.samsaraContributionLog.length > 0 ||
+    Boolean(normalizedSnapshot.bonusState);
+
+  if (!hasProgress || (parsedExpiry !== null && Date.now() <= parsedExpiry)) {
     return normalizedSnapshot;
   }
 
@@ -346,12 +361,86 @@ const sanitizeSamsaraSnapshot = (
   };
 };
 
+const hasSamsaraProgress = (snapshot: GameState | null | undefined) =>
+  Boolean(
+    snapshot &&
+      (snapshot.bonusMeter > 0 ||
+        snapshot.samsaraCollectedBets > 0 ||
+        snapshot.samsaraContributionLog.length > 0 ||
+        snapshot.bonusState)
+  );
+
+const resetSamsaraSnapshot = (snapshot: GameState): GameState => ({
+  ...snapshot,
+  bonusMeter: 0,
+  samsaraCollectedBets: 0,
+  samsaraContributionLog: []
+});
+
+const getCurrentSamsaraOwnerId = (
+  state: Pick<PlayerUiState, "runtimeMode" | "authenticatedUserId"> | Partial<PlayerUiState>
+) => {
+  const guestSession = loadGuestSession();
+
+  if (guestSession) {
+    return `guest:${guestSession.id}`;
+  }
+
+  return state.authenticatedUserId ? `user:${state.authenticatedUserId}` : null;
+};
+
+const getSamsaraPersistence = (
+  state: Pick<PlayerUiState, "runtimeMode" | "authenticatedUserId" | "samsaraOwnerId" | "samsaraExpiryAt">,
+  snapshot: GameState,
+  options: { allowNewExpiry: boolean }
+) => {
+  const ownerId = getCurrentSamsaraOwnerId(state);
+
+  if (!hasSamsaraProgress(snapshot) || !ownerId) {
+    return {
+      gameStateSnapshot: !hasSamsaraProgress(snapshot) ? snapshot : resetSamsaraSnapshot(snapshot),
+      samsaraOwnerId: null,
+      samsaraExpiryAt: null
+    };
+  }
+
+  const ownerMatches = state.samsaraOwnerId === ownerId;
+  const validExistingExpiry =
+    ownerMatches &&
+    typeof state.samsaraExpiryAt === "number" &&
+    Date.now() <= state.samsaraExpiryAt;
+
+  if (validExistingExpiry) {
+    return {
+      gameStateSnapshot: snapshot,
+      samsaraOwnerId: ownerId,
+      samsaraExpiryAt: state.samsaraExpiryAt
+    };
+  }
+
+  if (!options.allowNewExpiry) {
+    return {
+      gameStateSnapshot: resetSamsaraSnapshot(snapshot),
+      samsaraOwnerId: null,
+      samsaraExpiryAt: null
+    };
+  }
+
+  return {
+    gameStateSnapshot: snapshot,
+    samsaraOwnerId: ownerId,
+    samsaraExpiryAt: Date.now() + SAMSARA_PROGRESS_TTL_MS
+  };
+};
+
 export const usePlayerUiStore = create<PlayerUiState>()(
   persist(
     (set, get) => ({
       runtimeMode: "authenticated",
       authSource: null,
+      authenticatedUserId: null,
       soundEnabled: false,
+      graphicsQuality: "high",
       hasHydrated: false,
       spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
       autoContinueNeverStop: false,
@@ -371,6 +460,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       },
       totalDeposited: 0,
       totalWithdrawn: 0,
+      samsaraOwnerId: null,
       samsaraExpiryAt: null,
       gameStateSnapshot: null,
       roundsLog: [],
@@ -388,6 +478,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       withdrawalDraft: baseWithdrawalDraft(),
       paymentMethodDraft: basePaymentMethodDraft(),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setGraphicsQuality: (quality) =>
+        set({ graphicsQuality: quality === "low" ? "low" : "high" }),
       setSpinAnimationSpeed: (speed) => set({ spinAnimationSpeed: speed }),
       setAutoContinueNeverStop: (value) => set({ autoContinueNeverStop: value }),
       toggleModal: (key) => set((state) => ({ [key]: !state[key] }) as Pick<PlayerUiState, ModalKey>),
@@ -694,9 +786,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         }));
       },
       syncGameState: (gameState) =>
-        set({
-          gameStateSnapshot: gameState
-        }),
+        set((state) => getSamsaraPersistence(state, gameState, { allowNewExpiry: true })),
       applyRoundResult: (result) =>
         set((state) => {
           const nextTransactions = [...state.walletTransactions];
@@ -765,6 +855,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           // Write rounds log asynchronously in its own key — never blocks the spin
           if (shouldTrackAnalytics) {
             scheduleRoundsLogFlush(trimmedRoundsLog);
+            void storeAnalyticsRoundForRuntime(analyticsEntry, state.runtimeMode);
           }
 
           const simulatorWallet =
@@ -782,19 +873,19 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             });
           }
 
+          const samsaraPersistence = getSamsaraPersistence(state, result.nextState, {
+            allowNewExpiry: true
+          });
+
           return {
             wallet: {
               ...state.wallet,
               balance: result.balanceAfter
             },
             simulatorWallet,
-            samsaraExpiryAt:
-              state.runtimeMode === "simulator"
-                ? null
-                : result.nextState.bonusMeter > 0 || result.nextState.bonusState
-                  ? Date.now() + SAMSARA_PROGRESS_TTL_MS
-                  : null,
-            gameStateSnapshot: state.runtimeMode === "simulator" ? null : result.nextState,
+            samsaraOwnerId: samsaraPersistence.samsaraOwnerId,
+            samsaraExpiryAt: samsaraPersistence.samsaraExpiryAt,
+            gameStateSnapshot: samsaraPersistence.gameStateSnapshot,
             walletTransactions: nextTransactions.slice(0, 50),
             roundsLog: trimmedRoundsLog
           };
@@ -814,14 +905,11 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           const fallbackMethodId = paymentMethods[0]?.id ?? defaultPaymentMethod.id;
           const sanitizedGameState = sanitizeSamsaraSnapshot(
             snapshot.gameStateSnapshot as GameState | null,
-            snapshot.gameStateSnapshot &&
-              typeof snapshot.gameStateSnapshot === "object" &&
-              snapshot.gameStateSnapshot !== null &&
-              (((snapshot.gameStateSnapshot as GameState).bonusMeter ?? 0) > 0 ||
-                Boolean((snapshot.gameStateSnapshot as GameState).bonusState))
-              ? Date.now() + SAMSARA_PROGRESS_TTL_MS
-              : null
+            state.samsaraExpiryAt
           );
+          const samsaraPersistence = sanitizedGameState
+            ? getSamsaraPersistence(state, sanitizedGameState, { allowNewExpiry: false })
+            : { gameStateSnapshot: null, samsaraOwnerId: null, samsaraExpiryAt: null };
 
           return {
             wallet: {
@@ -832,12 +920,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             totalWithdrawn: snapshot.totalWithdrawn,
             welcomeClaimed: snapshot.welcomeClaimed,
             welcomeOpen: !snapshot.welcomeClaimed,
-            samsaraExpiryAt:
-              sanitizedGameState &&
-              (sanitizedGameState.bonusMeter > 0 || Boolean(sanitizedGameState.bonusState))
-                ? Date.now() + SAMSARA_PROGRESS_TTL_MS
-                : null,
-            gameStateSnapshot: sanitizedGameState,
+            samsaraOwnerId: samsaraPersistence.samsaraOwnerId,
+            samsaraExpiryAt: samsaraPersistence.samsaraExpiryAt,
+            gameStateSnapshot: samsaraPersistence.gameStateSnapshot,
             walletTransactions: snapshot.walletTransactions,
             paymentMethods,
             withdrawalDraft: {
@@ -877,6 +962,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             totalWithdrawn: guestSession.totalWithdrawn,
             welcomeClaimed: guestSession.welcomeClaimed,
             welcomeOpen: !guestSession.welcomeClaimed,
+            samsaraOwnerId: null,
             samsaraExpiryAt: null,
             gameStateSnapshot: null,
             roundsLog: [],
@@ -907,6 +993,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           totalWithdrawn: 0,
           welcomeClaimed: false,
           welcomeOpen: true,
+          samsaraOwnerId: null,
           samsaraExpiryAt: null,
           gameStateSnapshot: null,
           roundsLog: [],
@@ -951,6 +1038,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             state.runtimeMode === "simulator" ? state.simulatorTotalDeposited : 0,
           totalWithdrawn:
             state.runtimeMode === "simulator" ? state.simulatorTotalWithdrawn : 0,
+          samsaraOwnerId: null,
           samsaraExpiryAt: null,
           gameStateSnapshot: null,
           roundsLog: [],
@@ -969,7 +1057,31 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           walletHistoryOpen: false,
           analyticsOpen: false
         })),
-      setAuthSource: (source) => set({ authSource: source })
+      setAuthSource: (source) => set({ authSource: source }),
+      setAuthenticatedUserId: (userId) =>
+        set((state) => {
+          const authenticatedUserId = userId?.trim() || null;
+          const nextOwnerId = getCurrentSamsaraOwnerId({
+            ...state,
+            authenticatedUserId
+          });
+
+          if (
+            state.samsaraOwnerId &&
+            nextOwnerId &&
+            state.samsaraOwnerId !== nextOwnerId &&
+            state.gameStateSnapshot
+          ) {
+            return {
+              authenticatedUserId,
+              samsaraOwnerId: null,
+              samsaraExpiryAt: null,
+              gameStateSnapshot: resetSamsaraSnapshot(state.gameStateSnapshot)
+            };
+          }
+
+          return { authenticatedUserId };
+        })
     }),
     {
       name: PLAYER_STORE_PERSIST_KEY,
@@ -997,8 +1109,28 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             : ensureDefaultPaymentMethod(persisted.paymentMethods);
         const fallbackMethodId = paymentMethods[0]?.id ?? defaultPaymentMethod.id;
         const withdrawalAmount = persisted.withdrawalDraft?.amount ?? baseWithdrawalDraft().amount;
+        const persistedAuthenticatedUserId =
+          typeof persisted.authenticatedUserId === "string" && persisted.authenticatedUserId.trim()
+            ? persisted.authenticatedUserId.trim()
+            : null;
+        const currentSamsaraOwnerId =
+          runtimeMode === "simulator"
+            ? guestSession
+              ? `guest:${guestSession.id}`
+              : null
+            : persistedAuthenticatedUserId
+              ? `user:${persistedAuthenticatedUserId}`
+              : null;
+        const persistedSamsaraOwnerId =
+          typeof persisted.samsaraOwnerId === "string" && persisted.samsaraOwnerId.trim()
+            ? persisted.samsaraOwnerId.trim()
+            : null;
+        const samsaraOwnerMatches =
+          Boolean(currentSamsaraOwnerId) && persistedSamsaraOwnerId === currentSamsaraOwnerId;
         const persistedSamsaraExpiryAt =
-          typeof persisted.samsaraExpiryAt === "number" && Number.isFinite(persisted.samsaraExpiryAt)
+          samsaraOwnerMatches &&
+          typeof persisted.samsaraExpiryAt === "number" &&
+          Number.isFinite(persisted.samsaraExpiryAt)
             ? persisted.samsaraExpiryAt
             : null;
         const mergedGameStateSnapshot = sanitizeSamsaraSnapshot(
@@ -1007,8 +1139,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
         );
         // Restore TTL only if it hasn't expired yet. TTL validity is independent of bonusMeter post-sanitization.
         const samsaraStillValid =
-          persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
+          samsaraOwnerMatches && persistedSamsaraExpiryAt && Date.now() <= persistedSamsaraExpiryAt;
         const mergedSamsaraExpiryAt = samsaraStillValid ? persistedSamsaraExpiryAt : null;
+        const mergedSamsaraOwnerId = mergedSamsaraExpiryAt ? currentSamsaraOwnerId : null;
         const simulatorWallet = {
           balance: guestSession?.walletBalance ?? 0,
           currency: "EUR" as const
@@ -1021,6 +1154,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           runtimeMode,
+          graphicsQuality: persisted.graphicsQuality === "low" ? "low" : "high",
+          authenticatedUserId: runtimeMode === "simulator" ? null : persistedAuthenticatedUserId,
           authSource: runtimeMode === "simulator" ? null : persisted.authSource ?? currentState.authSource,
           guestDisplayName: guestSession?.displayName ?? "",
           wallet: runtimeMode === "simulator" ? simulatorWallet : persisted.wallet ?? currentState.wallet,
@@ -1045,8 +1180,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           simulatorTotalDeposited,
           simulatorTotalWithdrawn,
           paymentMethods,
-          samsaraExpiryAt: runtimeMode === "simulator" ? null : mergedSamsaraExpiryAt,
-          gameStateSnapshot: runtimeMode === "simulator" ? null : mergedGameStateSnapshot,
+          samsaraOwnerId: mergedSamsaraOwnerId,
+          samsaraExpiryAt: mergedSamsaraExpiryAt,
+          gameStateSnapshot: mergedGameStateSnapshot,
           walletTransactions:
             runtimeMode === "simulator"
               ? []
@@ -1075,16 +1211,23 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       partialize: (state) => ({
         runtimeMode: state.runtimeMode,
         soundEnabled: state.soundEnabled,
+        graphicsQuality: state.graphicsQuality,
         spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,
         ...(state.runtimeMode === "simulator"
-          ? {}
+          ? {
+              samsaraOwnerId: state.samsaraOwnerId,
+              samsaraExpiryAt: state.samsaraExpiryAt,
+              gameStateSnapshot: state.gameStateSnapshot
+            }
           : {
+              authenticatedUserId: state.authenticatedUserId,
               welcomeOpen: state.welcomeOpen,
               welcomeClaimed: state.welcomeClaimed,
               wallet: state.wallet,
               totalDeposited: state.totalDeposited,
               totalWithdrawn: state.totalWithdrawn,
+              samsaraOwnerId: state.samsaraOwnerId,
               samsaraExpiryAt: state.samsaraExpiryAt,
               walletTransactions: state.walletTransactions,
               paymentMethods: state.paymentMethods,

@@ -6,17 +6,21 @@ Uses: shell asset manifest and bonus state
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { shellAssetSources, shellAssets } from "@/lib/assets/asset-manifest";
+import type { ShellAssets, ShellAssetSources } from "@/lib/assets/asset-manifest";
 
 type RightOperatorRailProps = {
   bonusActive: boolean;
   activeBonusSpins: number;
+  shellAssets: ShellAssets;
+  shellAssetSources: ShellAssetSources;
   variantId?: "main_cluster" | "constellation_simple";
 };
 
 export function RightOperatorRail({
   bonusActive,
   activeBonusSpins,
+  shellAssets,
+  shellAssetSources,
   variantId = "main_cluster"
 }: RightOperatorRailProps) {
   const isConstellationVariant = variantId === "constellation_simple";
@@ -27,7 +31,7 @@ export function RightOperatorRail({
 
   useEffect(() => {
     setSceneSourceIndex(0);
-  }, [bonusActive]);
+  }, [bonusActive, shellAssetSources]);
 
   return (
     <aside className="sideRail rightRail brandingRail">

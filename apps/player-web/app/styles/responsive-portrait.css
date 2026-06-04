@@ -93,7 +93,7 @@
   .supportRail .treasuryBlock {
     grid-area: treasury;
     align-self: end;
-    transform: translateY(125px);
+    transform: none;
   }
 
   .supportRail .supportBalanceBlock {
@@ -173,169 +173,6 @@
     margin-top: 0;
     padding-top: 2px;
     justify-content: flex-start;
-  }
-
-  .supportRail.is-handheld-portrait {
-    grid-template-areas:
-      "history balance"
-      "history meter"
-      "utility meter";
-  }
-
-  .supportRail.is-handheld-portrait .treasuryBlock {
-    grid-area: meter;
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-    min-width: 0;
-    max-width: 144px;
-    justify-self: end;
-    transform: none;
-    margin: 0;
-    box-sizing: border-box;
-    padding: 7px;
-    overflow: hidden;
-  }
-
-  .supportRail.is-handheld-portrait .supportBalanceBlock {
-    width: 100%;
-    max-width: 168px;
-    justify-self: end;
-    transform: translateY(20px);
-  }
-
-  .supportRail.is-handheld-portrait .supportBalanceZone {
-    min-height: 0;
-    gap: 4px;
-  }
-
-  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat {
-    min-height: 34px;
-    padding: 4px 6px;
-    display: grid;
-    gap: 2px;
-    justify-items: center;
-    align-items: center;
-  }
-
-  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat span {
-    line-height: 1;
-  }
-
-  .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat strong {
-    font-size: 0.84rem;
-    line-height: 1;
-  }
-
-  .supportRail.is-handheld-portrait .supportMeterBlock {
-    position: fixed;
-    right: clamp(10px, 3vw, 18px);
-    bottom: var(--portrait-bottom-safe);
-    width: 144px;
-    min-width: 144px;
-    max-width: 144px;
-    z-index: var(--z-portrait-meter);
-    justify-self: auto;
-    margin: 0;
-    box-sizing: border-box;
-  }
-
-  .supportRail.is-handheld-portrait .treasuryBlock .supportActions {
-    width: 100%;
-  }
-
-  .supportRail.is-handheld-portrait .treasuryBlock .walletAction {
-    width: 100%;
-    min-width: 0;
-    padding: 6px 4px;
-    font-size: 0.58rem;
-    letter-spacing: 0.08em;
-  }
-
-  .supportRail.is-handheld-portrait .supportStatusBlock.is-handheld-hidden {
-    display: none;
-  }
-
-  .supportRail.is-handheld-portrait .supportStatusStrip {
-    gap: 3px;
-  }
-
-  .supportRail.is-handheld-portrait .supportStatusBottomRow {
-    gap: 3px;
-  }
-
-  .supportRail.is-handheld-portrait .supportMiniStat {
-    min-height: 54px;
-    padding: 5px 6px;
-    gap: 1px;
-  }
-
-  .supportRail.is-handheld-portrait .supportMiniStatRound {
-    min-height: 62px;
-  }
-
-  .supportRail.is-handheld-portrait .supportMiniStat span {
-    font-size: 0.56rem;
-    letter-spacing: 0.12em;
-  }
-
-  .supportRail.is-handheld-portrait .supportMiniStatCascade span {
-    letter-spacing: 0.08em;
-    text-indent: 0.08em;
-  }
-
-  .supportRail.is-handheld-portrait .supportMiniStat strong {
-    font-size: 0.92rem;
-  }
-
-  .supportRail.is-handheld-portrait .supportMeterBlock {
-    align-self: start;
-    height: fit-content;
-    min-height: 0;
-  }
-
-  .supportRail.is-handheld-portrait .samsaraMeter {
-    gap: 4px;
-  }
-
-  .supportRail.is-handheld-portrait .samsaraMeterBody {
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .supportRail.is-handheld-portrait .samsaraMeter small {
-    font-size: 0.64rem;
-    line-height: 1;
-  }
-
-  .supportRail.is-handheld-portrait .samsaraTrack {
-    height: 7px;
-  }
-
-  .supportRail.is-handheld-portrait .supportRailUtilityBar {
-    position: relative;
-    grid-area: utility;
-    justify-content: flex-start;
-    gap: 3px;
-    padding-top: 0;
-  }
-
-  .supportRail.is-handheld-portrait .supportStatusContextWindow {
-    position: absolute;
-    left: 0;
-    bottom: calc(100% + 6px);
-    z-index: var(--z-portrait-context);
-    width: min(100vw - 32px, 190px);
-    padding: 8px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
-  }
-
-  .supportRail.is-handheld-portrait .supportRailUtilityBar .supportRailUtilityButton {
-    width: 24px;
-    min-width: 24px;
-    height: 24px;
-    min-height: 24px;
   }
 
   .treasuryBlock .supportActions {
@@ -419,67 +256,319 @@
 
   @media (max-width: 11in) {
     .slotViewport {
-      --portrait-spin-size: 112px;
-      --portrait-dock-footprint: clamp(148px, 39vw, 178px);
+      --portrait-spin-size: clamp(86px, 24vw, 96px);
+      --portrait-dock-height: clamp(94px, 12dvh, 108px);
+      --portrait-dock-width: clamp(292px, 78vw, 340px);
+      --portrait-rail-bottom: calc(var(--portrait-bottom-safe) + var(--portrait-dock-height) + clamp(52px, 8dvh, 76px));
+      --portrait-rail-max-height: clamp(196px, 25dvh, 224px);
+      --portrait-rail-width: min(calc(100vw - 20px), 392px);
+    }
+
+    .supportRail.is-handheld-portrait {
+      left: 50%;
+      bottom: var(--portrait-rail-bottom);
+      transform: translateX(-50%);
+      width: var(--portrait-rail-width);
+      max-width: none;
+      max-height: var(--portrait-rail-max-height);
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: 46px 54px minmax(50px, 60px) 24px;
+      grid-template-areas:
+        "treasury balance"
+        "status meter"
+        "history history"
+        "utility utility";
+      gap: 5px;
+      align-content: end;
+    }
+
+    .supportRail.is-handheld-portrait .supportBlock {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      justify-self: stretch;
+      align-self: stretch;
+      box-sizing: border-box;
+      padding: 5px 6px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .supportRail.is-handheld-portrait .treasuryBlock {
+      transform: none;
+      margin: 0;
+    }
+
+    .supportRail.is-handheld-portrait .panelHeader {
+      min-height: 10px;
+      margin-bottom: 2px;
+    }
+
+    .supportRail.is-handheld-portrait .panelHeader .eyebrow {
+      font-size: 0.48rem;
+      letter-spacing: 0.1em;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .treasuryBlock .supportActions {
+      width: 100%;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .supportRail.is-handheld-portrait .treasuryBlock .walletAction {
+      width: 100%;
+      min-width: 0;
+      min-height: 28px;
+      padding: 4px 3px;
+      font-size: 0.52rem;
+      letter-spacing: 0.06em;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      min-height: 100%;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone::after {
+      display: block;
+      top: 8px;
+      bottom: 8px;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat {
+      min-height: 44px;
+      padding: 4px;
+      display: grid;
+      gap: 1px;
+      justify-items: center;
+      align-items: center;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat:first-child {
+      order: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat:last-child {
+      order: 2;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat span,
+    .supportRail.is-handheld-portrait .supportMiniStat span {
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportBalanceZone .bottomBarStat strong {
+      font-size: 0.78rem;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportStatusBlock.is-handheld-hidden {
+      display: block;
+    }
+
+    .supportRail.is-handheld-portrait .supportStatusStrip,
+    .supportRail.is-handheld-portrait .supportStatusBottomRow {
+      gap: 2px;
+    }
+
+    .supportRail.is-handheld-portrait .supportMiniStat {
+      min-height: 18px;
+      padding: 3px 4px;
+      gap: 1px;
+    }
+
+    .supportRail.is-handheld-portrait .supportMiniStatRound {
+      min-height: 22px;
+    }
+
+    .supportRail.is-handheld-portrait .supportMiniStat strong {
+      font-size: 0.68rem;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportMeterBlock {
+      position: static;
+      z-index: auto;
+      margin: 0;
+      min-height: 0;
+    }
+
+    .supportRail.is-handheld-portrait .samsaraMeter {
+      gap: 3px;
+    }
+
+    .supportRail.is-handheld-portrait .samsaraMeterBody {
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .supportRail.is-handheld-portrait .samsaraMeter small {
+      font-size: 0.58rem;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .samsaraTrack {
+      height: 6px;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistoryBlock {
+      min-height: 50px;
+      max-height: 60px;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistoryBlock .panelHeader {
+      margin-bottom: 0;
+    }
+
+    .supportRail.is-handheld-portrait .supportEmotion {
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      grid-template-areas: "pulse title hint";
+      min-height: 22px;
+      padding: 3px 6px;
+      column-gap: 5px;
+      margin: 2px 0;
+    }
+
+    .supportRail.is-handheld-portrait .supportEmotionPulse {
+      width: 6px;
+      height: 6px;
+      margin-top: 0;
+    }
+
+    .supportRail.is-handheld-portrait .supportEmotion strong {
+      font-size: 0.62rem;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportEmotionHint {
+      display: none;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistory {
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistoryRow {
+      min-height: 18px;
+      padding: 2px 5px;
+      border-radius: 8px;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistoryRow strong,
+    .supportRail.is-handheld-portrait .supportMuted {
+      font-size: 0.62rem;
+      line-height: 1;
+    }
+
+    .supportRail.is-handheld-portrait .supportHistoryRow span {
+      font-size: 0.48rem;
+      letter-spacing: 0.08em;
+    }
+
+    .supportRail.is-handheld-portrait .supportRailUtilityBar {
+      position: relative;
+      grid-area: utility;
+      justify-content: center;
+      gap: 5px;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .supportRail.is-handheld-portrait .supportRailUtilityBar .supportRailUtilityButton {
+      width: 24px;
+      min-width: 24px;
+      height: 24px;
+      min-height: 24px;
+    }
+
+    .supportRail.is-handheld-portrait .supportStatusContextWindow {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 6px);
+      z-index: var(--z-portrait-context);
+      width: min(100vw - 32px, 190px);
+      padding: 8px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
     }
 
     .floatingGameDock {
+      left: auto;
       right: clamp(10px, 3vw, 16px);
-      bottom: calc(var(--portrait-bottom-safe) + 76px);
+      bottom: var(--portrait-bottom-safe);
+      width: var(--portrait-dock-width);
+      transform: none;
     }
 
     .floatingGameDockInner {
-      width: var(--portrait-dock-footprint);
-      min-width: var(--portrait-dock-footprint);
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto;
-      justify-items: center;
-      column-gap: 0;
-      row-gap: 8px;
-      padding: calc(var(--portrait-spin-size) * 0.42) 10px 14px;
-      border-radius: 18px;
+      width: 100%;
+      min-width: 0;
+      min-height: var(--portrait-dock-height);
+      display: grid;
+      grid-template-columns: var(--portrait-spin-size) minmax(0, 1fr);
+      grid-template-areas: "spin controls";
+      align-items: center;
+      justify-items: stretch;
+      column-gap: 8px;
+      row-gap: 0;
+      padding: 8px 10px;
+      border-radius: 16px;
     }
 
     .floatingGameDock .dockTopRow {
-      display: block;
+      grid-area: spin;
+      display: flex;
       width: 100%;
+      align-items: center;
+      justify-content: center;
     }
 
     .floatingGameDock .dockSpinWrapper {
-      width: 100%;
-      min-width: 0;
-      height: 0;
-      min-height: 0;
+      width: var(--portrait-spin-size);
+      min-width: var(--portrait-spin-size);
+      max-width: var(--portrait-spin-size);
+      height: var(--portrait-spin-size);
+      min-height: var(--portrait-spin-size);
       justify-self: center;
       transform: none;
     }
 
     .floatingGameDock .dockBottomRow {
-      display: flex;
+      grid-area: controls;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(2, max-content);
       width: 100%;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
+      justify-items: end;
+      gap: 5px;
     }
 
     .floatingGameDock .dockBetCluster,
     .floatingGameDock .dockAutoCluster {
       gap: 4px;
-      justify-content: center;
+      justify-content: flex-end;
     }
 
     .floatingGameDock .spinCta {
-      top: 0;
+      position: relative;
+      left: auto;
+      top: auto;
       overflow: visible;
-      transform: translate(-50%, calc(-50% - 8px));
+      transform: none;
     }
 
     .floatingGameDock .spinCta:hover {
-      transform: translate(-50%, calc(-50% - 8px)) scale(1.05);
+      transform: scale(1.05);
     }
 
     .floatingGameDock .spinCta:active:not(:disabled) {
-      transform: translate(-50%, calc(-50% - 8px)) scale(0.97);
+      transform: scale(0.97);
     }
 
     .floatingGameDock .dockSmallButton {
@@ -500,6 +589,17 @@
       height: 32px;
       min-height: 32px;
       font-size: 0.7rem;
+    }
+
+    .floatingGameDock .dockSpeedCycleButton {
+      width: 54px;
+      min-width: 54px;
+      max-width: 54px;
+    }
+
+    .floatingGameDock .dockSpeedCycleValue {
+      font-size: 0.44rem;
+      letter-spacing: 0.02em;
     }
 
     .floatingGameDock .dockAutoInlineInput {

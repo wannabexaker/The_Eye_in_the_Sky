@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: slot wallet/bet/autoplay state and spin-button.tsx
 */
 
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { SpinButton } from "@/components/controls/spin-button";
 import type { SpinAnimationSpeed, SpinPhase } from "@/lib/presentation/spin-state-machine";
 
@@ -27,6 +27,7 @@ type ControlPanelProps = {
   spinSpeedOptions: readonly SpinAnimationSpeed[];
   spinPhase: SpinPhase;
   spinPulseKey: number;
+  ouroborosRingSrc: string;
   onSpinSpeedChange: (speed: SpinAnimationSpeed) => void;
   onBetInputChange: (value: string) => void;
   onCommitBetInput: () => boolean;
@@ -39,6 +40,60 @@ type ControlPanelProps = {
   onStartAutospinInfinite: () => void;
   onStopAutoSpin: () => void;
   onToggleAutoContinueNeverStop: () => void;
+};
+
+type DockSilhouette = {
+  height: number;
+  path: string;
+  width: number;
+};
+
+const clampNumber = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const fmt = (value: number) => Number(value.toFixed(2));
+
+const buildDockSilhouette = (
+  rawWidth: number,
+  rawHeight: number,
+  rawSpinCenterY: number,
+  rawSpinSize: number
+): DockSilhouette => {
+  const width = Math.max(1, fmt(rawWidth));
+  const height = Math.max(1, fmt(rawHeight));
+  const spinCenterY = clampNumber(rawSpinCenterY, 28, Math.max(29, height - 24));
+  const spinSize = clampNumber(rawSpinSize, 68, 132);
+  const centerX = width / 2;
+  const barTop = fmt(spinCenterY);
+  const bottom = fmt(Math.max(barTop + 36, height - 2));
+  const sideRadius = fmt(clampNumber((bottom - barTop) * 0.42, 12, 18));
+  const domeRadius = fmt(clampNumber(spinSize / 2 + 9, 42, Math.min(width * 0.18, barTop + 18)));
+  const domeArcY = fmt(barTop - domeRadius * 0.44);
+  const domeArcXOffset = fmt(domeRadius * 0.9);
+  const shoulderWidth = fmt(clampNumber(domeRadius * 0.42, 18, Math.max(18, (width - domeRadius * 2 - 80) / 2)));
+  const left = 1;
+  const right = fmt(width - 1);
+  const leftDomeX = fmt(centerX - domeArcXOffset);
+  const rightDomeX = fmt(centerX + domeArcXOffset);
+  const leftShoulderX = fmt(Math.max(left + sideRadius + 8, leftDomeX - shoulderWidth));
+  const rightShoulderX = fmt(Math.min(right - sideRadius - 8, rightDomeX + shoulderWidth));
+
+  const path = [
+    `M ${fmt(left + sideRadius)} ${barTop}`,
+    `L ${leftShoulderX} ${barTop}`,
+    `C ${fmt(leftShoulderX + shoulderWidth * 0.42)} ${barTop} ${fmt(leftDomeX - shoulderWidth * 0.32)} ${fmt(domeArcY + domeRadius * 0.1)} ${leftDomeX} ${domeArcY}`,
+    `A ${domeRadius} ${domeRadius} 0 0 1 ${rightDomeX} ${domeArcY}`,
+    `C ${fmt(rightDomeX + shoulderWidth * 0.32)} ${fmt(domeArcY + domeRadius * 0.1)} ${fmt(rightShoulderX - shoulderWidth * 0.42)} ${barTop} ${rightShoulderX} ${barTop}`,
+    `L ${fmt(right - sideRadius)} ${barTop}`,
+    `Q ${right} ${barTop} ${right} ${fmt(barTop + sideRadius)}`,
+    `L ${right} ${fmt(bottom - sideRadius)}`,
+    `Q ${right} ${bottom} ${fmt(right - sideRadius)} ${bottom}`,
+    `L ${fmt(left + sideRadius)} ${bottom}`,
+    `Q ${left} ${bottom} ${left} ${fmt(bottom - sideRadius)}`,
+    `L ${left} ${fmt(barTop + sideRadius)}`,
+    `Q ${left} ${barTop} ${fmt(left + sideRadius)} ${barTop}`,
+    "Z"
+  ].join(" ");
+
+  return { height, path, width };
 };
 
 export function ControlPanel({
@@ -60,6 +115,7 @@ export function ControlPanel({
   spinSpeedOptions,
   spinPhase,
   spinPulseKey,
+  ouroborosRingSrc,
   onSpinSpeedChange,
   onBetInputChange,
   onCommitBetInput,
@@ -82,8 +138,15 @@ export function ControlPanel({
   const [autoplayInputOpen, setAutoplayInputOpen] = useState(false);
   const [isManualClickedRef, setIsManualClicked] = useState(false);
   const [isSpinButtonPressed, setIsSpinButtonPressed] = useState(false);
+  const [dockSilhouette, setDockSilhouette] = useState<DockSilhouette>(() =>
+    buildDockSilhouette(720, 112, 54, 112)
+  );
+  const dockInnerRef = useRef<HTMLDivElement>(null);
   const autoplayHoldTimerRef = useRef<number | null>(null);
   const manualClickTimerRef = useRef<number | null>(null);
+  const svgId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const silhouetteGradientId = `dockSilhouetteGradient-${svgId}`;
+  const silhouetteFilterId = `dockSilhouetteShadow-${svgId}`;
 
   // Preset spin counts shown in the chip tray (∞ = infinite)
   const AUTOSPIN_PRESETS = [10, 25, 50, 100, "∞"] as const;
@@ -94,6 +157,51 @@ export function ControlPanel({
       setAutoplayInputOpen(false);
     }
   }, [isAutospinActive]);
+
+  useEffect(() => {
+    const dockInner = dockInnerRef.current;
+
+    if (!dockInner) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateSilhouette = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const dockRect = dockInner.getBoundingClientRect();
+        const spinButton = dockInner.querySelector<HTMLElement>(".spinCta");
+        const spinRect = spinButton?.getBoundingClientRect();
+        const spinCenterY = spinRect ? spinRect.top - dockRect.top + spinRect.height / 2 : dockRect.height * 0.46;
+        const spinSize = spinRect ? Math.max(spinRect.width, spinRect.height) : 96;
+        const next = buildDockSilhouette(dockRect.width, dockRect.height, spinCenterY, spinSize);
+
+        setDockSilhouette((current) => (
+          current.width === next.width && current.height === next.height && current.path === next.path
+            ? current
+            : next
+        ));
+      });
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateSilhouette);
+    resizeObserver?.observe(dockInner);
+
+    const spinButton = dockInner.querySelector<HTMLElement>(".spinCta");
+    if (spinButton) {
+      resizeObserver?.observe(spinButton);
+    }
+
+    updateSilhouette();
+    window.addEventListener("resize", updateSilhouette);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateSilhouette);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   const handleAutoplayPress = () => {
     if (isAutospinActive) {
@@ -242,7 +350,35 @@ export function ControlPanel({
 
   return (
     <div className="floatingGameDock">
-      <div className="floatingGameDockInner">
+      <div className="floatingGameDockInner" ref={dockInnerRef}>
+        <svg
+          aria-hidden="true"
+          className="dockSilhouetteSvg"
+          focusable="false"
+          height={dockSilhouette.height}
+          preserveAspectRatio="xMidYMid meet"
+          viewBox={`0 0 ${dockSilhouette.width} ${dockSilhouette.height}`}
+          width={dockSilhouette.width}
+        >
+          <defs>
+            <linearGradient id={silhouetteGradientId} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stopColor="#2a231d" stopOpacity="0.6" />
+              <stop offset="0.5" stopColor="#0d0c0d" stopOpacity="0.58" />
+              <stop offset="1" stopColor="#070708" stopOpacity="0.62" />
+            </linearGradient>
+            <filter id={silhouetteFilterId} x="-4%" y="-18%" width="108%" height="136%">
+              <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="rgba(0,0,0,0.34)" />
+            </filter>
+          </defs>
+          <path
+            d={dockSilhouette.path}
+            fill={`url(#${silhouetteGradientId})`}
+            filter={`url(#${silhouetteFilterId})`}
+            stroke="rgba(226,190,112,0.18)"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
         {/* Top Row: Spin */}
         <div className="dockTopRow">
           <div className="dockSpinWrapper">
@@ -254,6 +390,7 @@ export function ControlPanel({
               onKeyUp={handleSpinKeyUp}
               onMouseDown={handleSpinButtonMouseDown}
               onMouseUp={handleSpinButtonMouseUp}
+              ouroborosRingSrc={ouroborosRingSrc}
               pulseKey={spinPulseKey}
               spinPhase={spinPhase}
             />
@@ -342,7 +479,7 @@ export function ControlPanel({
                         ? "Close autoplay presets"
                         : "Autoplay"
                 }
-                className={`dockSmallButton is-active autoplayButton ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
+                className={`dockSmallButton autoplayButton ${isAutospinActive ? "is-active" : ""} ${autoplayInputOpen && !isAutospinActive ? "is-open" : ""} ${autoplayIsStopState ? "is-stop" : ""}`}
                 disabled={autoplayDisabled}
                 onContextMenu={(e) => e.preventDefault()}
                 onMouseDown={suppressSelectionOnPointerDown}

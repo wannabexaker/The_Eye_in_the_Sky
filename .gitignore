@@ -35,6 +35,9 @@ graphify-out/
 # Local visual/test artifacts
 apps/player-web/screenshots/
 apps/player-web/test-results/
+apps/player-web/playwright-report/
+.audit-shots/
+apps/player-web/e2e/_*.spec.ts
 
 # Local editor workspaces
 .obsidian/

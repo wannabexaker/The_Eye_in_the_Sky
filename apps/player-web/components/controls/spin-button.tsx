@@ -17,6 +17,7 @@ type SpinButtonProps = {
   onKeyUp?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onMouseDown?: () => void;
   onMouseUp?: () => void;
+  ouroborosRingSrc: string;
   spinPhase: SpinPhase;
   pulseKey: number;
 };
@@ -29,6 +30,7 @@ export function SpinButton({
   onKeyUp,
   onMouseDown,
   onMouseUp,
+  ouroborosRingSrc,
   spinPhase,
   pulseKey
 }: SpinButtonProps) {
@@ -56,7 +58,7 @@ export function SpinButton({
       <span className="spinRipple" key={pulseKey} />
       <span aria-hidden="true" className="ouroborosRing">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="ouroborosArt" src="/assets/ui/ouroboros-ring.png" alt="" draggable={false} />
+        <img className="ouroborosArt" src={ouroborosRingSrc} alt="" draggable={false} />
       </span>
       <span className="spinCore">
         <span className="spinText">Spin</span>

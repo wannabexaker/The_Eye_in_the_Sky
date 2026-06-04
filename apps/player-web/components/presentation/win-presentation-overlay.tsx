@@ -5,11 +5,12 @@ Uses: slot presentation state from use-slot-machine.ts
 */
 
 import type { WinPresentationEntry } from "@/lib/presentation/win-presentation-types";
-import { shellAssets } from "@/lib/assets/asset-manifest";
+import type { ShellAssets } from "@/lib/assets/asset-manifest";
 import type { CSSProperties } from "react";
 
 type WinPresentationOverlayProps = {
   presentation: WinPresentationEntry | null;
+  shellAssets: ShellAssets;
   onContinue: () => void;
 };
 
@@ -21,6 +22,7 @@ const formatMoney = (value: number) =>
 
 export function WinPresentationOverlay({
   presentation,
+  shellAssets,
   onContinue
 }: WinPresentationOverlayProps) {
   if (!presentation) {

@@ -56,11 +56,23 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   headers.delete("origin");
   headers.delete("referer");
 
-  const upstreamRes = await fetch(upstream, {
-    method: req.method,
-    headers,
-    body,
-  });
+  let upstreamRes: Response;
+  try {
+    upstreamRes = await fetch(upstream, {
+      method: req.method,
+      headers,
+      body,
+    });
+  } catch {
+    // API is unreachable (e.g. `pnpm dev:api` not running, or DB down). Return a
+    // clean 503 instead of letting `fetch failed` bubble up as an unhandled
+    // TypeError that floods the console on every /_api request. The client
+    // treats this as "API offline" and guest mode keeps working.
+    return NextResponse.json(
+      { error: "API unavailable", code: "API_UNREACHABLE" },
+      { status: 503 },
+    );
+  }
 
   const resHeaders = new Headers(upstreamRes.headers);
   resHeaders.delete("content-encoding");

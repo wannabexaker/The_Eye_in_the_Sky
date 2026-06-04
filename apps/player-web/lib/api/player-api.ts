@@ -2,6 +2,7 @@
 
 import type { SpinResult } from "@eye/game-engine";
 import type { AuthSessionDto, PlayerSnapshotDto } from "@eye/shared-types";
+import { markPlayerApiOffline, markPlayerApiOnline } from "./offline-status";
 
 // Use the server-side proxy path so the browser never needs a direct route to
 // the API. Next.js rewrites /_api/* → API_INTERNAL_URL/* at the server level.
@@ -37,14 +38,25 @@ export class PlayerApiError extends Error {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    },
-    ...init
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {})
+      },
+      ...init
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? `API unavailable (${error.message})`
+        : "API unavailable";
+    markPlayerApiOffline("API_UNREACHABLE", message);
+    throw new PlayerApiError(message, 503, "API_UNREACHABLE");
+  }
 
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -73,9 +85,16 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // ignore malformed error payloads
     }
+    if (code === "API_UNREACHABLE") {
+      markPlayerApiOffline(code, message);
+    } else {
+      markPlayerApiOnline();
+    }
+
     throw new PlayerApiError(message, response.status, code, fieldErrors);
   }
 
+  markPlayerApiOnline();
   return response.json() as Promise<T>;
 }
 

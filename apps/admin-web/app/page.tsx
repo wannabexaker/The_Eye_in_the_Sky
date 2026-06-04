@@ -6,6 +6,7 @@ import { BonusEntryPreview } from "@/components/bonus-entry-preview";
 import { GameStatsViewer } from "@/components/game-stats-viewer";
 import { MathProfileSelector } from "@/components/math-profile-selector";
 import { SafetyNote } from "@/components/safety-note";
+import { SimulationRunner } from "@/components/simulation-runner";
 import { WinTierPreview } from "@/components/win-tier-preview";
 import styles from "./page.module.css";
 
@@ -28,6 +29,12 @@ const sections: AdminSection[] = [
     title: "Game analytics",
     description: "View live session analytics, RTP drift, win distributions, and cascade behavior.",
     component: GameStatsViewer,
+    ready: true
+  },
+  {
+    title: "Simulation Runner",
+    description: "Run capped non-blocking math simulations in a worker and inspect RTP, hit rate, volatility, and bonus rate.",
+    component: SimulationRunner,
     ready: true
   },
   {

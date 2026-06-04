@@ -62,6 +62,13 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-04` **Premium spin dock polish checkpoint**
+  - Intent: preserve the approved premium spin dock state, then make the requested polish fixes without losing the current layout.
+  - Hypothesis: the dock only needed scoped visual refinement: clearer hover/active feedback, a narrower SVG silhouette, slightly tighter board contact, and an adaptive Ritual Log row count based on available space.
+  - Code change: added stronger gold/copper hover and pressed states for dock buttons; reduced the dock max width and balanced its center offset; increased the wide-layout board/dock contact by tightening the gap and overlap; replaced the fixed two-row Ritual Log preview with a ResizeObserver-based row count in both support rails.
+  - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm -r --if-present typecheck`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, `corepack pnpm --filter api test:e2e`, and `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed. Host Playwright guest-mode flow verified deposit, nonstop, repeated spins, hover/active states, autoplay popovers, no horizontal scroll, visible panels, and screenshots under `apps/player-web/screenshots/spin-polish-final/`.
+  - Build caveat: local Windows `corepack pnpm -r build` and `corepack pnpm --filter player-web build:clean` compile successfully and generate pages, then fail only at Next standalone traced-file symlink creation with `EPERM`; final build signoff still belongs on Linux/Docker/WSL or Windows Developer Mode.
+  - Rollback note: revert the four polish commits in order (`Adapt ritual log density to available space`, `Grow board contact with spin dock`, `Tighten spin dock silhouette width`, `Polish spin dock button feedback`) to return to the saved checkpoint branch `codex/backup-spin-turret-good-20260603-171601`.
 - `done` Create root workspace and initial player-web prototype
 - `done` Add first game-engine implementation
 - `done` Add fake balance, spin, history, reset balance
@@ -112,6 +119,31 @@
 - API and admin apps are not yet runtime-wired.
 
 ## Change Log
+- `2026-06-02` **Math RTP regression fix (game-engine)**
+  - Intent: bring two live math profiles back into the professional RTP band.
+  - Found via simulation (1M spins): `math_base_v2_0` (the seeded/default profile) at **100.47%** RTP and `legacy_v1_3` at **104.31%** RTP; `constellation_simple_v0_1` was correct at 95.24%.
+  - Hypothesis: paytable/cascade tuning drifted above 100% and was never caught because the only RTP test used a useless `0.88-1.20` band.
+  - Code change: added an optional `payoutScale` knob to `GameConfig` (`types.ts`), applied once in `cluster-resolver.ts` `payoutForThreshold` so it scales base + cascade + bonus wins linearly. Set `math_base_v2_0` = `0.9475`, `legacy_v1_3` = `0.9127` in `config.ts`. `constellation` untouched.
+  - Verification (1M spins, seed 1337): `math_base_v2_0` → **95.11%**, `legacy_v1_3` → **95.26%**; hit rate (49.1% / 47.9%) and bonus cadence (0.32% / 0.34%) unchanged. Replaced the loose RTP test with a per-profile RTP/hit/bonus band guard — 15/15 engine tests pass.
+  - Rollback: delete the `payoutScale` fields from the two profiles (reverts to the prior 100%+ RTP).
+- `2026-06-02` **Task 3 handheld portrait panel grid**
+  - Intent: restore all phone-portrait support panels, especially Round Status, without bottom clipping or overlap with the spin dock.
+  - Hypothesis: the handheld grid omitted the `status` area and then compensated with translate/fixed-position hacks, causing the Round/Cascade/Spins panel to disappear and lower panels to drift into each other.
+  - Code change: replaced the handheld portrait grid with a four-row, two-column area map for `Treasury`, `Balance/Bet`, `Round Status`, `Samsara`, `Ritual Log`, and utility buttons; removed handheld translate offsets, made the Samsara block participate in grid flow instead of fixed positioning, compacted the ritual/status panels, and separated dock width from vertical dock footprint so the spin ring stays inside the viewport.
+  - Verification: host Playwright guest-mode smoke passed at `360x800`, `390x844`, and `412x915`; checks confirmed all five panels visible with required text, no panel overlaps, no support/dock overlap, no clipping, no horizontal scroll, and refreshed screenshots under `apps/player-web/screenshots/mobile-fixes/`.
+  - Rollback note: revert this task commit if portrait board visibility needs a different lower-zone composition; keep `status` in the handheld grid in any replacement.
+- `2026-06-02` **Task 2 landscape phone dock and wallet readout**
+  - Intent: make phone landscape usable by separating Spin from bet/autoplay controls and restoring visible wallet context.
+  - Hypothesis: the landscape-only spin transform pushed the button over the dock controls, while hiding the whole support rail removed the only readable Balance/Bet panel.
+  - Code change: replaced the landscape dock override with a two-column cluster (`bet/autoplay` column left, Spin right), removed the negative spin offset, increased board side breathing slightly, kept horizontal overflow hidden, and exposed only the existing `supportBalanceBlock` as a compact fixed top-left Balance/Bet readout.
+  - Verification: host Playwright guest-mode smoke passed at `844x390`, `932x430`, and `740x360`; checks confirmed no spin/bet/autoplay overlap, no horizontal scroll, visible Balance/Bet readout, board within viewport, and enabled spin/autoplay with a funded guest session. Screenshots saved under `apps/player-web/screenshots/mobile-fixes/`.
+  - Rollback note: revert this task commit if landscape board space becomes too constrained; do not reintroduce translated spin offsets over dock controls.
+- `2026-06-02` **Task 1 wake lock opt-in**
+  - Intent: stop Brave Android from showing the unprompted Screen Wake Lock permission prompt on every fresh player visit.
+  - Hypothesis: `useScreenWakeLock()` requested native wake lock from its mount effect, so permission surfaced before the player touched the existing wake-lock toggle.
+  - Code change: removed mount-time native/fallback acquisition, split explicit user request from internal re-acquire, added an `enabledByUser` ref, and kept visibility re-acquire gated behind prior user enablement while still releasing active locks when the page hides.
+  - Verification: pending full mobile Playwright screenshot pass after responsive tasks; TypeScript/lint will run after all three task commits.
+  - Rollback note: revert this task commit if a target browser stops honoring explicit wake-lock toggle acquisition; do not restore mount-time wake-lock requests.
 - `2026-06-01` **WO-0 baseline and local artifact protection**
   - Intent: start the hardening pass from a known baseline without accidentally committing local Codex screenshots or generated test output.
   - Hypothesis: the pasted work order described an older dirty tracked tree; the current checkout has no tracked diffs and only local untracked artifacts.
@@ -560,3 +592,52 @@
     - decide later whether round persistence remains client-resolved or moves to server-authoritative spin resolution
     - clean up the API runtime path so local smoke no longer needs the `corepack pnpm --filter api exec node --import tsx dist/apps/api/src/main.js` workspace-loader workaround
 
+- `2026-06-02`
+  - Mobile UI corrective pass after interaction QA:
+    - Intent: remove real phone portrait and landscape overlaps after screenshots showed the board, support panels, spin dock, bet controls, autoplay controls, and menu states fighting for the same pixels.
+    - Hypothesis: the remaining breakage came from fragile handheld portrait translate/offset rules plus a landscape board height model that did not reserve enough room for the fixed dock.
+    - Code change: rebuilt handheld portrait placement around one compact support-rail grid with real `treasury`, `balance`, `status`, `meter`, `history`, and `utility` cells; replaced the portrait spin dock with a two-column spin/control tray; tightened landscape board height/inline breathing, widened speed labels so `NORMAL` remains readable, and hid hover-only symbol tooltips on mobile viewports so they cannot clip over the board.
+    - Verification: ran Playwright interaction QA in guest mode, opened the deposit modal, confirmed a deposit, executed three spins, opened the menu, and resized through 360x800, 390x844, 412x915, 740x360, 844x390, and 932x430. Final audit showed no horizontal scroll and zero measured overlap for rail/board, dock/board, dock/rail, spin/bet, and spin/autoplay on settled viewport states.
+    - Rollback: revert `apps/player-web/app/styles/responsive-portrait.css` and `apps/player-web/app/styles/responsive-mobile.css` to restore the previous mobile layout rules.
+  - Annotation responsive pass for iPhone SE, Pixel 8, iPad Mini/Air, Surface Pro 7, and 1024x768 laptop:
+    - Intent: address browser annotations showing support panels covering the board on iPhone SE, hidden HUD on iPad Mini, rail/board collision on Surface Pro 7, dock/board collision on iPad Air, and a cropped board with hidden controls on 1024x768 laptop.
+    - Hypothesis: the `max-width: 900px` mobile fallback and narrow `10/16` portrait condition were sending portrait tablets through incompatible desktop/mobile rules, while the landscape hard board geometry kept a 1024x768 board wider than the available stage.
+    - Code change: added named viewport locks after the split responsive imports for small-phone portrait, tall-phone portrait, tablet portrait, and small-laptop landscape; tablet portrait now uses a stacked board/HUD/dock model, 1024-class landscape restores a compact support rail and bounded board, and tablet win cards are compacted into the board zone.
+    - Verification: ran Playwright annotation audit on 375x667, 412x915, 768x1024, 820x1180, 912x1368, and 1024x768; final metrics showed no horizontal scroll, all board/rail/dock elements in viewport, SPIN/bet/autoplay hit targets reachable, visible Round Status and Balance/Bet, and zero measured rail/board, dock/board, dock/rail, spin/bet, and spin/autoplay overlap.
+    - Rollback: revert `apps/player-web/app/styles/responsive-views.css` to remove the annotation viewport locks.
+  - API-offline HUD badge:
+    - Intent: make API proxy outages visible to the player without blocking guest/simulator play.
+    - Hypothesis: player API calls already surface `API_UNREACHABLE`, but the shell had no shared UI state for that failure so outages looked like silent no-ops.
+    - Code change: added a small `player-api` offline status event channel, dispatching it from `requestJson()` only for `API_UNREACHABLE`/network failures and rendering a fixed `Offline — guest mode` HUD badge from the root layout.
+    - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed; `corepack pnpm --filter player-web lint` passed with existing warnings; `corepack pnpm --filter player-web test` passed 3/3; Playwright routed `_api` to 503 on 390x844, confirmed exact badge text `Offline — guest mode` and no horizontal scroll. Screenshot: `apps/player-web/screenshots/offline-badge-390x844.png`.
+    - Rollback: remove `apps/player-web/lib/api/offline-status.ts`, `apps/player-web/hooks/use-player-api-offline-status.ts`, `apps/player-web/components/runtime/api-offline-badge.*`, and the badge import/render in `apps/player-web/app/layout.tsx`.
+  - Authenticated analytics API persistence bridge:
+    - Intent: replace the remaining frontend analytics service stub with an API-backed implementation while keeping guest/offline play non-blocking.
+    - Hypothesis: the service abstraction existed but still threw for every PostgreSQL method, so authenticated analytics persistence could not use the existing API endpoints.
+    - Code change: implemented `PostgresAnalyticsService` against existing `/analytics/ingest`, `/analytics/rounds`, `/analytics/summary`, `/analytics/dashboard`, and `/analytics/reset` endpoints; updated `use-analytics-service.ts` to choose API-backed analytics for authenticated runtime with local offline fallback; wired authenticated round application to persist analytics without blocking spins.
+    - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed; `corepack pnpm --filter player-web lint` passed with existing warnings; `corepack pnpm --filter player-web test` passed 3/3.
+    - Rollback: revert `apps/player-web/lib/analytics/postgres-service.ts`, `apps/player-web/hooks/use-analytics-service.ts`, and the `storeAnalyticsRoundForRuntime` import/call in `apps/player-web/lib/state/player-store.ts`.
+  - Admin simulation runner:
+    - Intent: move the CLI-only simulation workflow into authenticated admin UI without blocking the API event loop.
+    - Hypothesis: running `simulateSpins()` directly in an HTTP handler would freeze Nest for large spin counts, so each request needs an isolated worker-backed job and a polling endpoint.
+    - Code change: added `POST /admin/simulate` and `GET /admin/simulate/:jobId` behind `AdminGuard` + throttling; capped jobs at 1,000,000 spins and two active workers; added an admin-web Simulation Runner panel with profile/spins/bet/seed inputs, status polling, progress, and RTP/hit/bonus/volatility result cards.
+    - Verification: `corepack pnpm --filter api lint` passed; `corepack pnpm --filter admin-web lint` passed; `corepack pnpm --filter api test` passed 59/59; `corepack pnpm --filter api test:e2e` passed 38/38; direct service smoke completed a 1,000-spin worker job with progress 100. `corepack pnpm --filter admin-web build` compiled successfully but failed on the known Windows standalone symlink `EPERM` copy step.
+    - Rollback: remove `apps/api/src/admin-simulation.*`, unregister them from `apps/api/src/app.module.ts`, and remove `apps/admin-web/components/simulation-runner.tsx` plus its admin page section.
+  - Olamov iframe embed finish:
+    - Intent: finish the iframe deployment defaults for olamov.com without changing the proxy/session model.
+    - Hypothesis: trust-proxy and embed CSS were already present, but production compose still defaulted secure cookies off and the shell exposed boolean-ish `data-embed` values instead of the documented `1/0` flag.
+    - Code change: set `COOKIE_SECURE` default to `true` in `docker-compose.prod.yml`; changed player shell `data-embed` to `1`/`0` while keeping `.is-embed-mode` for the CSS that hides the branding rail/right scene.
+    - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed; `corepack pnpm --filter player-web lint` passed with existing warnings; `docker compose -f docker-compose.prod.yml config` passed and resolves `COOKIE_SECURE: "true"`.
+    - Rollback: restore `COOKIE_SECURE: ${COOKIE_SECURE:-false}` and `data-embed={embedMode ? "true" : "false"}`.
+  - GitHub Actions CI gate:
+    - Intent: add a Linux CI gate that catches type, lint, unit/e2e, and build regressions before merges.
+    - Hypothesis: the repo already has Docker image publishing, but no general PR/push verification workflow; running the build on Linux also avoids the Windows standalone symlink `EPERM` caveat.
+    - Code change: added `.github/workflows/ci.yml` with Node 22, pnpm 10.6.3 via corepack, frozen install, API Prisma generation, recursive typecheck/lint/tests, API e2e tests, and recursive build.
+    - Verification: `git diff --check -- .github/workflows/ci.yml docs/tasks.md` passed; `corepack pnpm -r --if-present typecheck` passed as the current no-op contract; `corepack pnpm -r lint` passed with existing player-web warnings; `corepack pnpm -r --if-present test` passed; `corepack pnpm --filter api test:e2e` passed 38/38. Local `corepack pnpm --filter api prisma:generate` was blocked by Windows `EPERM` renaming Prisma's query-engine DLL, consistent with an active local process/file lock; the workflow runs this step on Ubuntu. Local recursive build left to CI/Linux because Windows standalone symlink behavior is the known caveat.
+    - Rollback: delete `.github/workflows/ci.yml`.
+  - README dev/build caveats:
+    - Intent: document the new full local startup path and the Windows standalone build requirement so setup does not depend on oral context.
+    - Hypothesis: root scripts already expose `dev:full`, but README still showed only three-terminal startup and did not say Developer Mode/Docker is the correct Windows build fix.
+    - Code change: added `corepack pnpm dev:full` to Development and expanded the Windows `EPERM` note to require Developer Mode or Docker/WSL/Linux instead of removing standalone output.
+    - Verification: `git diff --check -- README.md docs/tasks.md` passed; reviewed README diff for scoped `dev:full` and Windows build caveat changes.
+    - Rollback: remove the `dev:full` block and restore the shorter Windows `EPERM` note.

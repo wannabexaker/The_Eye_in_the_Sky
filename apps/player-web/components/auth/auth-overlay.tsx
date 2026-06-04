@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { shellAssets } from "@/lib/assets/asset-manifest";
 import { generateRandomDisplayName } from "@/lib/identity/random-display-name";
 import type { PlayerApiFieldErrors } from "@/lib/api/player-api";
 
@@ -14,6 +13,7 @@ type AuthOverlayProps = {
   onRegister: (payload: { email: string; password: string; displayName: string }) => Promise<void>;
   onResetPassword: (payload: { token: string; newPassword: string }) => Promise<void>;
   onSkipLogin: () => void;
+  logoSrc?: string;
 };
 
 export function AuthOverlay({
@@ -26,7 +26,8 @@ export function AuthOverlay({
   onLogin,
   onRegister,
   onResetPassword,
-  onSkipLogin
+  onSkipLogin,
+  logoSrc = "/assets/ui/logo-eye-in-the-sky.png"
 }: AuthOverlayProps) {
   const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">("login");
   const [displayName, setDisplayName] = useState(() => generateRandomDisplayName());
@@ -142,7 +143,7 @@ export function AuthOverlay({
             <div
               aria-hidden="true"
               className="welcomeLogo"
-              style={{ backgroundImage: `url(${shellAssets.logo})` }}
+              style={{ backgroundImage: `url(${logoSrc})` }}
             />
             <div className="overlayTitleBlock welcomeTitleBlock">
               <h2>{title}</h2>

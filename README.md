@@ -9,6 +9,7 @@ The project is built for math validation, engine development, and full-cycle gam
 ## Features
 
 - Playable PixiJS slot board in a Next.js player shell.
+- Fully responsive player shell (phone → tablet → desktop) with an adaptive luxury spin dock and ritual log.
 - Runtime-selectable math profiles backed by API settings.
 - Session-based auth with role-based player/admin access.
 - Server-side wallet, ledger, round, and bonus-state persistence.
@@ -74,6 +75,14 @@ corepack pnpm --filter api prisma:seed
 
 ## Development
 
+Fast local path when Docker is available:
+
+```bash
+corepack pnpm dev:full
+```
+
+This starts PostgreSQL, generates the Prisma client, applies migrations, seeds configured local accounts, and runs the API, player, and admin apps together.
+
 ```bash
 # Terminal 1 - API
 corepack pnpm dev:api
@@ -103,8 +112,18 @@ Run the full build only after stopping dev servers:
 corepack pnpm build
 ```
 
+## Testing
+
+| Command | Scope |
+|---|---|
+| `corepack pnpm -r --if-present test` | Unit tests (game-engine RTP regression bands, API validators) |
+| `corepack pnpm --filter api test:e2e` | API end-to-end (auth, security, sessions) |
+| `corepack pnpm --filter player-web exec playwright test` | Player UI end-to-end (auth flow, fluid responsive shell) |
+
+CI (`.github/workflows/ci.yml`) runs typecheck, lint, unit tests, API e2e, and build on every push and pull request.
+
 ## Notes
 
 - Do not run `pnpm build` while `pnpm dev:*` is active. The player build guard aborts when port `3000` is busy to avoid `.next` cache corruption.
-- On Windows, standalone Next builds may compile and then fail on symlink creation with `EPERM`; rerun build signoff in an environment that permits symlinks.
+- On Windows, standalone Next builds may compile and then fail on symlink creation with `EPERM`. Enable Windows Developer Mode or run build signoff in Docker/WSL/Linux; do not remove `output: "standalone"` to work around it.
 - Seed credentials are local-only. Keep `PLAYER_SEED_*` and `ADMIN_SEED_*` blank in committed examples and set them only in ignored local env files.

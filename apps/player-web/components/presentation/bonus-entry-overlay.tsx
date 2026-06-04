@@ -1,20 +1,20 @@
 /*
 Purpose: announces bonus entry with the awarded free spins
 Layer: frontend (player-web)
-Uses: shared shell asset manifest and slot bonus announcement state
+Uses: caller-provided bonus art and slot bonus announcement state
 */
-
-import { shellAssets } from "@/lib/assets/asset-manifest";
 
 type BonusEntryOverlayProps = {
   open: boolean;
   freeSpins: number;
+  bonusOverlaySrc?: string;
   onContinue: () => void;
 };
 
 export function BonusEntryOverlay({
   open,
   freeSpins,
+  bonusOverlaySrc = "/assets/backgrounds/bonus-sky-opens.png",
   onContinue
 }: BonusEntryOverlayProps) {
   if (!open) {
@@ -35,7 +35,7 @@ export function BonusEntryOverlay({
           <div
             aria-hidden="true"
             className="bonusEntryArt"
-            style={{ backgroundImage: `url(${shellAssets.bonusOverlay})` }}
+            style={{ backgroundImage: `url(${bonusOverlaySrc})` }}
           />
 
           <p className="welcomeTagline">The chamber yields to divine fire.</p>

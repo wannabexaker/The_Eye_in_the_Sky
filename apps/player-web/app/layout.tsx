@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Cinzel, Spectral } from "next/font/google";
+import { ApiOfflineBadge } from "@/components/runtime/api-offline-badge";
 import "./globals.css";
 import "./main-board.css";
-import "./styles/responsive-views.css";
+import "./fluid-shell.css";
 
 const displayFont = Cinzel({
   subsets: ["latin"],
@@ -32,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${displayFont.variable} ${uiFont.variable}`}>{children}</body>
+      <body className={`${displayFont.variable} ${uiFont.variable}`}>
+        {children}
+        <ApiOfflineBadge />
+      </body>
     </html>
   );
 }

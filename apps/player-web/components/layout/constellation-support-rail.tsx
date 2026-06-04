@@ -8,7 +8,7 @@ Uses: wallet actions, status state, and scatter trigger summary
 
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
-import { symbolAssetSources } from "@/lib/assets/asset-manifest";
+import type { SymbolAssetSources } from "@/lib/assets/asset-manifest";
 import { useViewport } from "@/hooks/useViewport";
 
 type ConstellationSupportRailProps = {
@@ -20,6 +20,7 @@ type ConstellationSupportRailProps = {
   freeSpins: number;
   activeBonusSpins: number;
   bonusActive: boolean;
+  symbolAssetSources: SymbolAssetSources;
   scatterRewards: Array<{
     count: number;
     payoutMultiplier: number;
@@ -37,18 +38,30 @@ type ConstellationSupportRailProps = {
 };
 
 const formatWin = (result: SpinResult) =>
-  result.totalWin > 0
-    ? `+${new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(result.totalWin)}`
-    : "LOSS";
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(result.totalWin);
+
+const formatRitualPayout = (result: SpinResult) =>
+  result.totalWin > 0 ? `+${formatWin(result)}` : "0.00";
+
+const getRitualModeLabel = (result: SpinResult) =>
+  result.mode === "bonus" ? "Sky Opens" : "Temple Watch";
+
+const getRitualTooltip = (result: SpinResult) => {
+  if (result.totalWin > 0) {
+    return result.mode === "bonus"
+      ? `+${formatWin(result)} · the Sky rewards the watch`
+      : `+${formatWin(result)} · the Eye favors you`;
+  }
+
+  return result.mode === "bonus" ? "the Sky holds its gifts" : "the omen passes";
+};
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
-const DESKTOP_VISIBLE_ENTRIES = 5;
-const COMPACT_VISIBLE_ENTRIES = 3;
-const PORTRAIT_VISIBLE_ENTRIES = 10;
-const HANDHELD_PORTRAIT_VISIBLE_ENTRIES = 11;
+const MIN_VISIBLE_ENTRIES = 2;
+const FALLBACK_HISTORY_ROW_HEIGHT = 26;
 
 export function ConstellationSupportRail({
   balance,
@@ -59,6 +72,7 @@ export function ConstellationSupportRail({
   freeSpins,
   activeBonusSpins,
   bonusActive,
+  symbolAssetSources,
   scatterRewards,
   history,
   soundEnabled,
@@ -73,9 +87,9 @@ export function ConstellationSupportRail({
   const [showMore, setShowMore] = useState(false);
   const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
+  const [adaptiveVisibleEntries, setAdaptiveVisibleEntries] = useState(MIN_VISIBLE_ENTRIES);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
   const viewport = useViewport();
-  const compactView = (viewport.band !== "desktop" && viewport.band !== "wide") || viewport.height <= 900;
   const portraitView =
     viewport.orientation === "portrait" && viewport.width / Math.max(viewport.height, 1) <= 10 / 16;
   const handheldPortraitView = portraitView && viewport.band === "phone";
@@ -87,13 +101,7 @@ export function ConstellationSupportRail({
   }, [handheldPortraitView]);
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = handheldPortraitView
-    ? HANDHELD_PORTRAIT_VISIBLE_ENTRIES
-    : portraitView
-      ? PORTRAIT_VISIBLE_ENTRIES
-      : compactView
-        ? COMPACT_VISIBLE_ENTRIES
-        : DESKTOP_VISIBLE_ENTRIES;
+  const defaultVisibleEntries = Math.max(MIN_VISIBLE_ENTRIES, adaptiveVisibleEntries);
   const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
   const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
   const historyToggleTitle = showMore ? "Collapse constellation log" : "Expand constellation log";
@@ -133,6 +141,49 @@ export function ConstellationSupportRail({
       setShowMore(false);
     }
   }, [defaultVisibleEntries, ritualEntries.length, showMore]);
+
+  useEffect(() => {
+    const historyElement = supportHistoryRef.current;
+
+    if (!historyElement) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateVisibleEntries = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const rowElement = historyElement.querySelector<HTMLElement>(".supportHistoryRow");
+        const historyStyles = window.getComputedStyle(historyElement);
+        const rowGap = Number.parseFloat(historyStyles.rowGap || historyStyles.gap || "0") || 0;
+        const rowHeight = rowElement?.getBoundingClientRect().height ?? FALLBACK_HISTORY_ROW_HEIGHT;
+        const availableHeight = historyElement.getBoundingClientRect().height;
+        const nextVisibleEntries = Math.max(
+          MIN_VISIBLE_ENTRIES,
+          Math.floor((availableHeight + rowGap) / Math.max(1, rowHeight + rowGap))
+        );
+
+        setAdaptiveVisibleEntries((current) => (
+          current === nextVisibleEntries ? current : nextVisibleEntries
+        ));
+      });
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateVisibleEntries);
+    resizeObserver?.observe(historyElement);
+
+    updateVisibleEntries();
+    window.addEventListener("resize", updateVisibleEntries);
+    window.addEventListener("orientationchange", updateVisibleEntries);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateVisibleEntries);
+      window.removeEventListener("orientationchange", updateVisibleEntries);
+      resizeObserver?.disconnect();
+    };
+  }, [ritualEntries.length]);
 
   useEffect(() => {
     if (!showMore) {
@@ -294,22 +345,24 @@ export function ConstellationSupportRail({
         className="compactPanel supportBlock supportHistoryBlock constellationHistoryBlock"
         title="Recent constellation outcomes. Shows the latest resolved rounds and whether they happened in base game or bonus mode."
       >
-        <div className="panelHeader">
-          <p className="eyebrow">Constellation Log</p>
-          {canToggleHistory ? (
-            <button
-              className="supportToggle"
-              onClick={() => setShowMore((current) => !current)}
-              aria-expanded={showMore}
-              aria-label={showMore ? "Collapse constellation log" : "Expand constellation log"}
-              title={historyToggleTitle}
-              type="button"
-            >
-              <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-          ) : null}
+        <div className="panelHeader supportHistoryHeader">
+          <button
+            aria-expanded={showMore}
+            aria-label={showMore ? "Collapse constellation log" : "Expand constellation log"}
+            className="supportHistoryHeaderButton"
+            disabled={!canToggleHistory}
+            onClick={() => setShowMore((current) => !current)}
+            title={historyToggleTitle}
+            type="button"
+          >
+            <span className="eyebrow">Constellation Log</span>
+            <span className="supportHistoryHeaderHint">
+              {canToggleHistory ? (showMore ? "Collapse" : "Full history") : "Recent"}
+            </span>
+            <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
         </div>
         <div className={`supportEmotion supportEmotion--${emotionVariant}`} title={emotionHint}>
           <span aria-hidden="true" className="supportEmotionPulse" />
@@ -332,12 +385,13 @@ export function ConstellationSupportRail({
           ) : (
             visibleEntries.map((result, index) => (
               <div
-                className="supportHistoryRow"
+                className={`supportHistoryRow ${result.totalWin > 0 ? "is-win" : "is-loss"}`}
                 key={`${result.roundSummary.roundId}-${index}`}
-                title={`Round ${result.roundSummary.roundId} - ${result.mode === "bonus" ? "Bonus" : "Base"} - ${formatWin(result)}`}
+                title={getRitualTooltip(result)}
               >
-                <strong>{formatWin(result)}</strong>
-                <span>{result.mode === "bonus" ? "bonus" : "base"}</span>
+                <span aria-hidden="true" className="supportHistoryDot" />
+                <strong className="supportHistoryPayout">{formatRitualPayout(result)}</strong>
+                <span className="supportHistoryMode">{getRitualModeLabel(result)}</span>
               </div>
             ))
           )}

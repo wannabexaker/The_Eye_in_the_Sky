@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  AUTH_MODE: INTERNAL_ONLY
+  COOKIE_SECURE: "false"
+  DATABASE_URL: postgresql://app_user:app_password@localhost:5432/eye_db?schema=public
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    name: Verify monorepo
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.6.3 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter api prisma:generate
+
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Unit tests
+        run: pnpm -r --if-present test
+
+      - name: API e2e tests
+        run: pnpm --filter api test:e2e
+
+      - name: Build
+        run: pnpm -r build

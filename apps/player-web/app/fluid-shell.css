@@ -1,0 +1,1016 @@
+/*
+Purpose: one fluid four-zone player shell.
+Owns: brand / board / info / deck placement.
+Replaces the old per-breakpoint mobile/desktop shell patches.
+*/
+
+.slotViewport {
+  --fluid-gap: clamp(6px, 1vw, 12px);
+  --fluid-panel-radius: 11px;
+  --fluid-info-panel-padding: clamp(5px, 0.8vw, 9px);
+  --fluid-brand-width: clamp(76px, 11vw, 180px);
+  --fluid-info-width: clamp(132px, 18vw, 260px);
+  --fluid-deck-max-width: min(100%, 670px);
+  --dock-x-balance: 0px;
+  --dock-board-overlap: clamp(0px, 1vw, 6px);
+  --dock-bar-height: clamp(30px, 4.4vw, 40px);
+  --dock-crown-overhang: clamp(48px, 8.5vw, 74px);
+  --dock-control-size: clamp(28px, 3.8vw, 34px);
+  --dock-spin-size: clamp(86px, 15vw, 120px);
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fluidShell {
+  display: grid;
+  grid-template-areas:
+    "brand"
+    "board"
+    "info"
+    "deck";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: var(--fluid-gap);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--fluid-gap) + env(safe-area-inset-top, 0px))
+    calc(var(--fluid-gap) + env(safe-area-inset-right, 0px))
+    calc(var(--fluid-gap) + env(safe-area-inset-bottom, 0px))
+    calc(var(--fluid-gap) + env(safe-area-inset-left, 0px));
+  position: relative;
+  z-index: var(--z-stage);
+  pointer-events: auto;
+}
+
+/* Own the shell columns decisively over the legacy `.gameArea.machineStage`
+   grid (globals.css), which sets `--machine-stage-columns` (main-board.css) to a
+   3-track value at >=768 and outranks `.fluidShell` (0,1,0) with its 0,2,0.
+   Matching 0,2,0 here + loading last lets the fluid grid win at every breakpoint. */
+.fluidShell.machineStage {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fluid-gap);
+  pointer-events: auto;
+}
+
+.fluidShell > .brandingRail {
+  grid-area: brand;
+}
+
+.fluidShell > .centerStage {
+  grid-area: board;
+}
+
+.fluidShell > .supportRail {
+  grid-area: info;
+}
+
+.fluidShell > .floatingGameDock {
+  grid-area: deck;
+}
+
+.fluidShell > .brandingRail,
+.fluidShell > .centerStage,
+.fluidShell > .supportRail,
+.fluidShell > .floatingGameDock {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Brand: small and discreet in the shell. */
+
+.fluidShell .brandingRail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+.fluidShell .brandPanel,
+.fluidShell .constellationBrandPanel {
+  width: 100%;
+  min-height: 0;
+  padding: 3px 8px;
+  border-radius: var(--fluid-panel-radius);
+  border: 1px solid rgba(226, 190, 112, 0.12);
+  background: rgba(12, 10, 14, 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fluidShell .brandLogo {
+  width: clamp(112px, 36vw, 190px);
+  height: clamp(28px, 8vw, 48px);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.94;
+  filter: drop-shadow(0 0 12px rgba(226, 190, 112, 0.2));
+}
+
+/* Brand rail = CLEAN frameless logo (kill the legacy `.inlineRounds` glass box
+   that wrapped the logo / scene in an ugly bordered square). Logo reads bigger. */
+.fluidShell .brandingRail .inlineRounds,
+.fluidShell .brandingRail .brandPanel,
+.fluidShell .brandingRail .brandScenePanel {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.fluidShell .brandingRail .brandLogo {
+  width: min(100%, clamp(180px, 16vw, 300px));
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 7;
+  opacity: 1;
+  --brand-logo-scale: 1;
+}
+
+.fluidShell .brandTagline,
+.fluidShell .constellationBrandLead,
+.fluidShell .brandScenePanel,
+.fluidShell .constellationScenePanel {
+  display: none;
+}
+
+/* Board: one aspect-ratio surface that fills its grid zone. */
+
+.fluidShell .centerStage {
+  display: grid;
+  place-items: center;
+  container-type: size;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  z-index: var(--z-center-stage);
+}
+
+.fluidShell .boardShell {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+.fluidShell .boardStageHalo {
+  inset: 8% 7%;
+}
+
+.fluidShell .boardFrameMain {
+  aspect-ratio: 6 / 5;
+  /* Contain a fixed 6:5 board inside its zone on BOTH axes (cqw + cqh),
+     so it never squishes (tall zones) or stretches (wide zones). */
+  width: min(100cqw, calc(100cqh * 6 / 5));
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  justify-self: center;
+  align-self: center;
+  margin: 0;
+  transform: none;
+  border-radius: clamp(12px, 2.4vw, 22px);
+}
+
+.fluidShell .pixiStageShell,
+.fluidShell .pixiStage {
+  width: 100%;
+  height: 100%;
+}
+
+/* Info: portrait = left stats + right ritual log. */
+
+.fluidShell .supportRail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  grid-template-rows: repeat(4, min-content) min-content;
+  grid-template-areas:
+    "treasury history"
+    "balance history"
+    "meter history"
+    "status history"
+    "utility history";
+  gap: clamp(5px, 0.9vw, 8px);
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  align-content: stretch;
+  justify-self: stretch;
+  overflow: hidden;
+  position: relative;
+  transform: none;
+}
+
+.fluidShell .treasuryBlock {
+  grid-area: treasury;
+}
+
+/* Discreet treasury (match approved mockup): no card chrome / header,
+   Deposit + Withdraw read as floating pill chips at the top of the rail. */
+.fluidShell .treasuryBlock.compactPanel,
+.fluidShell .treasuryBlock.supportBlock {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.fluidShell .treasuryBlock .panelHeader {
+  display: none;
+}
+
+.fluidShell .treasuryBlock .supportActions {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.fluidShell .treasuryBlock .walletAction {
+  flex: 1 1 0;
+}
+
+.fluidShell .supportBalanceBlock {
+  grid-area: balance;
+}
+
+.fluidShell .supportMeterBlock,
+.fluidShell .constellationTriggerBlock {
+  grid-area: meter;
+}
+
+.fluidShell .supportStatusBlock {
+  grid-area: status;
+}
+
+.fluidShell .supportHistoryBlock {
+  grid-area: history;
+}
+
+.fluidShell .supportRailUtilityBar {
+  grid-area: utility;
+}
+
+.fluidShell .supportRail .supportBlock,
+.fluidShell .supportRail .compactPanel {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 0;
+  padding: var(--fluid-info-panel-padding);
+  border-radius: var(--fluid-panel-radius);
+  overflow: hidden;
+}
+
+.fluidShell .supportRail .panelHeader {
+  min-height: 12px;
+  margin-bottom: 3px;
+}
+
+.fluidShell .supportRail .panelHeader .eyebrow,
+.fluidShell .supportHistoryHeaderButton .eyebrow {
+  font-size: clamp(0.5rem, 1.6vw, 0.62rem);
+  line-height: 1;
+  letter-spacing: 0.13em;
+}
+
+.fluidShell .supportActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.fluidShell .walletAction {
+  min-height: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: clamp(0.52rem, 1.65vw, 0.66rem);
+  letter-spacing: 0.08em;
+}
+
+.fluidShell .supportBalanceZone {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  min-height: 38px;
+}
+
+.fluidShell .supportBalanceZone::after {
+  display: none;
+}
+
+.fluidShell .supportRail .bottomBarStat {
+  min-height: 38px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.fluidShell .supportRail .bottomBarStat span,
+.fluidShell .supportRail .supportMiniStat span,
+.fluidShell .samsaraMeter small {
+  font-size: clamp(0.48rem, 1.5vw, 0.58rem);
+  letter-spacing: 0.1em;
+}
+
+.fluidShell .supportRail .bottomBarStat strong,
+.fluidShell .supportRail .supportMiniStat strong {
+  font-size: clamp(0.76rem, 2.4vw, 0.98rem);
+  line-height: 1;
+}
+
+.fluidShell .supportStatusBlock.is-handheld-hidden {
+  display: block;
+}
+
+.fluidShell .supportStatusStrip {
+  display: grid;
+  gap: 4px;
+}
+
+.fluidShell .supportStatusBottomRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.fluidShell .supportMiniStat {
+  min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.fluidShell .supportMeterBlock .samsaraMeter,
+.fluidShell .constellationTriggerBlock {
+  min-height: 42px;
+}
+
+.fluidShell .samsaraMeter {
+  gap: 3px;
+}
+
+.fluidShell .samsaraMeterBody {
+  min-height: 13px;
+}
+
+.fluidShell .samsaraTrack {
+  height: 8px;
+}
+
+.fluidShell .samsaraEye {
+  width: 22px;
+  height: 22px;
+}
+
+.fluidShell .constellationTriggerLead,
+.fluidShell .constellationTriggerRewards {
+  gap: 4px;
+}
+
+.fluidShell .constellationTriggerIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.fluidShell .constellationTriggerReward {
+  padding: 3px 5px;
+}
+
+.fluidShell .supportHistoryBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.fluidShell .supportHistoryHeader {
+  margin-bottom: 4px;
+}
+
+.fluidShell .supportHistoryHeaderButton {
+  width: 100%;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fluidShell .supportHistoryHeaderButton:disabled {
+  cursor: default;
+}
+
+.fluidShell .supportHistoryHeaderHint {
+  color: rgba(226, 190, 112, 0.78);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fluidShell .supportHistoryHeaderButton:disabled .supportHistoryHeaderHint,
+.fluidShell .supportHistoryHeaderButton:disabled .supportToggleIcon {
+  opacity: 0.46;
+}
+
+.fluidShell .supportHistoryHeaderButton[aria-expanded="true"] .supportToggleIcon {
+  transform: rotate(180deg);
+}
+
+.fluidShell .supportEmotion {
+  min-height: 0;
+  padding: 5px 7px;
+  margin-bottom: 4px;
+  gap: 2px;
+}
+
+.fluidShell .supportEmotion strong {
+  font-size: 0.66rem;
+}
+
+.fluidShell .supportEmotionHint {
+  display: none;
+}
+
+.fluidShell .supportHistory {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.fluidShell .supportHistory.is-scrollable {
+  overflow-y: auto;
+}
+
+.fluidShell .supportHistoryRow {
+  min-height: 18px;
+  padding: 4px 7px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.fluidShell .supportHistoryDot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  border-radius: 999px;
+  background: rgba(244, 239, 230, 0.32);
+  box-shadow: 0 0 8px rgba(244, 239, 230, 0.1);
+}
+
+.fluidShell .supportHistoryRow.is-win .supportHistoryDot {
+  background: #e2be70;
+  box-shadow: 0 0 10px rgba(226, 190, 112, 0.42);
+}
+
+.fluidShell .supportHistoryPayout {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(244, 239, 230, 0.82);
+}
+
+.fluidShell .supportHistoryRow.is-win .supportHistoryPayout {
+  color: rgba(247, 207, 94, 0.98);
+}
+
+.fluidShell .supportHistoryMode {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 58%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  color: rgba(244, 239, 230, 0.52);
+  font-size: clamp(0.48rem, 1.35vw, 0.56rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fluidShell .supportHistoryPayout,
+.fluidShell .supportMuted {
+  font-size: clamp(0.54rem, 1.5vw, 0.66rem);
+}
+
+.fluidShell .supportRailUtilityBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0;
+  margin: 0;
+}
+
+.fluidShell .supportRailUtilityButton {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.fluidShell .supportStatusContextWindow {
+  display: none;
+}
+
+/* Deck: one in-flow control deck under the board. */
+
+.fluidShell .floatingGameDock {
+  position: relative;
+  inset: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-width: var(--fluid-deck-max-width);
+  margin-top: calc(-1 * var(--dock-board-overlap));
+  justify-self: center;
+  align-self: center;
+  translate: var(--dock-x-balance) 0;
+  z-index: var(--z-dock);
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.fluidShell .floatingGameDockInner {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--dock-spin-size) minmax(0, 1fr);
+  grid-template-rows: var(--dock-crown-overhang) var(--dock-bar-height) minmax(12px, auto);
+  grid-template-areas:
+    ". spin ."
+    "bet spin autoplay"
+    "meta meta meta";
+  align-items: center;
+  justify-items: center;
+  gap: 0 clamp(10px, 2.3vw, 24px);
+  min-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 16px);
+  padding: 0 clamp(10px, 2.4vw, 22px);
+  border-radius: 28px;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.fluidShell .dockSilhouetteSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: var(--z-local-base);
+}
+
+.fluidShell .dockTopRow,
+.fluidShell .dockBottomRow {
+  display: contents;
+}
+
+.fluidShell .dockSpinWrapper {
+  grid-area: spin;
+  position: relative;
+  z-index: var(--z-local-overlay);
+  align-self: center;
+  width: var(--dock-spin-size);
+  min-width: var(--dock-spin-size);
+  height: var(--dock-spin-size);
+  min-height: var(--dock-spin-size);
+  overflow: visible;
+}
+
+.fluidShell .floatingGameDock .spinCta {
+  --spin-cta-size: var(--dock-spin-size);
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 231, 154, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.34),
+    inset 0 0 18px rgba(0, 0, 0, 0.34);
+}
+
+.fluidShell .floatingGameDock .spinCta:hover {
+  filter: brightness(1.07);
+  transform: none;
+}
+
+.fluidShell .floatingGameDock .spinCta:active:not(:disabled) {
+  filter: brightness(0.95);
+  transform: none;
+}
+
+.fluidShell .floatingGameDock .spinCta.is-pressed:not(:disabled) {
+  filter: brightness(0.95);
+  transform: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 231, 154, 0.16),
+    0 6px 14px rgba(0, 0, 0, 0.38),
+    inset 0 0 18px rgba(0, 0, 0, 0.46);
+}
+
+.fluidShell .dockBetCluster {
+  grid-area: bet;
+  justify-self: end;
+  align-self: center;
+}
+
+.fluidShell .dockAutoCluster {
+  grid-area: autoplay;
+  justify-self: start;
+  align-self: center;
+}
+
+.fluidShell .dockBetCluster,
+.fluidShell .dockAutoCluster {
+  position: relative;
+  z-index: var(--z-local-raised);
+  gap: clamp(5px, 1vw, 10px);
+}
+
+.fluidShell .dockSmallButton,
+.fluidShell .dockBetInput {
+  height: var(--dock-control-size);
+  min-height: var(--dock-control-size);
+  min-width: var(--dock-control-size);
+  border-radius: clamp(10px, 2vw, 15px);
+  border-color: rgba(226, 190, 112, 0.12);
+  background:
+    linear-gradient(180deg, rgba(28, 27, 27, 0.9), rgba(8, 8, 9, 0.96));
+  box-shadow:
+    0 5px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.72);
+}
+
+.fluidShell .dockSmallButton:hover:not(:disabled),
+.fluidShell .dockSmallButton.is-active:hover:not(:disabled) {
+  border-color: rgba(247, 207, 94, 0.55);
+  background: linear-gradient(180deg, rgba(60, 51, 38, 0.96), rgba(22, 18, 13, 0.98));
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.34),
+    0 0 12px rgba(226, 190, 112, 0.30),
+    inset 0 1px 0 rgba(255, 236, 184, 0.20);
+  color: rgba(255, 231, 154, 0.98);
+  transform: none;
+}
+
+.fluidShell .dockSmallButton:active:not(:disabled),
+.fluidShell .dockSmallButton.is-active:active:not(:disabled) {
+  border-color: rgba(247, 207, 94, 0.75);
+  background: linear-gradient(180deg, rgba(226, 190, 112, 0.94), rgba(166, 121, 46, 0.96));
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.45),
+    0 0 12px rgba(226, 190, 112, 0.35);
+  color: #17120f;
+  transform: translateY(1px);
+}
+
+.fluidShell .dockBetInput {
+  width: clamp(44px, 9vw, 66px);
+  color: rgba(247, 207, 94, 0.96);
+  font-size: clamp(0.7rem, 1.5vw, 0.95rem);
+  font-weight: 800;
+}
+
+.fluidShell .dockSpeedCycleButton {
+  width: clamp(58px, 11vw, 82px);
+  min-width: clamp(58px, 11vw, 82px);
+  max-width: clamp(58px, 11vw, 82px);
+}
+
+.fluidShell .dockMetaInfo {
+  grid-area: meta;
+  position: relative;
+  z-index: var(--z-local-raised);
+  min-height: 12px;
+  padding: 1px 0 0;
+  justify-content: center;
+  max-width: 100%;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+}
+
+.fluidShell .dockMetaInfo:empty::before {
+  content: "GOOD LUCK!";
+  opacity: 0.86;
+}
+
+/* Wide and all landscape: info rail | board | brand, deck under board. */
+
+@media (min-width: 900px), (orientation: landscape) {
+  .slotViewport {
+    --fluid-gap: clamp(6px, 0.7vw, 9px);
+    --fluid-brand-width: clamp(180px, 16vw, 300px);
+    --dock-board-overlap: clamp(38px, 6dvh, 56px);
+    --dock-x-balance: 5px;
+  }
+
+  .fluidShell.machineStage {
+    grid-template-areas:
+      "info board brand"
+      "info deck brand";
+    grid-template-columns: var(--fluid-info-width) minmax(0, 1fr) var(--fluid-brand-width);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .fluidShell .centerStage {
+    justify-self: center;
+  }
+
+  .fluidShell .supportRail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, min-content) minmax(0, 1fr) min-content;
+    grid-template-areas:
+      "treasury"
+      "balance"
+      "meter"
+      "status"
+      "history"
+      "utility";
+    height: 100%;
+    align-content: stretch;
+  }
+
+  .fluidShell .supportHistoryBlock {
+    min-height: 0;
+  }
+
+  .fluidShell .brandingRail {
+    align-items: start;
+  }
+
+  .fluidShell .brandPanel,
+  .fluidShell .constellationBrandPanel {
+    min-height: clamp(64px, 12dvh, 112px);
+    flex-direction: column;
+  }
+
+  .fluidShell .brandLogo {
+    width: min(100%, clamp(180px, 16vw, 300px));
+    height: clamp(42px, 8dvh, 72px);
+  }
+
+  .fluidShell .floatingGameDockInner {
+    min-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 16px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .slotViewport {
+    --fluid-gap: 6px;
+    --fluid-info-width: clamp(128px, 18vw, 168px);
+    --fluid-brand-width: clamp(58px, 9vw, 92px);
+    --fluid-info-panel-padding: 5px;
+    --fluid-deck-max-width: min(100%, 480px);
+    --dock-board-overlap: clamp(12px, 3dvh, 18px);
+    --dock-bar-height: 36px;
+    --dock-crown-overhang: 28px;
+    --dock-control-size: 28px;
+    --dock-spin-size: 72px;
+  }
+
+  .fluidShell .brandPanel,
+  .fluidShell .constellationBrandPanel {
+    min-height: 44px;
+    padding: 3px;
+  }
+
+  .fluidShell .brandLogo {
+    width: 64px;
+    height: 30px;
+  }
+
+  .fluidShell .supportRail {
+    gap: 4px;
+  }
+
+  .fluidShell .supportRail .panelHeader {
+    margin-bottom: 2px;
+  }
+
+  .fluidShell .supportMeterBlock .samsaraMeter,
+  .fluidShell .constellationTriggerBlock {
+    min-height: 36px;
+  }
+
+  .fluidShell .supportEmotion {
+    display: none;
+  }
+
+  .fluidShell .floatingGameDockInner {
+    min-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 14px);
+    padding-inline: 8px;
+    gap: 0 8px;
+  }
+
+  .fluidShell .dockBetCluster,
+  .fluidShell .dockAutoCluster {
+    gap: 4px;
+  }
+
+  .fluidShell .dockBetInput {
+    width: 40px;
+  }
+
+  .fluidShell .dockSpeedCycleButton {
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .slotViewport {
+    --fluid-gap: 4px;
+    --fluid-info-panel-padding: 4px;
+    --fluid-panel-radius: 9px;
+    --dock-bar-height: 36px;
+    --dock-crown-overhang: 24px;
+    --dock-control-size: 28px;
+    --dock-spin-size: 72px;
+  }
+
+  .fluidShell {
+    padding: calc(2px + env(safe-area-inset-top, 0px))
+      env(safe-area-inset-right, 0px)
+      calc(4px + env(safe-area-inset-bottom, 0px))
+      env(safe-area-inset-left, 0px);
+  }
+
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(120px, 36vw, 140px));
+  }
+
+  .fluidShell .supportRail {
+    grid-template-rows: repeat(4, min-content);
+    grid-template-areas:
+      "treasury history"
+      "balance history"
+      "meter history"
+      "status utility";
+    gap: 4px;
+    align-content: start;
+    max-height: min(192px, 30dvh);
+  }
+
+  .fluidShell .supportRail .panelHeader {
+    min-height: 10px;
+    margin-bottom: 2px;
+  }
+
+  .fluidShell .supportRail .supportBlock,
+  .fluidShell .supportRail .compactPanel {
+    padding: var(--fluid-info-panel-padding);
+  }
+
+  .fluidShell .supportActions {
+    gap: 4px;
+  }
+
+  .fluidShell .walletAction {
+    min-height: 20px;
+    padding: 2px 8px;
+  }
+
+  .fluidShell .supportEmotion {
+    display: none;
+  }
+
+  .fluidShell .supportBalanceZone,
+  .fluidShell .supportRail .bottomBarStat {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportMeterBlock .samsaraMeter,
+  .fluidShell .constellationTriggerBlock {
+    min-height: 28px;
+  }
+
+  .fluidShell .samsaraEye {
+    width: 18px;
+    height: 18px;
+  }
+
+  .fluidShell .samsaraTrack {
+    height: 6px;
+  }
+
+  .fluidShell .supportMiniStat {
+    min-height: 22px;
+    padding: 2px 5px;
+  }
+
+  .fluidShell .supportHistory {
+    gap: 2px;
+  }
+
+  .fluidShell .supportHistoryRow {
+    min-height: 15px;
+    padding: 2px 5px;
+  }
+
+  .fluidShell .supportRailUtilityBar {
+    min-height: 22px;
+    align-self: end;
+  }
+
+  .fluidShell .floatingGameDockInner {
+    gap: 0 8px;
+    padding-inline: 8px;
+  }
+
+  .fluidShell .dockBetCluster,
+  .fluidShell .dockAutoCluster {
+    gap: 4px;
+  }
+
+  .fluidShell .dockBetInput {
+    width: 40px;
+  }
+
+  .fluidShell .dockSpeedCycleButton {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 768px) {
+  .fluidShell {
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+
+  .fluidShell .supportRail {
+    max-width: min(100%, 780px);
+    justify-self: center;
+  }
+
+  .fluidShell .floatingGameDock {
+    max-width: min(100%, 620px);
+  }
+}
+
+.slotViewport.is-embed-mode .fluidShell {
+  grid-template-areas:
+    "board"
+    "info"
+    "deck";
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+.slotViewport.is-embed-mode .brandingRail {
+  display: none;
+}
+
+@media (min-width: 900px), (orientation: landscape) {
+  .slotViewport.is-embed-mode .fluidShell {
+    grid-template-areas:
+      "info board"
+      "info deck";
+    grid-template-columns: var(--fluid-info-width) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+}

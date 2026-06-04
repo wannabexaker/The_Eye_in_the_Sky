@@ -18,7 +18,6 @@ import {
   Text
 } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { symbolAssetSources } from "@/lib/assets/asset-manifest";
 import {
   getFloatingTextAlpha,
   shouldSuppressBoardDropAnimation
@@ -144,6 +143,7 @@ type Props = {
   presentationTimings: SpinPresentationTimings;
   floatingTextHoldMs: number;
   floatingTextFadeMs: number;
+  symbolAssetSources: Record<SymbolId, readonly string[]>;
 };
 
 const drawSymbolIcon = (graphics: Graphics, symbol: SymbolId, accent: number) => {
@@ -227,7 +227,8 @@ export function PixiTempleBoard({
   bonusActive,
   presentationTimings,
   floatingTextHoldMs,
-  floatingTextFadeMs
+  floatingTextFadeMs,
+  symbolAssetSources
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -646,6 +647,15 @@ export function PixiTempleBoard({
 
     return true;
   }, [presentationTimings.boardDrop, presentationTimings.cascadeDrop, presentationTimings.spinStart]);
+
+  // Stable ref to the latest paintBoardCells. The Pixi init effect repaints through
+  // this ref WITHOUT listing paintBoardCells as a dependency, so a spin-speed /
+  // presentationTimings change no longer tears down and rebuilds the whole Pixi
+  // Application (the teardown raced and threw "Cannot read properties of null").
+  const paintBoardCellsRef = useRef(paintBoardCells);
+  useEffect(() => {
+    paintBoardCellsRef.current = paintBoardCells;
+  }, [paintBoardCells]);
 
   useEffect(() => {
     if (shouldSuppressBoardDropAnimation(board, spinPhase)) {
@@ -1271,7 +1281,7 @@ export function PixiTempleBoard({
         resizeStage();
 
         // paint the board immediately after the async Pixi init completes
-        paintBoardCells();
+        paintBoardCellsRef.current();
         
         // Restart ticker after scene tree is fully constructed
         app.ticker.start();
@@ -1326,7 +1336,9 @@ export function PixiTempleBoard({
       floatingTextLayerRef.current = null;
       particleSystemRef.current = null;
     };
-  }, [paintBoardCells, safeDestroyApplication]);
+    // paintBoardCells intentionally omitted: the init effect repaints via
+    // paintBoardCellsRef so timings/speed changes don't rebuild the Application.
+  }, [safeDestroyApplication, symbolAssetSources]);
 
   useEffect(() => {
     if (!paintBoardCells()) {
