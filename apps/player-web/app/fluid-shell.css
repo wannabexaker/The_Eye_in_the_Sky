@@ -134,10 +134,12 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 }
 
 .fluidShell .brandingRail .brandLogo {
-  width: min(100%, clamp(168px, 14vw, 248px));
+  width: min(100%, clamp(180px, 16vw, 300px));
+  max-width: 100%;
   height: auto;
   aspect-ratio: 16 / 7;
   opacity: 1;
+  --brand-logo-scale: 1;
 }
 
 .fluidShell .brandTagline,
@@ -697,6 +699,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 @media (min-width: 900px), (orientation: landscape) {
   .slotViewport {
     --fluid-gap: clamp(6px, 0.7vw, 9px);
+    --fluid-brand-width: clamp(180px, 16vw, 300px);
     --dock-board-overlap: clamp(38px, 6dvh, 56px);
     --dock-x-balance: 5px;
   }
@@ -743,7 +746,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 
   .fluidShell .brandLogo {
-    width: min(100%, 160px);
+    width: min(100%, clamp(180px, 16vw, 300px));
     height: clamp(42px, 8dvh, 72px);
   }
 
