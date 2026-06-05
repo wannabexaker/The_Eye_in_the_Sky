@@ -59,6 +59,12 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Container startup scripts must be POSIX-`sh` compatible when the image entrypoint uses `/bin/sh` (Alpine). Do not use bash-only syntax such as here-strings (`<<<`) in entrypoint scripts.
 - On Windows, `player-web` standalone build can compile successfully and then fail during `.next/standalone` trace copy if symlink creation is blocked (`EPERM`). Treat this as an environment signoff issue and rerun in an environment that permits symlinks instead of disabling `output: "standalone"`.
 
+## Asset Performance Contract
+- Runtime player art under `apps/player-web/public/assets/` must be kept web-sized, not source-art-sized.
+- Run `corepack pnpm optimize:assets` after replacing non-lite PNG art; the script emits WebP primary assets beside compressed PNG fallbacks and leaves `public/assets/lite/` unchanged.
+- High-quality asset sources should prefer WebP, then PNG fallback. Low-quality mode may use the existing `public/assets/lite/` PNG set first.
+- Keep symbol source art at or below 512px long edge for runtime delivery; the Pixi board displays symbols far smaller than the original production PNGs.
+
 ## Auth And Guest Session Contract
 - Auth API errors use `{ code, message, fieldErrors? }` so the player UI can map failures to exact form fields.
 - Public auth codes include `EMAIL_NOT_FOUND`, `WRONG_PASSWORD`, `VALIDATION_FAILED`, `PASSWORD_REUSE`, `INVALID_RESET_TOKEN`, and `RESET_TOKEN_EXPIRED`.

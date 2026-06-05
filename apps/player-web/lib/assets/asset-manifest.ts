@@ -16,6 +16,11 @@ const assetRootByQuality: Record<GraphicsQuality, string> = {
   low: "/assets/lite"
 };
 
+const assetExtensionByQuality: Record<GraphicsQuality, "png" | "webp"> = {
+  high: "webp",
+  low: "png"
+};
+
 const shellAssetSlugs = {
   mainBackground: "backgrounds/bg-main-temple-sky",
   bonusOverlay: "backgrounds/bonus-sky-opens",
@@ -35,25 +40,26 @@ export type ShellAssets = {
 export const getShellAssets = (quality: GraphicsQuality): ShellAssets => {
   const normalized = normalizeGraphicsQuality(quality);
   const root = assetRootByQuality[normalized];
+  const extension = assetExtensionByQuality[normalized];
 
   return {
-    mainBackground: `${root}/${shellAssetSlugs.mainBackground}.png`,
-    bonusOverlay: `${root}/${shellAssetSlugs.bonusOverlay}.png`,
-    boardFrame: `${root}/${shellAssetSlugs.boardFrame}.png`,
-    winFlowPlate: `${root}/${shellAssetSlugs.winFlowPlate}.png`,
-    bigWinGlowPlate: `${root}/${shellAssetSlugs.bigWinGlowPlate}.png`,
-    hugeWinGlowPlate: `${root}/${shellAssetSlugs.hugeWinGlowPlate}.png`,
-    superWinGlowPlate: `${root}/${shellAssetSlugs.superWinGlowPlate}.png`,
-    logo: `${root}/${shellAssetSlugs.logo}.png`,
-    meterEye: `${root}/${shellAssetSlugs.meterEye}.png`
+    mainBackground: `${root}/${shellAssetSlugs.mainBackground}.${extension}`,
+    bonusOverlay: `${root}/${shellAssetSlugs.bonusOverlay}.${extension}`,
+    boardFrame: `${root}/${shellAssetSlugs.boardFrame}.${extension}`,
+    winFlowPlate: `${root}/${shellAssetSlugs.winFlowPlate}.${extension}`,
+    bigWinGlowPlate: `${root}/${shellAssetSlugs.bigWinGlowPlate}.${extension}`,
+    hugeWinGlowPlate: `${root}/${shellAssetSlugs.hugeWinGlowPlate}.${extension}`,
+    superWinGlowPlate: `${root}/${shellAssetSlugs.superWinGlowPlate}.${extension}`,
+    logo: `${root}/${shellAssetSlugs.logo}.${extension}`,
+    meterEye: `${root}/${shellAssetSlugs.meterEye}.${extension}`
   };
 };
 
 export const shellAssets = getShellAssets("high");
 
 const shellFallbackAsset = (slug: string) => [
+  `/assets/${slug}.webp`,
   `/assets/${slug}.png`,
-  `/assets/${slug}.svg`
 ] as const;
 
 export const getShellAssetSources = (quality: GraphicsQuality) => {
@@ -85,11 +91,14 @@ const buildSymbolAssetSources = (
   slug: string,
   quality: GraphicsQuality
 ): readonly string[] => {
-  const highSource = `/assets/symbols/${slug}.png`;
+  const highSources = [
+    `/assets/symbols/${slug}.webp`,
+    `/assets/symbols/${slug}.png`
+  ];
 
   return normalizeGraphicsQuality(quality) === "low"
-    ? [`/assets/lite/symbols/${slug}.png`, highSource]
-    : [highSource];
+    ? [`/assets/lite/symbols/${slug}.png`, ...highSources]
+    : highSources;
 };
 
 export type SymbolAssetSources = Record<SymbolId, readonly string[]>;
@@ -115,4 +124,4 @@ export const symbolAssetSources = getSymbolAssetSources("high");
 export const getOuroborosRingAsset = (quality: GraphicsQuality) =>
   normalizeGraphicsQuality(quality) === "low"
     ? "/assets/lite/ui/ouroboros-ring.png"
-    : "/assets/ui/ouroboros-ring.png";
+    : "/assets/ui/ouroboros-ring.webp";

@@ -21,6 +21,7 @@
     "build": "corepack pnpm -r build",
     "build:player:clean": "corepack pnpm --filter player-web build:clean",
     "lint": "corepack pnpm -r lint",
+    "optimize:assets": "corepack pnpm --filter player-web optimize:assets",
     "typecheck": "corepack pnpm -r --if-present typecheck",
     "simulate": "corepack pnpm --filter @eye/game-engine simulate"
   }

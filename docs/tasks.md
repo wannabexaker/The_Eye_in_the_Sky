@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-05` **Task A asset optimization pipeline**
+  - Intent: reduce player startup payload by replacing oversized non-lite PNG runtime art with optimized WebP primary assets and compressed PNG fallbacks.
+  - Hypothesis: the board renders symbols around 96px and shell art at bounded viewport sizes, so multi-megabyte source PNGs waste bandwidth, memory, and GPU upload time without visible benefit.
+  - Code change: added `apps/player-web/scripts/optimize-assets.mjs` using `sharp`, wired `optimize:assets` scripts, added direct `sharp@0.33.5`, generated WebP siblings, compressed/downscaled non-lite PNG fallbacks, and updated `asset-manifest.ts` to prefer WebP then PNG for high-quality sources while leaving `public/assets/lite/` intact.
+  - Verification: `corepack pnpm --filter player-web optimize:assets` reduced non-lite PNG fallbacks from **35.31 MB** to **1.91 MB** and emitted **1.67 MB** of WebP primary assets (**3.57 MB combined**). `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed. `corepack pnpm --filter player-web lint` passed with only pre-existing `<img>` and hook dependency warnings.
+  - Rollback note: revert the Task A commit to restore the original PNG assets, remove WebP source priority, and remove the optimizer script/dependency.
 - `2026-06-04` **Premium spin dock polish checkpoint**
   - Intent: preserve the approved premium spin dock state, then make the requested polish fixes without losing the current layout.
   - Hypothesis: the dock only needed scoped visual refinement: clearer hover/active feedback, a narrower SVG silhouette, slightly tighter board contact, and an adaptive Ritual Log row count based on available space.
