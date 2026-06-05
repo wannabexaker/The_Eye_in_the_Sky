@@ -95,6 +95,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Phone landscape keeps only the center board plus compact floating dock; side rails are hidden in that band to keep the board visible.
 - Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
 - Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
+- Narrow phone support-rail controls, including the Samsara eye, must stay fully inside the viewport while preserving the full-width board.
 
 ## Olamov Embed Contract
 - `player-web` supports iframe mode through `?embed=1`; this trims the shell by hiding the right branding rail while keeping board, left support rail, floating dock, and auth flows active.

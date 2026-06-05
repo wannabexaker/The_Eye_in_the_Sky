@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-05` **Baseline carry-forward: narrow-phone Samsara eye**
+  - Intent: preserve the already-approved mobile e2e baseline while building the asset optimization branch from the symbol-preload base.
+  - Hypothesis: `codex/fix-pixi-symbol-preload` does not contain the later narrow-phone `.samsaraEye` fix, so the final e2e suite fails at `360x640` before asset/render assertions can complete.
+  - Code change: carried forward the scoped `fluid-shell.css` fix that keeps `.samsaraEye` inside the viewport on <=430px portrait screens and keeps the dock grid box from overlapping sibling zones.
+  - Verification: pending final Playwright e2e rerun in this branch.
+  - Rollback note: revert this carry-forward commit only if the target base already includes the same mobile shell fix.
 - `2026-06-05` **Task D low-quality particle budget**
   - Intent: reduce idle Pixi update cost on adaptive low-quality runtimes without changing spin math, board layout, or animation sequencing.
   - Hypothesis: ambient particle count is safe to reduce on low/mobile asset mode, while ticker idle pausing and antialias changes are riskier because they can affect presentation timing or symbol edge quality.
