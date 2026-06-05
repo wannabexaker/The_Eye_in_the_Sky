@@ -53,6 +53,7 @@ import {
   getShellAssetSources,
   getShellAssets,
   getSymbolAssetSources,
+  selectRuntimeGraphicsQuality,
   type GraphicsQuality
 } from "@/lib/assets/asset-manifest";
 import { ensureGuestSession, loadGuestSession } from "@/lib/identity/guest-session";
@@ -108,6 +109,28 @@ const graphicsQualityOptions: readonly GraphicsQuality[] = ["high", "low"];
 const graphicsQualityLabels: Record<GraphicsQuality, string> = {
   high: "High",
   low: "Low"
+};
+
+type RuntimeGraphicsHints = {
+  deviceMemory?: number;
+  devicePixelRatio: number;
+};
+
+const DEFAULT_RUNTIME_GRAPHICS_HINTS: RuntimeGraphicsHints = {
+  devicePixelRatio: 1
+};
+
+const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
+  if (typeof window === "undefined") {
+    return DEFAULT_RUNTIME_GRAPHICS_HINTS;
+  }
+
+  const nav = window.navigator as Navigator & { deviceMemory?: number };
+
+  return {
+    deviceMemory: nav.deviceMemory,
+    devicePixelRatio: window.devicePixelRatio || 1
+  };
 };
 
 export default function HomePage() {
@@ -199,21 +222,33 @@ export default function HomePage() {
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
   const viewport = useViewport();
+  const [runtimeGraphicsHints, setRuntimeGraphicsHints] = useState<RuntimeGraphicsHints>(
+    DEFAULT_RUNTIME_GRAPHICS_HINTS
+  );
+  const effectiveGraphicsQuality = useMemo(
+    () =>
+      selectRuntimeGraphicsQuality(graphicsQuality, {
+        deviceMemory: runtimeGraphicsHints.deviceMemory,
+        devicePixelRatio: runtimeGraphicsHints.devicePixelRatio,
+        viewportWidth: viewport.width
+      }),
+    [graphicsQuality, runtimeGraphicsHints.deviceMemory, runtimeGraphicsHints.devicePixelRatio, viewport.width]
+  );
   const activeShellAssets = useMemo(
-    () => getShellAssets(graphicsQuality),
-    [graphicsQuality]
+    () => getShellAssets(effectiveGraphicsQuality),
+    [effectiveGraphicsQuality]
   );
   const activeShellAssetSources = useMemo(
-    () => getShellAssetSources(graphicsQuality),
-    [graphicsQuality]
+    () => getShellAssetSources(effectiveGraphicsQuality),
+    [effectiveGraphicsQuality]
   );
   const activeSymbolAssetSources = useMemo(
-    () => getSymbolAssetSources(graphicsQuality),
-    [graphicsQuality]
+    () => getSymbolAssetSources(effectiveGraphicsQuality),
+    [effectiveGraphicsQuality]
   );
   const ouroborosRingAsset = useMemo(
-    () => getOuroborosRingAsset(graphicsQuality),
-    [graphicsQuality]
+    () => getOuroborosRingAsset(effectiveGraphicsQuality),
+    [effectiveGraphicsQuality]
   );
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
@@ -232,7 +267,20 @@ export default function HomePage() {
     ? "Guest session. Wallet is stored only in this tab session."
     : authUser
       ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on PostgreSQL.`
-      : "Login is required to restore PostgreSQL-backed wallet and round state.";
+    : "Login is required to restore PostgreSQL-backed wallet and round state.";
+
+  useEffect(() => {
+    const syncGraphicsHints = () => setRuntimeGraphicsHints(readRuntimeGraphicsHints());
+
+    syncGraphicsHints();
+    window.addEventListener("resize", syncGraphicsHints);
+    window.visualViewport?.addEventListener("resize", syncGraphicsHints);
+
+    return () => {
+      window.removeEventListener("resize", syncGraphicsHints);
+      window.visualViewport?.removeEventListener("resize", syncGraphicsHints);
+    };
+  }, []);
 
   useEffect(() => {
     setAuthenticatedUserId(isAuthenticated && authUser ? authUser.id : null);
@@ -1006,7 +1054,7 @@ export default function HomePage() {
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
-      data-graphics-quality={graphicsQuality}
+      data-graphics-quality={effectiveGraphicsQuality}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}
       data-viewport-band={viewport.band}
@@ -1064,7 +1112,7 @@ export default function HomePage() {
                 bonusActive={bonusModeActive}
                 floatingTextFadeMs={slot.floatingTextFadeMs}
                 floatingTextHoldMs={slot.floatingTextHoldMs}
-                key={graphicsQuality}
+                key={effectiveGraphicsQuality}
                 phaseMessage={slot.phaseMessage}
                 presentationTimings={slot.presentationTimings}
                 result={slot.lastResult}

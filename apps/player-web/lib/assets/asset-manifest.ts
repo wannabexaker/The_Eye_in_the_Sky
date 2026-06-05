@@ -8,6 +8,12 @@ import type { SymbolId } from "@eye/game-engine";
 
 export type GraphicsQuality = "high" | "low";
 
+export type RuntimeGraphicsQualityHints = {
+  deviceMemory?: number;
+  devicePixelRatio: number;
+  viewportWidth: number;
+};
+
 const normalizeGraphicsQuality = (quality: GraphicsQuality) =>
   quality === "low" ? "low" : "high";
 
@@ -125,3 +131,19 @@ export const getOuroborosRingAsset = (quality: GraphicsQuality) =>
   normalizeGraphicsQuality(quality) === "low"
     ? "/assets/lite/ui/ouroboros-ring.png"
     : "/assets/ui/ouroboros-ring.webp";
+
+export const selectRuntimeGraphicsQuality = (
+  preferredQuality: GraphicsQuality,
+  hints: RuntimeGraphicsQualityHints
+): GraphicsQuality => {
+  if (preferredQuality === "low") {
+    return "low";
+  }
+
+  const cappedDpr = Math.min(Math.max(hints.devicePixelRatio || 1, 1), 2);
+  const isPhoneViewport = hints.viewportWidth < 768;
+  const isLowMemory = typeof hints.deviceMemory === "number" && hints.deviceMemory <= 4;
+  const isSmallLowDprViewport = hints.viewportWidth < 1024 && cappedDpr <= 1.25;
+
+  return isPhoneViewport || isLowMemory || isSmallLowDprViewport ? "low" : "high";
+};

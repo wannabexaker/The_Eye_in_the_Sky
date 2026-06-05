@@ -65,6 +65,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - High-quality asset sources should prefer WebP, then PNG fallback. Low-quality mode may use the existing `public/assets/lite/` PNG set first.
 - Keep symbol source art at or below 512px long edge for runtime delivery; the Pixi board displays symbols far smaller than the original production PNGs.
 - Pixi render resolution is capped at DPR 2 to avoid excessive render-target memory on 3x/4x mobile screens.
+- Runtime asset quality may resolve below the saved user preference on phone, low-memory, or small low-DPR contexts; this is a pure asset-source decision and must not change math, layout, or controls.
 
 ## Auth And Guest Session Contract
 - Auth API errors use `{ code, message, fieldErrors? }` so the player UI can map failures to exact form fields.

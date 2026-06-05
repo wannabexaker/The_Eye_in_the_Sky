@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-05` **Task C adaptive graphics source selection**
+  - Intent: choose lighter runtime assets automatically on constrained devices without changing game logic or layout.
+  - Hypothesis: phones, low-memory devices, and small low-DPR viewports benefit more from reduced decode/upload pressure than from loading the optimized high set.
+  - Code change: added `selectRuntimeGraphicsQuality()` in `asset-manifest.ts`, read runtime DPR/device-memory hints in `page.tsx`, and routed shell, symbol, ouroboros, data attribute, and Pixi remount key through `effectiveGraphicsQuality`.
+  - Verification: pending final player-web typecheck/lint/e2e, asset-source inspection, and screenshots after all render optimization tasks.
+  - Rollback note: revert the Task C commit to return to direct user-selected `graphicsQuality` source selection.
 - `2026-06-05` **Task B Pixi DPR cap**
   - Intent: prevent high-DPR devices from allocating oversized Pixi render targets for a board that is visually constrained by the responsive shell.
   - Hypothesis: uncapped `window.devicePixelRatio` increases GPU memory and upload cost on 3x/4x devices without meaningful symbol clarity gains after asset downsizing.
