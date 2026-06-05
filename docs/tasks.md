@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-05` **Task B Pixi DPR cap**
+  - Intent: prevent high-DPR devices from allocating oversized Pixi render targets for a board that is visually constrained by the responsive shell.
+  - Hypothesis: uncapped `window.devicePixelRatio` increases GPU memory and upload cost on 3x/4x devices without meaningful symbol clarity gains after asset downsizing.
+  - Code change: added `MAX_RENDER_DPR = 2` in `pixi-temple-board.tsx` and capped Pixi `app.init({ resolution })` with `Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR)`.
+  - Verification: pending final player-web typecheck/lint/e2e and visual screenshots after all render optimization tasks.
+  - Rollback note: revert the Task B commit if a target high-DPR device shows unacceptable board softness; keep the optimized assets independent of DPR rollback.
 - `2026-06-05` **Task A asset optimization pipeline**
   - Intent: reduce player startup payload by replacing oversized non-lite PNG runtime art with optimized WebP primary assets and compressed PNG fallbacks.
   - Hypothesis: the board renders symbols around 96px and shell art at bounded viewport sizes, so multi-megabyte source PNGs waste bandwidth, memory, and GPU upload time without visible benefit.

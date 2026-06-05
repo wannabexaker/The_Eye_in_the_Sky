@@ -220,6 +220,7 @@ const CASCADE_DROP_DISTANCE_PX = 100;
 const SYMBOL_TEXTURE_LOAD_ATTEMPTS = 3;
 const SYMBOL_TEXTURE_RETRY_DELAY_MS = 250;
 const SYMBOL_TEXTURE_BUNDLE_PREFIX = "eye-symbol";
+const MAX_RENDER_DPR = 2;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -859,7 +860,7 @@ export function PixiTempleBoard({
           height: logicalHeight,
           backgroundAlpha: 0,
           antialias: true,
-          resolution: window.devicePixelRatio || 1
+          resolution: Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR)
         });
         
         // Stop ticker immediately after init completes, before async operations
