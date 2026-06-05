@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-05` **Task D low-quality particle budget**
+  - Intent: reduce idle Pixi update cost on adaptive low-quality runtimes without changing spin math, board layout, or animation sequencing.
+  - Hypothesis: ambient particle count is safe to reduce on low/mobile asset mode, while ticker idle pausing and antialias changes are riskier because they can affect presentation timing or symbol edge quality.
+  - Code change: added explicit high/low particle count constants in `pixi-temple-board.tsx` and instantiate `ParticleSystem` with 80 particles when symbol sources are using `public/assets/lite/`, otherwise keeping the existing 140.
+  - Verification: pending final player-web typecheck/lint/e2e and visual screenshots after all render optimization tasks.
+  - Rollback note: revert the Task D commit to restore the fixed 140-particle budget everywhere.
 - `2026-06-05` **Task C adaptive graphics source selection**
   - Intent: choose lighter runtime assets automatically on constrained devices without changing game logic or layout.
   - Hypothesis: phones, low-memory devices, and small low-DPR viewports benefit more from reduced decode/upload pressure than from loading the optimized high set.

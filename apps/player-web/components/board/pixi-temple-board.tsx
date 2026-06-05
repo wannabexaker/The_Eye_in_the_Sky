@@ -221,6 +221,8 @@ const SYMBOL_TEXTURE_LOAD_ATTEMPTS = 3;
 const SYMBOL_TEXTURE_RETRY_DELAY_MS = 250;
 const SYMBOL_TEXTURE_BUNDLE_PREFIX = "eye-symbol";
 const MAX_RENDER_DPR = 2;
+const HIGH_QUALITY_PARTICLE_COUNT = 140;
+const LOW_QUALITY_PARTICLE_COUNT = 80;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -872,6 +874,11 @@ export function PixiTempleBoard({
             ([symbol, urls]) => loadSymbolTextureWithFallback(symbol, urls)
           )
         );
+        const particleCount = Object.values(symbolAssetSources).some(
+          (sources) => sources[0]?.includes("/assets/lite/")
+        )
+          ? LOW_QUALITY_PARTICLE_COUNT
+          : HIGH_QUALITY_PARTICLE_COUNT;
 
         symbolTexturesRef.current = textureEntries.reduce<Partial<Record<SymbolId, Sprite["texture"]>>>(
           (accumulator, [symbol, texture]) => {
@@ -921,7 +928,7 @@ export function PixiTempleBoard({
       winPathRef.current = winPath;
       root.addChild(winPath);
 
-      const particleSystem = new ParticleSystem(root, 140);
+      const particleSystem = new ParticleSystem(root, particleCount);
       particleSystem.container.zIndex = 32;
       particleSystemRef.current = particleSystem;
 
