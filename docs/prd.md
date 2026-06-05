@@ -65,7 +65,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - High-quality asset sources should prefer WebP, then PNG fallback. Low-quality mode may use the existing `public/assets/lite/` PNG set first.
 - Keep symbol source art at or below 512px long edge for runtime delivery; the Pixi board displays symbols far smaller than the original production PNGs.
 - Pixi render resolution is capped at DPR 2 to avoid excessive render-target memory on 3x/4x mobile screens.
-- Runtime asset quality may resolve below the saved user preference on phone, low-memory, or small low-DPR contexts; this is a pure asset-source decision and must not change math, layout, or controls.
+- Runtime symbol quality may resolve below the saved user preference on phone, low-memory, or small low-DPR contexts; this is a pure asset-source decision and must not change math, layout, or controls. Shell/background assets should keep using the optimized WebP high set unless the user explicitly selects low.
 - Low-quality runtime mode may reduce non-critical ambient particle density, but must not alter spin sequencing, win presentation timing, or engine payloads.
 
 ## Auth And Guest Session Contract

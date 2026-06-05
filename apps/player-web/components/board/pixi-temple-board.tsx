@@ -350,22 +350,25 @@ export function PixiTempleBoard({
     }
 
     try {
-      // Critical: Stop ticker FIRST before destroying stage to prevent render loop from accessing destroyed objects
-      if (target.ticker) {
-        target.ticker.stop();
-        target.ticker.destroy();
-      }
+      // Critical: stop the ticker before destroying the stage so no render loop
+      // can read partially torn-down objects.
+      target.ticker?.stop();
 
-      // Guard against teardown races where Application internals are partially initialized.
-      const maybeStage = (target as unknown as { stage?: { destroy?: () => void } }).stage;
-      if (maybeStage && typeof maybeStage.destroy === "function") {
-        target.destroy(true, { children: true });
+      // React dev mode can unmount while Pixi internals are only partially
+      // initialized. Pixi Application.destroy expects both stage and renderer.
+      const maybeTarget = target as unknown as {
+        renderer?: { destroy?: (options?: unknown) => void };
+        stage?: { destroy?: (options?: unknown) => void };
+      };
+      if (
+        typeof maybeTarget.stage?.destroy === "function" &&
+        typeof maybeTarget.renderer?.destroy === "function"
+      ) {
+        target.destroy({ removeView: true }, { children: true });
       }
-    } catch (error) {
-      // Ignore teardown race errors during unmount. Log in dev for debugging.
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[PixiTempleBoard] Error during destroy:", error);
-      }
+    } catch {
+      // Cleanup races during unmount are intentionally ignored. Runtime render
+      // errors still surface through the active Pixi loop.
     }
   }, []);
 

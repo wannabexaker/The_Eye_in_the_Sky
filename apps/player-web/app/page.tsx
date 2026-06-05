@@ -114,10 +114,12 @@ const graphicsQualityLabels: Record<GraphicsQuality, string> = {
 type RuntimeGraphicsHints = {
   deviceMemory?: number;
   devicePixelRatio: number;
+  viewportWidth: number;
 };
 
 const DEFAULT_RUNTIME_GRAPHICS_HINTS: RuntimeGraphicsHints = {
-  devicePixelRatio: 1
+  devicePixelRatio: 1,
+  viewportWidth: 0
 };
 
 const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
@@ -129,7 +131,8 @@ const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
 
   return {
     deviceMemory: nav.deviceMemory,
-    devicePixelRatio: window.devicePixelRatio || 1
+    devicePixelRatio: window.devicePixelRatio || 1,
+    viewportWidth: Math.round(window.visualViewport?.width ?? window.innerWidth)
   };
 };
 
@@ -225,30 +228,39 @@ export default function HomePage() {
   const [runtimeGraphicsHints, setRuntimeGraphicsHints] = useState<RuntimeGraphicsHints>(
     DEFAULT_RUNTIME_GRAPHICS_HINTS
   );
-  const effectiveGraphicsQuality = useMemo(
+  const [runtimeGraphicsHintsReady, setRuntimeGraphicsHintsReady] = useState(false);
+  const effectiveSymbolGraphicsQuality = useMemo(
     () =>
-      selectRuntimeGraphicsQuality(graphicsQuality, {
-        deviceMemory: runtimeGraphicsHints.deviceMemory,
-        devicePixelRatio: runtimeGraphicsHints.devicePixelRatio,
-        viewportWidth: viewport.width
-      }),
-    [graphicsQuality, runtimeGraphicsHints.deviceMemory, runtimeGraphicsHints.devicePixelRatio, viewport.width]
+      runtimeGraphicsHintsReady
+        ? selectRuntimeGraphicsQuality(graphicsQuality, {
+            deviceMemory: runtimeGraphicsHints.deviceMemory,
+            devicePixelRatio: runtimeGraphicsHints.devicePixelRatio,
+            viewportWidth: runtimeGraphicsHints.viewportWidth
+          })
+        : "low",
+    [
+      graphicsQuality,
+      runtimeGraphicsHints.deviceMemory,
+      runtimeGraphicsHints.devicePixelRatio,
+      runtimeGraphicsHints.viewportWidth,
+      runtimeGraphicsHintsReady
+    ]
   );
   const activeShellAssets = useMemo(
-    () => getShellAssets(effectiveGraphicsQuality),
-    [effectiveGraphicsQuality]
+    () => getShellAssets(graphicsQuality),
+    [graphicsQuality]
   );
   const activeShellAssetSources = useMemo(
-    () => getShellAssetSources(effectiveGraphicsQuality),
-    [effectiveGraphicsQuality]
+    () => getShellAssetSources(graphicsQuality),
+    [graphicsQuality]
   );
   const activeSymbolAssetSources = useMemo(
-    () => getSymbolAssetSources(effectiveGraphicsQuality),
-    [effectiveGraphicsQuality]
+    () => getSymbolAssetSources(effectiveSymbolGraphicsQuality),
+    [effectiveSymbolGraphicsQuality]
   );
   const ouroborosRingAsset = useMemo(
-    () => getOuroborosRingAsset(effectiveGraphicsQuality),
-    [effectiveGraphicsQuality]
+    () => getOuroborosRingAsset(graphicsQuality),
+    [graphicsQuality]
   );
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
@@ -270,7 +282,10 @@ export default function HomePage() {
     : "Login is required to restore PostgreSQL-backed wallet and round state.";
 
   useEffect(() => {
-    const syncGraphicsHints = () => setRuntimeGraphicsHints(readRuntimeGraphicsHints());
+    const syncGraphicsHints = () => {
+      setRuntimeGraphicsHints(readRuntimeGraphicsHints());
+      setRuntimeGraphicsHintsReady(true);
+    };
 
     syncGraphicsHints();
     window.addEventListener("resize", syncGraphicsHints);
@@ -1054,7 +1069,8 @@ export default function HomePage() {
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
-      data-graphics-quality={effectiveGraphicsQuality}
+      data-graphics-quality={graphicsQuality}
+      data-symbol-graphics-quality={effectiveSymbolGraphicsQuality}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}
       data-viewport-band={viewport.band}
@@ -1107,18 +1123,22 @@ export default function HomePage() {
                 style={{ backgroundImage: `url(${boardFrameBackground})` }}
               />
 
-              <PixiTempleBoard
-                board={board}
-                bonusActive={bonusModeActive}
-                floatingTextFadeMs={slot.floatingTextFadeMs}
-                floatingTextHoldMs={slot.floatingTextHoldMs}
-                key={effectiveGraphicsQuality}
-                phaseMessage={slot.phaseMessage}
-                presentationTimings={slot.presentationTimings}
-                result={slot.lastResult}
-                spinPhase={slot.spinPhase}
-                symbolAssetSources={activeSymbolAssetSources}
-              />
+              {runtimeGraphicsHintsReady ? (
+                <PixiTempleBoard
+                  board={board}
+                  bonusActive={bonusModeActive}
+                  floatingTextFadeMs={slot.floatingTextFadeMs}
+                  floatingTextHoldMs={slot.floatingTextHoldMs}
+                  key={effectiveSymbolGraphicsQuality}
+                  phaseMessage={slot.phaseMessage}
+                  presentationTimings={slot.presentationTimings}
+                  result={slot.lastResult}
+                  spinPhase={slot.spinPhase}
+                  symbolAssetSources={activeSymbolAssetSources}
+                />
+              ) : (
+                <div aria-hidden="true" className="boardAssetLoading" />
+              )}
             </div>
           </div>
         </div>
