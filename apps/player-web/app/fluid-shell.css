@@ -553,13 +553,16 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 /* Deck: one in-flow control deck under the board. */
 
 .fluidShell .floatingGameDock {
+  --dock-shell-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 16px);
   position: relative;
   inset: auto;
   right: auto;
   bottom: auto;
   width: 100%;
   max-width: var(--fluid-deck-max-width);
-  margin-top: calc(-1 * var(--dock-board-overlap));
+  height: max(var(--dock-bar-height), calc(var(--dock-shell-height) - var(--dock-board-overlap)));
+  min-height: max(var(--dock-bar-height), calc(var(--dock-shell-height) - var(--dock-board-overlap)));
+  margin-top: 0;
   justify-self: center;
   align-self: center;
   translate: var(--dock-x-balance) 0;
@@ -581,13 +584,14 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   align-items: center;
   justify-items: center;
   gap: 0 clamp(10px, 2.3vw, 24px);
-  min-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 16px);
+  min-height: var(--dock-shell-height);
   padding: 0 clamp(10px, 2.4vw, 22px);
   border-radius: 28px;
   border: 0;
   background: transparent;
   backdrop-filter: none;
   box-shadow: none;
+  transform: translateY(calc(-1 * var(--dock-board-overlap)));
   overflow: visible;
 }
 
@@ -871,6 +875,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     --dock-crown-overhang: 24px;
     --dock-control-size: 28px;
     --dock-spin-size: 72px;
+    --dock-board-overlap: 0px;
   }
 
   .fluidShell {
@@ -930,6 +935,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 
   .fluidShell .samsaraEye {
+    left: max(9px, calc(var(--meter-progress, 0) * 100%));
     width: 18px;
     height: 18px;
   }
