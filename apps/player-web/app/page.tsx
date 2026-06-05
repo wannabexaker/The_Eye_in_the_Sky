@@ -435,6 +435,11 @@ export default function HomePage() {
     Boolean(slot.gameState.bonusState) &&
     !slot.bonusEntryPending &&
     !bonusAnnouncementVisible;
+  const needsDepositAttention =
+    inputAllowed &&
+    !bonusModeActive &&
+    !slot.canSpin &&
+    (slot.needsDepositPrompt || wallet.balance < slot.bet);
   const visibleBonusSpins = bonusModeActive ? slot.activeBonusSpins : 0;
   const bonusFrameActive = bonusModeActive;
   const boardFrameBackground = bonusFrameActive
@@ -1069,6 +1074,7 @@ export default function HomePage() {
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
+      data-deposit-attention={needsDepositAttention ? "1" : "0"}
       data-graphics-quality={graphicsQuality}
       data-symbol-graphics-quality={effectiveSymbolGraphicsQuality}
       data-math-profile={activeGameConfigProfile.profileId}
