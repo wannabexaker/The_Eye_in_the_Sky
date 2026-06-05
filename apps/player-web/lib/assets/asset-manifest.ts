@@ -85,14 +85,11 @@ const buildSymbolAssetSources = (
   slug: string,
   quality: GraphicsQuality
 ): readonly string[] => {
-  const baseSources = [
-    `/assets/symbols/${slug}.png`,
-    `/assets/symbols/${slug}.svg`
-  ];
+  const highSource = `/assets/symbols/${slug}.png`;
 
   return normalizeGraphicsQuality(quality) === "low"
-    ? [`/assets/lite/symbols/${slug}.png`, ...baseSources]
-    : baseSources;
+    ? [`/assets/lite/symbols/${slug}.png`, highSource]
+    : [highSource];
 };
 
 export type SymbolAssetSources = Record<SymbolId, readonly string[]>;
