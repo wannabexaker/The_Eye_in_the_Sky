@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-08` **Merge-train API auth controller cleanup**
+  - Intent: keep the `cleanup-pro` auth endpoint additions without duplicating controller methods after the ordered merge train.
+  - Hypothesis: `feat/cleanup-pro` and the current base both carried password-management routes, so the merge preserved two method blocks and broke API TypeScript compilation.
+  - Code change: removed the stale duplicate `change-password`, `forgot-password`, and `reset-password` controller block while keeping the newer `changePassword(payload, currentUser)` call signature.
+  - Verification: discovered by `corepack pnpm -r lint`; rerun required after this cleanup.
+  - Rollback note: revert this cleanup only if the auth controller is rebuilt from a single source branch and TypeScript confirms there is one route implementation per endpoint.
 - `2026-06-08` **Refactor spin choreography into a central conductor**
   - Intent: make no-win and multi-cascade spins feel professional-fast while keeping win clarity, audio sync, and the existing premium win/bonus summary presentation.
   - Hypothesis: React phase timers, Pixi cascade timers, and sound cues were scheduled independently, so cascade chains accumulated dead time and the player could not clearly read each break/payout beat.

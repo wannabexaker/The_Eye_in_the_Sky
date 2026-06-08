@@ -125,31 +125,6 @@ export class AuthController {
     return this.authService.getCurrentSession(request);
   }
 
-  @UseGuards(SessionAuthGuard)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @Post("change-password")
-  changePassword(
-    @Body() body: { currentPassword?: string; newPassword?: string },
-    @CurrentUser() currentUser: CurrentAuthUser
-  ) {
-    const validatedBody = parseOrBadRequest(validators.authChangePassword, body);
-    return this.authService.changePassword(currentUser, validatedBody);
-  }
-
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @Post("forgot-password")
-  forgotPassword(@Body() body: { email?: string }) {
-    const validatedBody = parseOrBadRequest(validators.authForgotPassword, body);
-    return this.authService.forgotPassword(validatedBody);
-  }
-
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @Post("reset-password")
-  resetPassword(@Body() body: { token?: string; newPassword?: string }) {
-    const validatedBody = parseOrBadRequest(validators.authResetPassword, body);
-    return this.authService.resetPassword(validatedBody);
-  }
-
   /**
    * Get current auth mode and public integration config.
    */
