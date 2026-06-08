@@ -59,6 +59,15 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Container startup scripts must be POSIX-`sh` compatible when the image entrypoint uses `/bin/sh` (Alpine). Do not use bash-only syntax such as here-strings (`<<<`) in entrypoint scripts.
 - On Windows, `player-web` standalone build can compile successfully and then fail during `.next/standalone` trace copy if symlink creation is blocked (`EPERM`). Treat this as an environment signoff issue and rerun in an environment that permits symlinks instead of disabling `output: "standalone"`.
 
+## Asset Performance Contract
+- Runtime player art under `apps/player-web/public/assets/` must be kept web-sized, not source-art-sized.
+- Run `corepack pnpm optimize:assets` after replacing non-lite PNG art; the script emits WebP primary assets beside compressed PNG fallbacks and leaves `public/assets/lite/` unchanged.
+- High-quality asset sources should prefer WebP, then PNG fallback. Low-quality mode may use the existing `public/assets/lite/` PNG set first.
+- Keep symbol source art at or below 512px long edge for runtime delivery; the Pixi board displays symbols far smaller than the original production PNGs.
+- Pixi render resolution is capped at DPR 2 to avoid excessive render-target memory on 3x/4x mobile screens.
+- Runtime symbol quality may resolve below the saved user preference on phone, low-memory, or small low-DPR contexts; this is a pure asset-source decision and must not change math, layout, or controls. Shell/background assets should keep using the optimized WebP high set unless the user explicitly selects low.
+- Low-quality runtime mode may reduce non-critical ambient particle density, but must not alter spin sequencing, win presentation timing, or engine payloads.
+
 ## Auth And Guest Session Contract
 - Auth API errors use `{ code, message, fieldErrors? }` so the player UI can map failures to exact form fields.
 - Public auth codes include `EMAIL_NOT_FOUND`, `WRONG_PASSWORD`, `VALIDATION_FAILED`, `PASSWORD_REUSE`, `INVALID_RESET_TOKEN`, and `RESET_TOKEN_EXPIRED`.
@@ -86,6 +95,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Phone landscape keeps only the center board plus compact floating dock; side rails are hidden in that band to keep the board visible.
 - Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
 - Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
+- Narrow phone support-rail controls, including the Samsara eye, must stay fully inside the viewport while preserving the full-width board.
 
 ## Olamov Embed Contract
 - `player-web` supports iframe mode through `?embed=1`; this trims the shell by hiding the right branding rail while keeping board, left support rail, floating dock, and auth flows active.

@@ -1,8 +1,6 @@
 @echo off
 REM Start game services in 3 separate PowerShell windows
-REM API on localhost:3200
-REM Admin Web on localhost:3100
-REM Player Web on localhost:3000
+REM API on localhost:3200  |  Admin on localhost:3100  |  Player on localhost:3000
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
@@ -12,7 +10,10 @@ echo.
 echo Starting PostgreSQL without wiping saved data...
 docker compose up -d postgres --wait
 if errorlevel 1 (
-  echo Failed to start PostgreSQL.
+  echo.
+  echo [ERROR] Failed to start PostgreSQL. Is Docker Desktop running?
+  echo Start Docker Desktop, then run this script again.
+  pause
   exit /b 1
 )
 
@@ -23,14 +24,27 @@ for /f "usebackq delims=" %%A in (`docker compose exec -T postgres psql -U app_u
 
 if not defined ACCOUNT_COUNT (
   echo Fresh database detected. Running setup...
-  corepack pnpm db:setup
+  call corepack pnpm db:setup
   if errorlevel 1 (
-    echo Database setup failed.
+    echo.
+    echo [ERROR] Database setup failed.
+    pause
     exit /b 1
   )
   echo Fresh database created.
 ) else (
-  echo Existing database found (!ACCOUNT_COUNT! accounts) -- reusing your saved data.
+  echo Existing database found (!ACCOUNT_COUNT! accounts^) -- reusing your saved data.
+)
+
+REM Build the shared game engine first so the API starts cleanly (mirrors predev:api).
+echo.
+echo Building game engine...
+call corepack pnpm --filter @eye/game-engine build
+if errorlevel 1 (
+  echo.
+  echo [ERROR] Game engine build failed. The API will not start without it.
+  pause
+  exit /b 1
 )
 
 REM API Server
@@ -43,9 +57,12 @@ REM Player Web
 start "Player Web (3000)" powershell -NoExit -Command "cd '%ROOT%\apps\player-web'; npm run dev"
 
 echo.
-echo Launching 3 PowerShell windows:
-echo - API Server will start on http://localhost:3200
-echo - Admin Web will start on http://localhost:3100
-echo - Player Web will start on http://localhost:3000
+echo Launched 3 PowerShell windows:
+echo   - API Server  -^> http://localhost:3200
+echo   - Admin Web   -^> http://localhost:3100
+echo   - Player Web  -^> http://localhost:3000
 echo.
-echo Press Ctrl+C in each window to stop.
+echo If a window shows an error, read THAT window (especially "API Server (3200)").
+echo Login/Register need the API running; guest mode works without it.
+echo Press Ctrl+C in each window to stop. This launcher stays open below.
+pause
