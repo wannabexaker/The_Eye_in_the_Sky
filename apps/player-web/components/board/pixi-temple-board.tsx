@@ -148,7 +148,8 @@ type Props = {
 
 const drawSymbolIcon = (graphics: Graphics, symbol: SymbolId, accent: number) => {
   graphics.clear();
-  graphics.stroke({ color: accent, width: 4, alpha: 0.92 });
+  graphics.circle(60, 60, 44).fill({ color: 0x050507, alpha: 0.24 });
+  graphics.circle(60, 60, 42).stroke({ color: accent, width: 2, alpha: 0.36 });
 
   switch (symbol) {
     case "ashen_sigil":
@@ -200,6 +201,9 @@ const drawSymbolIcon = (graphics: Graphics, symbol: SymbolId, accent: number) =>
       graphics.star(60, 60, 6, 30, 14, Math.PI / 6);
       break;
   }
+
+  graphics.stroke({ color: accent, width: 4, alpha: 0.92, cap: "round", join: "round" });
+  graphics.circle(60, 60, 3).fill({ color: accent, alpha: 0.62 });
 };
 
 const getCellCenter = (row: number, col: number) => ({
@@ -213,10 +217,77 @@ const PRE_BREAK_FLASH_COUNT = 3;
 const SPIN_DROP_COLUMN_DELAY_MS = 24;
 const SPIN_DROP_DISTANCE_PX = 240;
 const CASCADE_DROP_DISTANCE_PX = 100;
+const SYMBOL_TEXTURE_LOAD_ATTEMPTS = 3;
+const SYMBOL_TEXTURE_RETRY_DELAY_MS = 250;
+const SYMBOL_TEXTURE_BUNDLE_PREFIX = "eye-symbol";
+const MAX_RENDER_DPR = 2;
+const HIGH_QUALITY_PARTICLE_COUNT = 140;
+const LOW_QUALITY_PARTICLE_COUNT = 80;
 
 type PaintBoardOptions = {
   allowWave?: boolean;
   allowMotion?: boolean;
+};
+
+type SymbolTexture = Sprite["texture"];
+type SymbolTextureEntry = readonly [SymbolId, SymbolTexture | null];
+
+const waitForSymbolTextureRetry = (delayMs: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, delayMs);
+  });
+
+const symbolTextureAlias = (symbol: SymbolId, sourceIndex: number, url: string) => {
+  const quality = url.includes("/assets/lite/") ? "low" : "high";
+
+  return `${SYMBOL_TEXTURE_BUNDLE_PREFIX}:${quality}:${symbol}:${sourceIndex}`;
+};
+
+const loadSymbolTextureSource = async (
+  alias: string,
+  url: string
+): Promise<SymbolTexture | null> => {
+  const bundleId = `${alias}:bundle`;
+
+  Assets.addBundle(bundleId, { [alias]: url });
+
+  for (let attempt = 1; attempt <= SYMBOL_TEXTURE_LOAD_ATTEMPTS; attempt += 1) {
+    try {
+      const bundle = await Assets.loadBundle(bundleId) as Record<string, SymbolTexture | undefined>;
+      const texture = bundle[alias] ?? await Assets.load<SymbolTexture>(alias);
+
+      if (texture && texture.width > 0 && texture.height > 0) {
+        return texture;
+      }
+    } catch {
+      // retry below before allowing the next source to be considered
+    }
+
+    if (attempt < SYMBOL_TEXTURE_LOAD_ATTEMPTS) {
+      await waitForSymbolTextureRetry(SYMBOL_TEXTURE_RETRY_DELAY_MS);
+    }
+  }
+
+  return null;
+};
+
+const loadSymbolTextureWithFallback = async (
+  symbol: SymbolId,
+  urls: readonly string[]
+): Promise<SymbolTextureEntry> => {
+  for (let sourceIndex = 0; sourceIndex < urls.length; sourceIndex += 1) {
+    const url = urls[sourceIndex];
+    const texture = await loadSymbolTextureSource(
+      symbolTextureAlias(symbol, sourceIndex, url),
+      url
+    );
+
+    if (texture) {
+      return [symbol, texture] as const;
+    }
+  }
+
+  return [symbol, null] as const;
 };
 
 export function PixiTempleBoard({
@@ -270,6 +341,7 @@ export function PixiTempleBoard({
   const [displayBoard, setDisplayBoard] = useState(board);
   const [highlightedCells, setHighlightedCells] = useState<{ row: number; col: number }[]>([]);
   const [hoveredSymbol, setHoveredSymbol] = useState<{ label: string; x: number; y: number } | null>(null);
+  const [texturesReady, setTexturesReady] = useState(false);
   const displayBoardRef = useRef(displayBoard);
 
   const safeDestroyApplication = useCallback((target: Application | null) => {
@@ -278,22 +350,25 @@ export function PixiTempleBoard({
     }
 
     try {
-      // Critical: Stop ticker FIRST before destroying stage to prevent render loop from accessing destroyed objects
-      if (target.ticker) {
-        target.ticker.stop();
-        target.ticker.destroy();
-      }
+      // Critical: stop the ticker before destroying the stage so no render loop
+      // can read partially torn-down objects.
+      target.ticker?.stop();
 
-      // Guard against teardown races where Application internals are partially initialized.
-      const maybeStage = (target as unknown as { stage?: { destroy?: () => void } }).stage;
-      if (maybeStage && typeof maybeStage.destroy === "function") {
-        target.destroy(true, { children: true });
+      // React dev mode can unmount while Pixi internals are only partially
+      // initialized. Pixi Application.destroy expects both stage and renderer.
+      const maybeTarget = target as unknown as {
+        renderer?: { destroy?: (options?: unknown) => void };
+        stage?: { destroy?: (options?: unknown) => void };
+      };
+      if (
+        typeof maybeTarget.stage?.destroy === "function" &&
+        typeof maybeTarget.renderer?.destroy === "function"
+      ) {
+        target.destroy({ removeView: true }, { children: true });
       }
-    } catch (error) {
-      // Ignore teardown race errors during unmount. Log in dev for debugging.
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[PixiTempleBoard] Error during destroy:", error);
-      }
+    } catch {
+      // Cleanup races during unmount are intentionally ignored. Runtime render
+      // errors still surface through the active Pixi loop.
     }
   }, []);
 
@@ -303,11 +378,13 @@ export function PixiTempleBoard({
 
     if (!texture) {
       cell.iconSprite.visible = false;
+      cell.iconSprite.alpha = 0;
       cell.iconFallback.visible = true;
+      cell.iconFallback.alpha = 0.96;
+      cell.iconFallback.rotation = 0;
       drawSymbolIcon(cell.iconFallback, symbol, accent);
       cell.iconFallback.scale.set(presentation.fallbackScale ?? presentation.fit);
-      cell.iconFallback.x = cellWidth / 2;
-      cell.iconFallback.y = cellHeight / 2 + (presentation.offsetY ?? 0);
+      cell.iconFallback.position.set(cellWidth / 2, cellHeight / 2 + (presentation.offsetY ?? 0));
       return;
     }
 
@@ -317,6 +394,7 @@ export function PixiTempleBoard({
 
     cell.iconFallback.clear();
     cell.iconFallback.visible = false;
+    cell.iconFallback.alpha = 0;
     cell.iconSprite.visible = true;
     cell.iconSprite.texture = texture;
     cell.iconSprite.width = texture.width * scale;
@@ -358,29 +436,6 @@ export function PixiTempleBoard({
     if (floatingTextLayerRef.current) {
       floatingTextLayerRef.current.removeChildren();
     }
-  };
-
-  const unloadSymbolTextures = () => {
-    // Unload all symbol textures from Pixi's global Assets cache to prevent memory leaks
-    // This ensures assets are released when the board is destroyed
-    void (async () => {
-      try {
-        const allUrls: string[] = [];
-        Object.values(symbolAssetSources).forEach((urls) => {
-          allUrls.push(...urls);
-        });
-
-        // Unload each asset from the Pixi cache
-        // Assets.unload() is fire-and-forget and won't throw if asset doesn't exist
-        for (const url of allUrls) {
-          await Assets.unload(url).catch(() => {
-            // Silently ignore unload failures for non-existent or already-unloaded assets
-          });
-        }
-      } catch {
-        // Suppress errors during asset cleanup
-      }
-    })();
   };
 
   const markWinningCells = (wins: CascadeWin[]) => {
@@ -783,6 +838,7 @@ export function PixiTempleBoard({
     const app = new Application();
     appRef.current = app;
     let mounted = true;
+    setTexturesReady(false);
 
     const resizeStage = () => {
       const currentHost = hostRef.current;
@@ -809,7 +865,7 @@ export function PixiTempleBoard({
           height: logicalHeight,
           backgroundAlpha: 0,
           antialias: true,
-          resolution: window.devicePixelRatio || 1
+          resolution: Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR)
         });
         
         // Stop ticker immediately after init completes, before async operations
@@ -818,20 +874,14 @@ export function PixiTempleBoard({
 
         const textureEntries = await Promise.all(
           (Object.entries(symbolAssetSources) as [SymbolId, readonly string[]][]).map(
-            async ([symbol, urls]) => {
-              for (const url of urls) {
-                try {
-                  const texture = await Assets.load(url);
-                  return [symbol, texture] as const;
-                } catch {
-                  // try the next source, typically svg fallback
-                }
-              }
-
-              return [symbol, null] as const;
-            }
+            ([symbol, urls]) => loadSymbolTextureWithFallback(symbol, urls)
           )
         );
+        const particleCount = Object.values(symbolAssetSources).some(
+          (sources) => sources[0]?.includes("/assets/lite/")
+        )
+          ? LOW_QUALITY_PARTICLE_COUNT
+          : HIGH_QUALITY_PARTICLE_COUNT;
 
         symbolTexturesRef.current = textureEntries.reduce<Partial<Record<SymbolId, Sprite["texture"]>>>(
           (accumulator, [symbol, texture]) => {
@@ -843,11 +893,12 @@ export function PixiTempleBoard({
           },
           {}
         );
-
         if (!mounted) {
           safeDestroyApplication(app);
           return;
         }
+
+        setTexturesReady(true);
 
         host.innerHTML = "";
         host.appendChild(app.canvas);
@@ -880,7 +931,7 @@ export function PixiTempleBoard({
       winPathRef.current = winPath;
       root.addChild(winPath);
 
-      const particleSystem = new ParticleSystem(root, 140);
+      const particleSystem = new ParticleSystem(root, particleCount);
       particleSystem.container.zIndex = 32;
       particleSystemRef.current = particleSystem;
 
@@ -1321,9 +1372,6 @@ export function PixiTempleBoard({
       // Destroy PixiJS application (which will stop ticker)
       safeDestroyApplication(app);
 
-      // Unload symbol textures from Pixi's global Assets cache after app destruction
-      unloadSymbolTextures();
-
       // Final ref cleanup
       appRef.current = null;
       rootRef.current = null;
@@ -1341,6 +1389,14 @@ export function PixiTempleBoard({
   }, [safeDestroyApplication, symbolAssetSources]);
 
   useEffect(() => {
+    if (!texturesReady) {
+      return;
+    }
+
+    paintBoardCellsRef.current({ allowWave: false, allowMotion: false });
+  }, [texturesReady]);
+
+  useEffect(() => {
     if (!paintBoardCells()) {
       return;
     }
@@ -1349,7 +1405,7 @@ export function PixiTempleBoard({
       suppressDropAnimationRef.current = false;
       shouldResetSuppressAfterPaintRef.current = false;
     }
-  }, [displayBoard, paintBoardCells]);
+  }, [displayBoard, paintBoardCells, texturesReady]);
 
   useEffect(() => {
     paintBoardCells({ allowWave: false, allowMotion: false });
