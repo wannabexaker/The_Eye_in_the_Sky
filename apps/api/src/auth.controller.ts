@@ -10,6 +10,46 @@ import { CurrentUser } from "./current-user.decorator";
 import type { RequestWithAuth, PlatformExchangeRequest, AuthMode } from "./auth.types";
 import type { CurrentAuthUser } from "./auth.types";
 
+const getValidationDetails = (issues: Array<{ path: readonly PropertyKey[]; message: string }>) =>
+  issues.map((issue) => ({
+    path: issue.path.map(String).join("."),
+    message: issue.message
+  }));
+
+const parseRegisterOrBadRequest = (body: unknown) => {
+  const result = validators.authRegister.safeParse(body);
+  if (result.success) {
+    return result.data;
+  }
+
+  const details = getValidationDetails(result.error.issues);
+  const hasPasswordIssue = result.error.issues.some((issue) => issue.path.join(".") === "password");
+  const hasDisplayNameIssue = result.error.issues.some((issue) => issue.path.join(".") === "displayName");
+
+  if (hasPasswordIssue) {
+    throw new BadRequestException({
+      code: "WEAK_PASSWORD",
+      message: "Password must be at least 8 characters.",
+      reason: "Min 8 characters.",
+      details
+    });
+  }
+
+  if (hasDisplayNameIssue) {
+    throw new BadRequestException({
+      code: "INVALID_DISPLAY_NAME",
+      message: "Display name contains invalid characters.",
+      reason: "Use letters, numbers, spaces, underscores, or hyphens.",
+      details
+    });
+  }
+
+  throw new BadRequestException({
+    error: "Validation failed",
+    details
+  });
+};
+
 @Controller("auth")
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -29,7 +69,7 @@ export class AuthController {
     @Req() request: RequestWithAuth,
     @Res({ passthrough: true }) response: any
   ) {
-    const validatedBody = parseOrBadRequest(validators.authRegister, body);
+    const validatedBody = parseRegisterOrBadRequest(body);
     return this.authService.registerPlayer(validatedBody, request, response);
   }
 
@@ -83,6 +123,31 @@ export class AuthController {
   @Get("me")
   getMe(@Req() request: RequestWithAuth) {
     return this.authService.getCurrentSession(request);
+  }
+
+  @UseGuards(SessionAuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("change-password")
+  changePassword(
+    @Body() body: { currentPassword?: string; newPassword?: string },
+    @CurrentUser() currentUser: CurrentAuthUser
+  ) {
+    const validatedBody = parseOrBadRequest(validators.authChangePassword, body);
+    return this.authService.changePassword(currentUser, validatedBody);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("forgot-password")
+  forgotPassword(@Body() body: { email?: string }) {
+    const validatedBody = parseOrBadRequest(validators.authForgotPassword, body);
+    return this.authService.forgotPassword(validatedBody);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("reset-password")
+  resetPassword(@Body() body: { token?: string; newPassword?: string }) {
+    const validatedBody = parseOrBadRequest(validators.authResetPassword, body);
+    return this.authService.resetPassword(validatedBody);
   }
 
   /**

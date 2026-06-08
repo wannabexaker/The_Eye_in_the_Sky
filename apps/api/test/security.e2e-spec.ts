@@ -198,7 +198,7 @@ describe("Security: Validation Layer (e2e)", () => {
     it("returns 400 with structured field-level error details", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "bad", password: "x", displayName: "A" });
+        .send({ email: "bad", password: "SecurePass1!", displayName: "Player" });
       expect(res.status).toBe(400);
       const payload = res.body;
       expect(payload.code).toBe("VALIDATION_FAILED");
