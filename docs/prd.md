@@ -83,6 +83,15 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
 - Spin CTA identity layers should remain mounted across pulse effects; remount only transient pulse/ripple layers, not the persistent ouroboros ring.
 
+## Presentation Choreography Contract
+- Spin presentation is driven by a single conductor: `buildSpinChoreography(result, profile, options)`.
+- The conductor may read `SpinResult`, current presentation speed, and nonstop mode, but must never mutate engine results, wallet state, RTP, or round contracts.
+- React phases, Pixi board reveals, floating payout text, win/bonus overlays, and synthetic audio cues must be scheduled from the same event stream when a choreography run exists.
+- Normal speed target bands: no-win `1.4s-1.8s`, one cascade `2.0s-2.4s`, four cascades `3.4s-4.2s`, and eight cascades `5.2s-6.2s`. Large win tiers may extend the final summary, not every cascade beat.
+- First cascade remains fully readable. Cascades 2-3 are shorter but clear. Cascades 4+ use compressed scan, break, payout, and drop beats with a visible running total.
+- Synthetic WebAudio remains acceptable for Phase 1, but sound scheduling must stay disabled when sound is off and must not create extra `AudioContext` work.
+- Blocking modal state must reflect visible blocking UI. Hidden store flags must not disable gameplay controls.
+
 ## Wake Lock Control Contract
 - The player shell owns one `useScreenWakeLock()` controller instance and passes it into UI controls that need to reflect or change wake-lock state.
 - The toggle must expose `aria-pressed` and visibly different active/inactive icons.

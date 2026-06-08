@@ -4,19 +4,32 @@ Layer: frontend (player-web)
 Uses: slot hook and board presentation events
 */
 
-type SoundEvent =
+export type GameSoundEvent =
+  | "ui_press"
   | "spin"
+  | "spin_charge"
   | "drop"
+  | "reel_drop"
   | "win"
+  | "win_scan"
   | "loss"
   | "cascade"
+  | "cascade_tick"
+  | "symbol_crack"
+  | "symbol_break"
+  | "payout_tick"
   | "multiplier"
+  | "multiplier_apply"
   | "bonus"
+  | "bonus_open"
+  | "round_win"
   | "big_win"
+  | "huge_win"
   | "super_win";
 
 type SoundOptions = {
   pan?: number;
+  intensity?: number;
 };
 
 type SoundPreset = {
@@ -67,7 +80,7 @@ class SoundManager {
   Layer: frontend (player-web)
   Uses: UI interactions and board feedback
   */
-  play(event: SoundEvent, enabled: boolean, options: SoundOptions = {}) {
+  play(event: GameSoundEvent, enabled: boolean, options: SoundOptions = {}) {
     if (!enabled) {
       return;
     }
@@ -80,6 +93,8 @@ class SoundManager {
     const preset = this.getPreset(event);
     const now = context.currentTime;
     const output = context.createGain();
+    const intensity = Math.max(0.2, Math.min(2, options.intensity ?? 1));
+    const volume = Math.min(0.12, preset.volume * (0.72 + intensity * 0.38));
     const panner = typeof StereoPannerNode !== "undefined"
       ? new StereoPannerNode(context, { pan: options.pan ?? 0 })
       : null;
@@ -88,7 +103,7 @@ class SoundManager {
     const release = preset.release ?? preset.duration;
 
     output.gain.setValueAtTime(0.0001, now);
-    output.gain.exponentialRampToValueAtTime(preset.volume, now + attack);
+    output.gain.exponentialRampToValueAtTime(volume, now + attack);
     output.gain.exponentialRampToValueAtTime(0.0001, now + release);
 
     if (panner) {
@@ -125,8 +140,17 @@ class SoundManager {
     }
   }
 
-  private getPreset(event: SoundEvent): SoundPreset {
-    const presets: Record<SoundEvent, SoundPreset> = {
+  private getPreset(event: GameSoundEvent): SoundPreset {
+    const presets: Record<GameSoundEvent, SoundPreset> = {
+      ui_press: {
+        baseFrequency: 420,
+        duration: 0.08,
+        volume: 0.035,
+        sweep: 36,
+        type: "triangle",
+        attack: 0.006,
+        release: 0.075
+      },
       spin: {
         baseFrequency: 112,
         duration: 0.16,
@@ -135,6 +159,16 @@ class SoundManager {
         type: "triangle",
         harmonics: [2]
       },
+      spin_charge: {
+        baseFrequency: 118,
+        duration: 0.28,
+        volume: 0.052,
+        sweep: 76,
+        type: "triangle",
+        harmonics: [1.5, 2],
+        attack: 0.012,
+        release: 0.24
+      },
       drop: {
         baseFrequency: 180,
         duration: 0.11,
@@ -142,6 +176,17 @@ class SoundManager {
         sweep: -16,
         type: "sine",
         noise: true
+      },
+      reel_drop: {
+        baseFrequency: 176,
+        duration: 0.16,
+        volume: 0.044,
+        sweep: -42,
+        type: "sine",
+        harmonics: [0.5, 1.5],
+        noise: true,
+        attack: 0.008,
+        release: 0.14
       },
       win: {
         baseFrequency: 610,
@@ -152,6 +197,16 @@ class SoundManager {
         harmonics: [1.5, 2, 3],
         attack: 0.014,
         release: 0.42
+      },
+      win_scan: {
+        baseFrequency: 520,
+        duration: 0.18,
+        volume: 0.034,
+        sweep: 80,
+        type: "sine",
+        harmonics: [2],
+        attack: 0.008,
+        release: 0.16
       },
       loss: {
         baseFrequency: 186,
@@ -175,6 +230,49 @@ class SoundManager {
         attack: 0.012,
         release: 0.24
       },
+      cascade_tick: {
+        baseFrequency: 338,
+        duration: 0.12,
+        volume: 0.038,
+        sweep: 42,
+        type: "sine",
+        harmonics: [2],
+        noise: true,
+        attack: 0.006,
+        release: 0.11
+      },
+      symbol_crack: {
+        baseFrequency: 260,
+        duration: 0.13,
+        volume: 0.04,
+        sweep: -72,
+        type: "triangle",
+        harmonics: [2, 3],
+        noise: true,
+        attack: 0.004,
+        release: 0.12
+      },
+      symbol_break: {
+        baseFrequency: 310,
+        duration: 0.16,
+        volume: 0.05,
+        sweep: -120,
+        type: "triangle",
+        harmonics: [1.5, 2.5],
+        noise: true,
+        attack: 0.004,
+        release: 0.15
+      },
+      payout_tick: {
+        baseFrequency: 690,
+        duration: 0.18,
+        volume: 0.046,
+        sweep: 110,
+        type: "triangle",
+        harmonics: [1.5, 2],
+        attack: 0.006,
+        release: 0.17
+      },
       multiplier: {
         baseFrequency: 840,
         duration: 0.42,
@@ -184,6 +282,16 @@ class SoundManager {
         harmonics: [2, 3, 4],
         attack: 0.012,
         release: 0.38
+      },
+      multiplier_apply: {
+        baseFrequency: 860,
+        duration: 0.5,
+        volume: 0.058,
+        sweep: 220,
+        type: "triangle",
+        harmonics: [1.5, 2, 3, 4],
+        attack: 0.01,
+        release: 0.44
       },
       bonus: {
         baseFrequency: 520,
@@ -195,6 +303,27 @@ class SoundManager {
         attack: 0.03,
         release: 1.08
       },
+      bonus_open: {
+        baseFrequency: 520,
+        duration: 1.08,
+        volume: 0.052,
+        sweep: 320,
+        type: "sine",
+        harmonics: [1.25, 1.5, 2, 3],
+        noise: true,
+        attack: 0.018,
+        release: 0.96
+      },
+      round_win: {
+        baseFrequency: 610,
+        duration: 0.5,
+        volume: 0.056,
+        sweep: 110,
+        type: "triangle",
+        harmonics: [1.5, 2, 3],
+        attack: 0.012,
+        release: 0.46
+      },
       big_win: {
         baseFrequency: 430,
         duration: 1.45,
@@ -205,6 +334,17 @@ class SoundManager {
         noise: true,
         attack: 0.016,
         release: 1.26
+      },
+      huge_win: {
+        baseFrequency: 452,
+        duration: 1.62,
+        volume: 0.074,
+        sweep: 380,
+        type: "triangle",
+        harmonics: [1.25, 1.5, 2, 3, 4],
+        noise: true,
+        attack: 0.012,
+        release: 1.42
       },
       super_win: {
         baseFrequency: 468,

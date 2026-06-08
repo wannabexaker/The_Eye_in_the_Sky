@@ -4,6 +4,9 @@ Layer: frontend (player-web)
 Uses: bonus/win presentation state from use-slot-machine.ts
 */
 
+"use client";
+
+import { AnimatePresence } from "motion/react";
 import type {
   BonusAnnouncementEntry,
   BonusSummaryEntry,
@@ -38,22 +41,31 @@ export function WinPresentationController({
   onDismissWinPresentation
 }: WinPresentationControllerProps) {
   return (
-    <>
-      <BonusWinOverlay
-        announcement={bonusAnnouncement}
-        locked={bonusAnnouncementLocked}
-        onContinue={onDismissBonusAnnouncement}
-      />
-      <BonusSummaryOverlay
-        locked={bonusSummaryLocked}
-        onContinue={onDismissBonusSummary}
-        summary={bonusSummary}
-      />
-      <WinPresentationOverlay
-        onContinue={onDismissWinPresentation}
-        presentation={winPresentation}
-        shellAssets={shellAssets}
-      />
-    </>
+    <AnimatePresence mode="wait">
+      {bonusAnnouncement ? (
+        <BonusWinOverlay
+          announcement={bonusAnnouncement}
+          key={`bonus-announcement-${bonusAnnouncement.freeSpins}-${bonusAnnouncement.entryWin}`}
+          locked={bonusAnnouncementLocked}
+          onContinue={onDismissBonusAnnouncement}
+        />
+      ) : null}
+      {bonusSummary ? (
+        <BonusSummaryOverlay
+          key={`bonus-summary-${bonusSummary.title}-${bonusSummary.totalWin}`}
+          locked={bonusSummaryLocked}
+          onContinue={onDismissBonusSummary}
+          summary={bonusSummary}
+        />
+      ) : null}
+      {winPresentation ? (
+        <WinPresentationOverlay
+          key={`win-${winPresentation.kind}-${winPresentation.amount}`}
+          onContinue={onDismissWinPresentation}
+          presentation={winPresentation}
+          shellAssets={shellAssets}
+        />
+      ) : null}
+    </AnimatePresence>
   );
 }

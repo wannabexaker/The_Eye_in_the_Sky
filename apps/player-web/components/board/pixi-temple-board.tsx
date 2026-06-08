@@ -27,6 +27,10 @@ import {
   type SpinPresentationTimings,
   type SpinPhase
 } from "@/lib/presentation/spin-state-machine";
+import type {
+  SpinChoreographyEvent,
+  SpinChoreographyRun
+} from "@/lib/presentation/spin-choreography";
 
 const rows = 5;
 const cols = 6;
@@ -140,6 +144,7 @@ type Props = {
   spinPhase: SpinPhase;
   phaseMessage: string;
   bonusActive: boolean;
+  choreographyRun: SpinChoreographyRun | null;
   presentationTimings: SpinPresentationTimings;
   floatingTextHoldMs: number;
   floatingTextFadeMs: number;
@@ -223,6 +228,7 @@ const SYMBOL_TEXTURE_BUNDLE_PREFIX = "eye-symbol";
 const MAX_RENDER_DPR = 2;
 const HIGH_QUALITY_PARTICLE_COUNT = 140;
 const LOW_QUALITY_PARTICLE_COUNT = 80;
+const registeredSymbolTextureBundles = new Set<string>();
 
 type PaintBoardOptions = {
   allowWave?: boolean;
@@ -248,13 +254,22 @@ const loadSymbolTextureSource = async (
   url: string
 ): Promise<SymbolTexture | null> => {
   const bundleId = `${alias}:bundle`;
+  const resolver = Assets.resolver as unknown as {
+    hasKey?: (key: string) => boolean;
+  };
+  const aliasAlreadyRegistered = Boolean(resolver.hasKey?.(alias));
 
-  Assets.addBundle(bundleId, { [alias]: url });
+  if (!registeredSymbolTextureBundles.has(bundleId) && !aliasAlreadyRegistered) {
+    Assets.addBundle(bundleId, { [alias]: url });
+    registeredSymbolTextureBundles.add(bundleId);
+  }
 
   for (let attempt = 1; attempt <= SYMBOL_TEXTURE_LOAD_ATTEMPTS; attempt += 1) {
     try {
-      const bundle = await Assets.loadBundle(bundleId) as Record<string, SymbolTexture | undefined>;
-      const texture = bundle[alias] ?? await Assets.load<SymbolTexture>(alias);
+      const texture = aliasAlreadyRegistered
+        ? await Assets.load<SymbolTexture>(alias)
+        : ((await Assets.loadBundle(bundleId)) as Record<string, SymbolTexture | undefined>)[alias] ??
+          (await Assets.load<SymbolTexture>(alias));
 
       if (texture && texture.width > 0 && texture.height > 0) {
         return texture;
@@ -296,6 +311,7 @@ export function PixiTempleBoard({
   spinPhase,
   phaseMessage,
   bonusActive,
+  choreographyRun,
   presentationTimings,
   floatingTextHoldMs,
   floatingTextFadeMs,
@@ -333,6 +349,8 @@ export function PixiTempleBoard({
   // Used for cascade.boardBefore updates which are same-frame redraws, not new-symbol drops.
   const suppressDropAnimationRef = useRef(false);
   const shouldResetSuppressAfterPaintRef = useRef(false);
+  const activeBoardDropDurationRef = useRef<number | null>(null);
+  const activeCascadeDropDurationRef = useRef<number | null>(null);
   const pendingCascadeWaveRef = useRef(false);
   const isWavingRef = useRef(false);
   const waveUnlockTimerRef = useRef<number | null>(null);
@@ -623,8 +641,14 @@ export function PixiTempleBoard({
       pendingCascadeWaveRef.current &&
       !suppressDropAnimationRef.current &&
       !isWavingRef.current;
-    const cascadeDropDurationMs = Math.max(240, Math.round(presentationTimings.cascadeDrop * 0.72));
-    const spinDropDurationMs = Math.max(400, presentationTimings.boardDrop);
+    const cascadeDropDurationMs = Math.max(
+      140,
+      activeCascadeDropDurationRef.current ?? Math.round(presentationTimings.cascadeDrop * 0.72)
+    );
+    const spinDropDurationMs = Math.max(
+      180,
+      activeBoardDropDurationRef.current ?? presentationTimings.boardDrop
+    );
     const spinStartAnticipationMs = phase === "SPIN_START" ? presentationTimings.spinStart : 0;
 
     if (shouldStartCascadeWave) {
@@ -728,6 +752,8 @@ export function PixiTempleBoard({
     if (!result || result.cascades.length === 0) {
       pendingCascadeWaveRef.current = false;
       isWavingRef.current = false;
+      activeBoardDropDurationRef.current = null;
+      activeCascadeDropDurationRef.current = null;
       if (waveUnlockTimerRef.current !== null) {
         window.clearTimeout(waveUnlockTimerRef.current);
         waveUnlockTimerRef.current = null;
@@ -755,14 +781,121 @@ export function PixiTempleBoard({
     if (result.totalWin > 0) {
       guidanceUntilRef.current =
         performance.now() +
-        presentationTimings.boardDrop +
-        presentationTimings.winHighlight +
-        presentationTimings.cascadeDrop +
-        220;
+        Math.max(
+          900,
+          choreographyRun?.runId === result.roundSummary.roundId
+            ? choreographyRun.summaryAtMs
+            : presentationTimings.boardDrop + presentationTimings.winHighlight + presentationTimings.cascadeDrop + 220
+        );
       lossVeilUntilRef.current = 0;
     } else if (!result.bonusTriggered) {
       lossVeilUntilRef.current = performance.now() + 700;
       guidanceUntilRef.current = 0;
+    }
+
+    const queueCascadePayoutText = (
+      cascade: SpinResult["cascades"][number],
+      event?: SpinChoreographyEvent
+    ) => {
+      if (cascade.stepWin <= 0) {
+        return;
+      }
+
+      const root = rootRef.current;
+      if (!root) {
+        return;
+      }
+
+      const winCells = cascade.wins.flatMap((win) => win.cells);
+      let spawnX = logicalWidth / 2;
+      let spawnY = logicalHeight / 2;
+      if (winCells.length > 0) {
+        const avgRow = winCells.reduce((acc, cell) => acc + cell.row, 0) / winCells.length;
+        const avgCol = winCells.reduce((acc, cell) => acc + cell.col, 0) / winCells.length;
+        spawnX = boardOffsetX + avgCol * (cellWidth + gap) + cellWidth / 2;
+        spawnY = boardOffsetY + avgRow * (cellHeight + gap) + cellHeight / 2 - 20;
+      }
+
+      const isBig = cascade.stepWin >= result.bet * 5;
+      queueFloatingText(
+        root,
+        `+${formatMoney(cascade.stepWin)}`,
+        spawnX,
+        spawnY - 60,
+        isBig ? 32 : 22,
+        0xf8edd9
+      );
+
+      if (result.cascades.length > 1 && event?.runningWin !== undefined) {
+        queueFloatingText(
+          root,
+          `TOTAL ${formatMoney(event.runningWin)}`,
+          logicalWidth / 2,
+          boardOffsetY + 8,
+          isBig ? 24 : 18,
+          0xf0ca72
+        );
+      }
+    };
+
+    const activeChoreography =
+      choreographyRun?.runId === result.roundSummary.roundId ? choreographyRun : null;
+
+    if (activeChoreography) {
+      const firstCascade = result.cascades[0];
+      activeBoardDropDurationRef.current =
+        activeChoreography.events.find((event) => event.type === "board_drop")?.durationMs ?? null;
+      activeCascadeDropDurationRef.current = null;
+      setDisplayBoard(firstCascade.boardBefore);
+      clearWinningCells();
+
+      activeChoreography.events.forEach((event) => {
+        if (event.cascadeIndex === undefined) {
+          return;
+        }
+
+        const cascade = result.cascades[event.cascadeIndex];
+        if (!cascade) {
+          return;
+        }
+
+        timeoutsRef.current.push(
+          window.setTimeout(() => {
+            switch (event.type) {
+              case "board_drop":
+                activeBoardDropDurationRef.current = event.durationMs;
+                if (event.cascadeIndex !== 0) {
+                  suppressDropAnimationRef.current = true;
+                  shouldResetSuppressAfterPaintRef.current = true;
+                }
+                setDisplayBoard(cascade.boardBefore);
+                clearWinningCells();
+                return;
+              case "win_scan":
+              case "symbol_prebreak":
+                markWinningCells(cascade.wins);
+                return;
+              case "symbol_break":
+                emitWinParticles(cascade.wins);
+                return;
+              case "cascade_payout":
+                queueCascadePayoutText(cascade, event);
+                return;
+              case "cascade_drop":
+                activeCascadeDropDurationRef.current = event.durationMs;
+                clearWinningCells();
+                pendingCascadeWaveRef.current = true;
+                setDisplayBoard(cascade.boardAfter);
+                return;
+            }
+          }, event.atMs)
+        );
+      });
+
+      return () => {
+        timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
+        timeoutsRef.current = [];
+      };
     }
 
     let cursor = 0;
@@ -827,7 +960,7 @@ export function PixiTempleBoard({
       timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
       timeoutsRef.current = [];
     };
-  }, [board, result, spinPhase]);
+  }, [board, choreographyRun, result, spinPhase]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -1201,6 +1334,8 @@ export function PixiTempleBoard({
           const currentPhase = phaseRef.current;
           const idleMotionActive =
             currentPhase === "IDLE" && !cell.animating;
+          const focusActive = currentPhase === "WIN_CHECK" && highlightedWinsRef.current.length > 0;
+          const pulseActive = cell.highlighted && cell.pulseUntil > now;
           const progress = Math.min(1, Math.max(0, (now - cell.animStart) / cell.animDuration));
           const animating = cell.animating && now >= cell.animStart;
           const eased = cell.useSettleEasing ? easeOutBack(progress) : easeOutCubic(progress);
@@ -1217,16 +1352,19 @@ export function PixiTempleBoard({
             ? Math.sin(now / 880 + cell.breathingSeed) * 0.012
             : 0;
           const hoverBoost = idleMotionActive && cell.hovered ? 0.05 : 0;
-          const scale = 1 + breathing + hoverBoost;
+          const focusBoost = pulseActive ? 0.05 + Math.sin(now / 80) * 0.018 : 0;
+          const scale = 1 + breathing + hoverBoost + focusBoost;
+          const animationAlpha = animating ? 0.38 + progress * 0.62 : 1;
+          const focusAlpha = focusActive && !cell.highlighted ? 0.42 : 1;
 
           cell.container.x = cell.baseX + shake;
           cell.container.y = animatedY + shakeY;
           cell.container.scale.set(scale);
-          cell.container.alpha = animating ? 0.38 + progress * 0.62 : 1;
+          cell.container.alpha = Math.min(animationAlpha, focusAlpha);
 
           cell.glow.alpha =
             (cell.hovered ? 0.14 : 0.04) +
-            (cell.highlighted ? 0.18 : 0);
+            (cell.highlighted ? (pulseActive ? 0.28 : 0.2) : 0);
 
           if (progress >= 1) {
             cell.animating = false;
