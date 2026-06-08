@@ -4,6 +4,9 @@ Layer: frontend (player-web)
 Uses: win-presentation-types.ts and player bonus-summary state
 */
 
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
 import type { BonusSummaryEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusSummaryOverlayProps = {
@@ -23,15 +26,28 @@ export function BonusSummaryOverlay({
   summary,
   onContinue
 }: BonusSummaryOverlayProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   if (!summary) {
     return null;
   }
 
   return (
-    <div className="winPresentationLayer is-bonus-summary" role="presentation">
-      <section
+    <motion.div
+      animate={{ opacity: 1, scale: 1 }}
+      className="winPresentationLayer is-bonus-summary"
+      exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.985 }}
+      initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.965 }}
+      role="presentation"
+      transition={{ duration: prefersReducedMotion ? 0.12 : 0.3, ease: "easeOut" }}
+    >
+      <motion.section
+        animate={{ opacity: 1, y: 0 }}
         aria-label={summary.title}
         className={`winPresentationCard is-ack is-bonus-summary ${summary.variantTheme === "constellation" ? "is-constellation" : ""}`}
+        exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
+        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 18 }}
+        transition={{ duration: prefersReducedMotion ? 0.12 : 0.28, ease: "easeOut" }}
       >
         <span className="winPresentationLabel">{summary.title}</span>
         <p className="winPresentationSubtitle">{summary.subtitle}</p>
@@ -46,7 +62,7 @@ export function BonusSummaryOverlay({
         >
           {summary.continueLabel ?? "Continue"}
         </button>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

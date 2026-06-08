@@ -4,7 +4,7 @@ Layer: frontend (player-web)
 Uses: player store deposit draft and wallet transactions
 */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerUiStore } from "@/lib/state/player-store";
 
 const depositAmounts = [20, 50, 100, 200, 500];
@@ -24,9 +24,10 @@ const formatMoneyCompactEur = (value: number) =>
 
 type DepositModalProps = {
   onConfirmDeposit: (amount: number) => Promise<void>;
+  onClose?: () => void;
 };
 
-export function DepositModal({ onConfirmDeposit }: DepositModalProps) {
+export function DepositModal({ onClose, onConfirmDeposit }: DepositModalProps) {
   const {
     depositDraft,
     setDepositAmount,
@@ -36,12 +37,25 @@ export function DepositModal({ onConfirmDeposit }: DepositModalProps) {
   } = usePlayerUiStore();
   const [localMessage, setLocalMessage] = useState("");
   const [amountInput, setAmountInput] = useState(String(depositDraft.amount));
+  const successCloseTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setAmountInput(String(depositDraft.amount));
   }, [depositDraft.amount]);
 
+  useEffect(() => {
+    return () => {
+      if (successCloseTimerRef.current !== null) {
+        window.clearTimeout(successCloseTimerRef.current);
+      }
+    };
+  }, []);
+
   const confirmDeposit = () => {
+    if (depositDraft.processing) {
+      return;
+    }
+
     const parsedAmount = parseAmount(amountInput);
 
     if (parsedAmount === null || parsedAmount <= 0) {
@@ -59,6 +73,13 @@ export function DepositModal({ onConfirmDeposit }: DepositModalProps) {
         .then(() => {
           finishDepositProcessing(`Deposit successful +${parsedAmount}`);
           setLocalMessage(`Deposit successful: ${formatMoneyCompactEur(parsedAmount)}`);
+          if (successCloseTimerRef.current !== null) {
+            window.clearTimeout(successCloseTimerRef.current);
+          }
+          successCloseTimerRef.current = window.setTimeout(() => {
+            successCloseTimerRef.current = null;
+            onClose?.();
+          }, 650);
         })
         .catch((error) => {
           finishDepositProcessing("");
@@ -157,8 +178,13 @@ export function DepositModal({ onConfirmDeposit }: DepositModalProps) {
           </strong>
           <span>Simulation only. No real payment is processed.</span>
         </div>
-        <button className="welcomeButton compactPrimary" onClick={confirmDeposit} type="button">
-          Confirm Deposit
+        <button
+          className="welcomeButton compactPrimary"
+          disabled={depositDraft.processing}
+          onClick={confirmDeposit}
+          type="button"
+        >
+          {depositDraft.processing ? "Processing..." : "Confirm Deposit"}
         </button>
       </section>
     </div>

@@ -268,7 +268,18 @@ export default function HomePage() {
   const presentationBlocked =
     slot.bonusEntryPending || slot.bonusAnnouncementLocked || slot.bonusSummaryLocked;
   const authBlocked = authLoading || !canPlayWithoutAuth;
-  const inputAllowed = !authBlocked && !presentationBlocked;
+  const welcomeBlockingOpen = hasHydrated && canPlayWithoutAuth && welcomeOpen;
+  const blockingModalOpen =
+    welcomeBlockingOpen ||
+    debugPanelOpen ||
+    historyOpen ||
+    settingsOpen ||
+    depositOpen ||
+    withdrawOpen ||
+    paymentMethodsOpen ||
+    walletHistoryOpen ||
+    analyticsOpen;
+  const inputAllowed = !authBlocked && !presentationBlocked && !blockingModalOpen;
   const spinInteractionAllowed = useMemo(
     () =>
       inputAllowed &&
@@ -715,6 +726,10 @@ export default function HomePage() {
         return;
       }
 
+      if (blockingModalOpen) {
+        return;
+      }
+
       if (slot.bonusEntryPending) {
         event.preventDefault();
         return;
@@ -801,6 +816,8 @@ export default function HomePage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     authBlocked,
+    analyticsOpen,
+    blockingModalOpen,
     debugPanelOpen,
     depositOpen,
     historyOpen,
@@ -1133,6 +1150,7 @@ export default function HomePage() {
                 <PixiTempleBoard
                   board={board}
                   bonusActive={bonusModeActive}
+                  choreographyRun={slot.choreographyRun}
                   floatingTextFadeMs={slot.floatingTextFadeMs}
                   floatingTextHoldMs={slot.floatingTextHoldMs}
                   key={effectiveSymbolGraphicsQuality}
@@ -1521,7 +1539,10 @@ export default function HomePage() {
         open={depositOpen}
         title="Deposit Credits"
       >
-        <DepositModal onConfirmDeposit={handleConfirmDeposit} />
+        <DepositModal
+          onClose={() => setModal("depositOpen", false)}
+          onConfirmDeposit={handleConfirmDeposit}
+        />
       </OverlayModal>
 
       <OverlayModal

@@ -4,6 +4,9 @@ Layer: frontend (player-web)
 Uses: win-presentation-types.ts
 */
 
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
 import type { BonusAnnouncementEntry } from "@/lib/presentation/win-presentation-types";
 
 type BonusWinOverlayProps = {
@@ -23,15 +26,28 @@ export function BonusWinOverlay({
   locked,
   onContinue
 }: BonusWinOverlayProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   if (!announcement) {
     return null;
   }
 
   return (
-    <div className="overlayBackdrop bonusBackdrop bonusWinBackdrop" role="presentation">
-      <section
+    <motion.div
+      animate={{ opacity: 1 }}
+      className="overlayBackdrop bonusBackdrop bonusWinBackdrop"
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      role="presentation"
+      transition={{ duration: prefersReducedMotion ? 0.12 : 0.2, ease: "easeOut" }}
+    >
+      <motion.section
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         aria-label={announcement.title}
         className={`overlayModal bonusWinModal ${announcement.variantTheme === "constellation" ? "is-constellation" : ""}`}
+        exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.985, y: prefersReducedMotion ? 0 : -10 }}
+        initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.96, y: prefersReducedMotion ? 0 : 18 }}
+        transition={{ duration: prefersReducedMotion ? 0.12 : 0.34, ease: "easeOut" }}
       >
         <header className="bonusWinHeader">
           <span className="winPresentationLabel">{announcement.title}</span>
@@ -73,7 +89,7 @@ export function BonusWinOverlay({
             {announcement.continueLabel ?? "Continue"}
           </button>
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

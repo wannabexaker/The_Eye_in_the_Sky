@@ -16,6 +16,11 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { soundManager } from "@/lib/audio/sound-manager";
 import {
+  buildSpinChoreography,
+  type SpinChoreographyEvent,
+  type SpinChoreographyRun
+} from "@/lib/presentation/spin-choreography";
+import {
   SPIN_ANIMATION_SPEEDS,
   getSpinPresentationProfile,
   type SpinAnimationSpeed,
@@ -529,6 +534,7 @@ export function useSlotMachine(gameConfig: GameConfig) {
   const [bonusSummary, setBonusSummary] = useState<BonusSummaryEntry | null>(null);
   const [bonusSummaryLocked, setBonusSummaryLocked] = useState(false);
   const [winPresentation, setWinPresentation] = useState<WinPresentationEntry | null>(null);
+  const [choreographyRun, setChoreographyRun] = useState<SpinChoreographyRun | null>(null);
   const phaseTimersRef = useRef<number[]>([]);
   const presentationTimerRef = useRef<number | null>(null);
   const bonusAnnouncementLockTimerRef = useRef<number | null>(null);
@@ -626,6 +632,7 @@ export function useSlotMachine(gameConfig: GameConfig) {
     setBonusSummary(null);
     setBonusSummaryLocked(false);
     setWinPresentation(null);
+    setChoreographyRun(null);
   }, [gameConfig.version, gameConfig.winMultiplierOptions]);
 
   useEffect(() => {
@@ -895,6 +902,8 @@ const validateAutospinCount = useCallback(
       window.clearTimeout(presentationTimerRef.current);
       presentationTimerRef.current = null;
     }
+
+    setChoreographyRun(null);
   }, []);
 
   const canAffordSpin = bonusModeActive || availableBalance >= bet;
@@ -1008,39 +1017,18 @@ const validateAutospinCount = useCallback(
   const scheduleRoundFeedback = useCallback(
     (result: SpinResult) => {
       clearTimers();
+      const choreography = buildSpinChoreography(result, presentationProfile, {
+        autoContinueNeverStop
+      });
       const bonusEntryTransition =
         result.mode === "base" &&
         !result.bonusStateBefore &&
         Boolean(result.nextState.bonusState);
       const shouldRunBonusEntryCue = hasBonusTrigger(result) || bonusEntryTransition;
-      const bonusEntryRevealOffsetMs = bonusEntryTransition
-        ? BONUS_ENTRY_CINEMATIC_DELAY_MS
-        : 0;
-      const bonusPhaseHoldMs = shouldRunBonusEntryCue
-        ? presentationTimings.bonusTrigger
-        : 0;
 
+      setChoreographyRun(choreography);
       setBonusEntryPending(bonusEntryTransition);
 
-      // Extra time to keep phase schedule in sync with the board's per-cascade animation loop.
-      // Board step = boardDrop + winHighlight + cascadeDrop + 110ms buffer.
-      // For N cascades the board runs N × stepMs; the fixed schedule only covers 1 step,
-      // so each additional cascade needs another stepMs added to all post-CASCADE timers.
-      const cascadeStepMs =
-        presentationTimings.boardDrop +
-        presentationTimings.winHighlight +
-        presentationTimings.cascadeDrop +
-        110;
-      const extraCascadeMs =
-        result.cascades.length > 1 ? (result.cascades.length - 1) * cascadeStepMs : 0;
-      const totalCascadeTimelineMs =
-        presentationTimings.spinStart +
-        presentationTimings.boardDrop +
-        presentationTimings.winHighlight +
-        presentationTimings.cascadeDrop +
-        extraCascadeMs;
-      const postBreakSafetyBufferMs = 40;
-      const spinResultSettleBufferMs = 130;
       const roundOutcomeMessage = result.bonusTriggered
         ? "Sky Opens ignites."
         : result.totalWin > 0
@@ -1049,178 +1037,168 @@ const validateAutospinCount = useCallback(
             : "Win landed."
           : "Missed this spin.";
 
-      setSpinPulseKey((current) => current + 1);
-      setSpinPhase("SPIN_START");
-      soundManager.play("spin", soundEnabled);
+      const showBonusAnnouncement = () => {
+        if (!shouldRunBonusEntryCue || !bonusEntryTransition || !result.nextState.bonusState) {
+          return;
+        }
 
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          setSpinPhase("BOARD_DROP");
-          soundManager.play("drop", soundEnabled);
-        }, presentationTimings.spinStart)
-      );
-
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          setSpinPhase("WIN_CHECK");
-
-          if (result.totalWin > 0) {
-            const winMultiple = result.bet > 0 ? result.totalWin / result.bet : 0;
-            const soundEvent =
-              winMultiple >= SUPER_WIN_THRESHOLD
-                ? "super_win"
-                : winMultiple >= BIG_WIN_THRESHOLD
-                  ? "big_win"
-                  : "win";
-            soundManager.play(soundEvent, soundEnabled);
-          } else {
-            soundManager.play("loss", soundEnabled);
-          }
-        }, presentationTimings.spinStart + presentationTimings.boardDrop + spinResultSettleBufferMs)
-      );
-
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          setSpinPhase("CASCADE");
-
-          if (result.cascades.length > 0) {
-            soundManager.play("cascade", soundEnabled);
-          }
-        },
-          presentationTimings.spinStart +
-            presentationTimings.boardDrop +
-            spinResultSettleBufferMs +
-            presentationTimings.winHighlight)
-      );
-
-      const totalCascadeTimelineWithSettleMs = totalCascadeTimelineMs + spinResultSettleBufferMs;
-
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          setSpinPhase("MODIFIER_APPLY");
-
-          if (hasMultiplierEvent(result)) {
-            soundManager.play("multiplier", soundEnabled);
-          }
-        }, totalCascadeTimelineWithSettleMs)
-      );
-
-      if (shouldRunBonusEntryCue) {
-        phaseTimersRef.current.push(
-          window.setTimeout(() => {
-            soundManager.play("bonus", soundEnabled);
-
-            if (bonusEntryTransition && result.nextState.bonusState) {
-              bonusAnnouncementShownAtRef.current = Date.now();
-              setBonusAnnouncementLocked(true);
-              setBonusAnnouncement(
-                buildBonusAnnouncement(
-                  result,
-                  result.nextState.bonusState.freeSpinsRemaining,
-                  gameConfig
-                )
-              );
-
-              if (bonusAnnouncementLockTimerRef.current) {
-                window.clearTimeout(bonusAnnouncementLockTimerRef.current);
-              }
-              if (bonusAnnouncementAutoContinueTimerRef.current) {
-                window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
-              }
-
-              if (autoContinueNeverStop) {
-                bonusAnnouncementAutoContinueTimerRef.current = window.setTimeout(() => {
-                  bonusAnnouncementAutoContinueTimerRef.current = null;
-                  bonusAnnouncementShownAtRef.current = null;
-                  setBonusAnnouncementLocked(false);
-                  setBonusEntryPending(false);
-                  setBonusAnnouncement(null);
-                }, presentationProfile.bonusNonstopAutoContinueMs);
-              } else {
-                bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
-                  setBonusAnnouncementLocked(false);
-                  bonusAnnouncementLockTimerRef.current = null;
-                }, presentationProfile.bonusAnnouncementInputLockMs);
-              }
-            }
-          }, totalCascadeTimelineWithSettleMs + presentationTimings.modifierFlash + bonusEntryRevealOffsetMs)
+        bonusAnnouncementShownAtRef.current = Date.now();
+        setBonusAnnouncementLocked(true);
+        setBonusAnnouncement(
+          buildBonusAnnouncement(
+            result,
+            result.nextState.bonusState.freeSpinsRemaining,
+            gameConfig
+          )
         );
-      }
 
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          setSpinPhase("ROUND_END");
-          setPhaseMessage(roundOutcomeMessage);
-        }, totalCascadeTimelineWithSettleMs + presentationTimings.modifierFlash + bonusPhaseHoldMs)
-      );
+        if (bonusAnnouncementLockTimerRef.current) {
+          window.clearTimeout(bonusAnnouncementLockTimerRef.current);
+        }
+        if (bonusAnnouncementAutoContinueTimerRef.current) {
+          window.clearTimeout(bonusAnnouncementAutoContinueTimerRef.current);
+        }
 
-      phaseTimersRef.current.push(
-        window.setTimeout(() => {
-          const summary = buildBonusSummary(result, gameConfig);
-          const presentation = summary
-            ? null
-            : buildWinPresentation(result, autoContinueNeverStop, gameConfig, {
-                bigWinAutoDismissMs: presentationProfile.bigWinAutoDismissMs,
-                winPresentationAutoDismissMs: presentationProfile.winPresentationAutoDismissMs
-              });
+        if (autoContinueNeverStop) {
+          bonusAnnouncementAutoContinueTimerRef.current = window.setTimeout(() => {
+            bonusAnnouncementAutoContinueTimerRef.current = null;
+            bonusAnnouncementShownAtRef.current = null;
+            setBonusAnnouncementLocked(false);
+            setBonusEntryPending(false);
+            setBonusAnnouncement(null);
+          }, presentationProfile.bonusNonstopAutoContinueMs);
+        } else {
+          bonusAnnouncementLockTimerRef.current = window.setTimeout(() => {
+            setBonusAnnouncementLocked(false);
+            bonusAnnouncementLockTimerRef.current = null;
+          }, presentationProfile.bonusAnnouncementInputLockMs + BONUS_ENTRY_CINEMATIC_DELAY_MS);
+        }
+      };
 
-          if (summary) {
-            bonusSummaryShownAtRef.current = Date.now();
-            if (bonusSummaryLockTimerRef.current) {
-              window.clearTimeout(bonusSummaryLockTimerRef.current);
-            }
-            if (bonusSummaryAutoContinueTimerRef.current) {
-              window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
-            }
+      const showRoundSummary = () => {
+        const summary = buildBonusSummary(result, gameConfig);
+        const presentation = summary
+          ? null
+          : buildWinPresentation(result, autoContinueNeverStop, gameConfig, {
+              bigWinAutoDismissMs: presentationProfile.bigWinAutoDismissMs,
+              winPresentationAutoDismissMs: presentationProfile.winPresentationAutoDismissMs
+            });
 
-            if (autoContinueNeverStop) {
-              setBonusSummaryLocked(true);
-              bonusSummaryAutoContinueTimerRef.current = window.setTimeout(() => {
-                bonusSummaryAutoContinueTimerRef.current = null;
-                bonusSummaryShownAtRef.current = null;
-                setBonusSummaryLocked(false);
-                setBonusSummary(null);
-              }, presentationProfile.bonusNonstopAutoContinueMs);
-            } else {
+        if (summary) {
+          bonusSummaryShownAtRef.current = Date.now();
+          if (bonusSummaryLockTimerRef.current) {
+            window.clearTimeout(bonusSummaryLockTimerRef.current);
+          }
+          if (bonusSummaryAutoContinueTimerRef.current) {
+            window.clearTimeout(bonusSummaryAutoContinueTimerRef.current);
+          }
+
+          if (autoContinueNeverStop) {
+            setBonusSummaryLocked(true);
+            bonusSummaryAutoContinueTimerRef.current = window.setTimeout(() => {
+              bonusSummaryAutoContinueTimerRef.current = null;
+              bonusSummaryShownAtRef.current = null;
               setBonusSummaryLocked(false);
-            }
+              setBonusSummary(null);
+            }, presentationProfile.bonusNonstopAutoContinueMs);
           } else {
             setBonusSummaryLocked(false);
           }
+        } else {
+          setBonusSummaryLocked(false);
+        }
 
-          setBonusSummary(summary);
-          setWinPresentation(presentation);
+        setBonusSummary(summary);
+        setWinPresentation(presentation);
 
-          if (presentation && !presentation.requireAcknowledgement && presentation.autoDismissMs) {
-            presentationTimerRef.current = window.setTimeout(() => {
-              setWinPresentation(null);
-              presentationTimerRef.current = null;
-            }, presentation.autoDismissMs);
-          }
+        if (presentation && !presentation.requireAcknowledgement && presentation.autoDismissMs) {
+          presentationTimerRef.current = window.setTimeout(() => {
+            setWinPresentation(null);
+            presentationTimerRef.current = null;
+          }, presentation.autoDismissMs);
+        }
+      };
 
-          setSpinPhase("IDLE");
-        },
-          totalCascadeTimelineWithSettleMs +
-            presentationTimings.modifierFlash +
-            bonusPhaseHoldMs +
-            presentationTimings.roundEnd +
-            postBreakSafetyBufferMs)
-      );
+      const applyChoreographyEvent = (event: SpinChoreographyEvent) => {
+        setSpinPhase(event.phase);
+
+        if (event.sound) {
+          soundManager.play(event.sound.event, soundEnabled, {
+            pan: event.sound.pan,
+            intensity: event.sound.intensity ?? event.intensity
+          });
+        }
+
+        switch (event.type) {
+          case "spin_start":
+            setSpinPulseKey((current) => current + 1);
+            setPhaseMessage("The Eye draws the board.");
+            return;
+          case "board_drop":
+            setPhaseMessage("Symbols drop into place.");
+            return;
+          case "win_scan":
+            setPhaseMessage(result.totalWin > 0 ? "Winning symbols found." : "No path opened.");
+            return;
+          case "symbol_prebreak":
+            setPhaseMessage(`Cascade ${(event.cascadeIndex ?? 0) + 1}: symbols are cracking.`);
+            return;
+          case "symbol_break":
+            setPhaseMessage(
+              event.stepWin
+                ? `Cascade ${(event.cascadeIndex ?? 0) + 1}: +${formatMoney(event.stepWin)} breaks.`
+                : `Cascade ${(event.cascadeIndex ?? 0) + 1}: symbols break.`
+            );
+            return;
+          case "cascade_payout":
+            setPhaseMessage(
+              `Cascade ${(event.cascadeIndex ?? 0) + 1}: +${formatMoney(event.stepWin ?? 0)} | Total ${formatMoney(event.runningWin ?? result.totalWin)}`
+            );
+            return;
+          case "cascade_drop":
+            setPhaseMessage(`Cascade ${(event.cascadeIndex ?? 0) + 1}: board refills.`);
+            return;
+          case "multiplier_apply":
+            setPhaseMessage(`Multiplier applied: x${result.appliedWinMultiplier}.`);
+            return;
+          case "bonus_trigger":
+            setPhaseMessage("Sky Opens ignites.");
+            showBonusAnnouncement();
+            return;
+          case "round_summary":
+            setPhaseMessage(roundOutcomeMessage);
+            showRoundSummary();
+            return;
+          case "round_end":
+            setPhaseMessage(getRoundEndMessage(result, gameConfig));
+            setSpinPhase("IDLE");
+            return;
+        }
+      };
+
+      choreography.events.forEach((event) => {
+        if (event.atMs <= 0) {
+          applyChoreographyEvent(event);
+          return;
+        }
+
+        phaseTimersRef.current.push(
+          window.setTimeout(() => {
+            applyChoreographyEvent(event);
+          }, event.atMs)
+        );
+      });
     },
     [
       autoContinueNeverStop,
       clearTimers,
       gameConfig,
       presentationProfile,
-      presentationTimings,
       soundEnabled
     ]
   );
 
   const runSpin = useCallback(() => {
-    // Increment pulse key to restart animations immediately
-    setSpinPulseKey((current) => current + 1);
-
     const currentState =
       gameStateRef.current.balance === availableBalance
         ? gameStateRef.current
@@ -1626,6 +1604,7 @@ const validateAutospinCount = useCallback(
     setBonusSummaryLocked(false);
     setBonusSummary(null);
     setWinPresentation(null);
+    setChoreographyRun(null);
     setSpinPhase("IDLE");
     setPhaseMessage("Awaiting the next ritual.");
     resetSession();
@@ -1763,6 +1742,7 @@ const validateAutospinCount = useCallback(
     floatingTextFadeMs: presentationProfile.floatingTextFadeMs,
     gameState,
     lastResult,
+    choreographyRun,
     history,
     spinPhase,
     phaseMessage: displayPhaseMessage,

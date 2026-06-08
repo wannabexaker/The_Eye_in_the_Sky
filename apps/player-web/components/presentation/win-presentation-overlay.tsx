@@ -4,6 +4,9 @@ Layer: frontend (player-web)
 Uses: slot presentation state from use-slot-machine.ts
 */
 
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
 import type { WinPresentationEntry } from "@/lib/presentation/win-presentation-types";
 import type { ShellAssets } from "@/lib/assets/asset-manifest";
 import type { CSSProperties } from "react";
@@ -25,6 +28,8 @@ export function WinPresentationOverlay({
   shellAssets,
   onContinue
 }: WinPresentationOverlayProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   if (!presentation) {
     return null;
   }
@@ -50,10 +55,21 @@ export function WinPresentationOverlay({
         : presentation.kind === "super_win"
           ? shellAssets.superWinGlowPlate
           : shellAssets.bigWinGlowPlate;
+  const entranceDuration =
+    presentation.kind === "super_win"
+      ? 0.42
+      : presentation.kind === "huge_win"
+        ? 0.36
+        : presentation.kind === "big_win"
+          ? 0.32
+          : 0.24;
 
   return (
-    <div
+    <motion.div
+      animate={{ opacity: 1, scale: 1 }}
       className={`winPresentationLayer is-${presentation.kind}`}
+      exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.985 }}
+      initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.965 }}
       onClick={onContinue}
       role="presentation"
       style={
@@ -62,10 +78,21 @@ export function WinPresentationOverlay({
           "--win-multiple": presentation.winMultiple
         } as CSSProperties
       }
+      transition={{
+        duration: prefersReducedMotion ? 0.12 : entranceDuration,
+        ease: "easeOut"
+      }}
     >
-      <section
+      <motion.section
+        animate={{ opacity: 1, y: 0 }}
         aria-label={presentation.title}
         className={`winPresentationCard ${presentation.requireAcknowledgement ? "is-ack" : "is-auto"}`}
+        exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -10 }}
+        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 18 }}
+        transition={{
+          duration: prefersReducedMotion ? 0.12 : entranceDuration,
+          ease: "easeOut"
+        }}
       >
         <span className="winPresentationLabel">{presentation.title}</span>
 
@@ -108,7 +135,7 @@ export function WinPresentationOverlay({
         ) : (
           <span className="winPresentationHint">Click to continue</span>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

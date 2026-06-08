@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-08` **Refactor spin choreography into a central conductor**
+  - Intent: make no-win and multi-cascade spins feel professional-fast while keeping win clarity, audio sync, and the existing premium win/bonus summary presentation.
+  - Hypothesis: React phase timers, Pixi cascade timers, and sound cues were scheduled independently, so cascade chains accumulated dead time and the player could not clearly read each break/payout beat.
+  - Code change: added `buildSpinChoreography()` with stable event streams and timing tests; routed `use-slot-machine.ts` through that stream; made `PixiTempleBoard` consume the same run for scan/prebreak/break/payout/drop rendering; expanded synthetic WebAudio events with intensity/pan; moved win/bonus overlays to `motion/react`; made Pixi asset registration idempotent; fixed modal input blocking so only visible blocking modals disable play; added a Playwright choreography smoke for deposit fallback + guest spin at `390x844`, `1366x768`, and `1920x1080`.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web test`, and the full `corepack pnpm --filter player-web exec playwright test --timeout=300000` suite passed locally. Lint still reports pre-existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this choreography commit to return to the previous per-hook/per-board timers, legacy sound names, and CSS-only overlay presentation; keep the isolated Motion dependency merge only if future UI work still uses it.
 - `2026-06-08` **Add Motion dependency for player choreography**
   - Intent: prepare the `player-web` presentation layer for richer, declarative gameplay choreography without touching engine math or current spin sequencing.
   - Hypothesis: choreography work belongs in the React/Next player shell, so the dependency should be scoped to `player-web` instead of the workspace root.
