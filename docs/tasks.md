@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-08` **Add Motion dependency for player choreography**
+  - Intent: prepare the `player-web` presentation layer for richer, declarative gameplay choreography without touching engine math or current spin sequencing.
+  - Hypothesis: choreography work belongs in the React/Next player shell, so the dependency should be scoped to `player-web` instead of the workspace root.
+  - Code change: added `motion@12.40.0` to `apps/player-web/package.json` via `corepack pnpm --filter player-web add motion`, updating `pnpm-lock.yaml`.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed, and `corepack pnpm --filter player-web list motion --depth 1` reports `motion 12.40.0`.
+  - Rollback note: run `corepack pnpm --filter player-web remove motion` if choreography experiments choose Pixi-only timelines or another animation runtime.
 - `2026-06-05` **Baseline carry-forward: narrow-phone Samsara eye**
   - Intent: preserve the already-approved mobile e2e baseline while building the asset optimization branch from the symbol-preload base.
   - Hypothesis: `codex/fix-pixi-symbol-preload` does not contain the later narrow-phone `.samsaraEye` fix, so the final e2e suite fails at `360x640` before asset/render assertions can complete.
