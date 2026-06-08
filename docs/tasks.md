@@ -62,6 +62,48 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-08` **Add Motion dependency for player choreography**
+  - Intent: prepare the `player-web` presentation layer for richer, declarative gameplay choreography without touching engine math or current spin sequencing.
+  - Hypothesis: choreography work belongs in the React/Next player shell, so the dependency should be scoped to `player-web` instead of the workspace root.
+  - Code change: added `motion@12.40.0` to `apps/player-web/package.json` via `corepack pnpm --filter player-web add motion`, updating `pnpm-lock.yaml`.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed, and `corepack pnpm --filter player-web list motion --depth 1` reports `motion 12.40.0`.
+  - Rollback note: run `corepack pnpm --filter player-web remove motion` if choreography experiments choose Pixi-only timelines or another animation runtime.
+- `2026-06-05` **Baseline carry-forward: narrow-phone Samsara eye**
+  - Intent: preserve the already-approved mobile e2e baseline while building the asset optimization branch from the symbol-preload base.
+  - Hypothesis: `codex/fix-pixi-symbol-preload` does not contain the later narrow-phone `.samsaraEye` fix, so the final e2e suite fails at `360x640` before asset/render assertions can complete.
+  - Code change: carried forward the scoped `fluid-shell.css` fix that keeps `.samsaraEye` inside the viewport on <=430px portrait screens and keeps the dock grid box from overlapping sibling zones.
+  - Verification: `corepack pnpm --filter player-web exec playwright test --timeout=300000` passed 3/3; the `360x640` `.samsaraEye` viewport assertion is green.
+  - Rollback note: revert this carry-forward commit only if the target base already includes the same mobile shell fix.
+- `2026-06-05` **Task D low-quality particle budget**
+  - Intent: reduce idle Pixi update cost on adaptive low-quality runtimes without changing spin math, board layout, or animation sequencing.
+  - Hypothesis: ambient particle count is safe to reduce on low/mobile asset mode, while ticker idle pausing and antialias changes are riskier because they can affect presentation timing or symbol edge quality.
+  - Code change: added explicit high/low particle count constants in `pixi-temple-board.tsx` and instantiate `ParticleSystem` with 80 particles when symbol sources are using `public/assets/lite/`, otherwise keeping the existing 140.
+  - Verification: player-web typecheck, lint, unit tests, and Playwright e2e passed; mobile runtime source inspection reports `data-symbol-graphics-quality="low"` and desktop reports `high`, so the reduced particle budget only applies to lite symbol mode.
+  - Rollback note: revert the Task D commit to restore the fixed 140-particle budget everywhere.
+- `2026-06-05` **Pixi teardown console hygiene**
+  - Intent: keep asset-load verification console output clean while preserving safe teardown after adaptive Pixi mounting.
+  - Hypothesis: React dev-mode double mount can call Pixi `Application.destroy()` while internals are partially initialized, producing a cleanup warning unrelated to active rendering.
+  - Code change: hardened `safeDestroyApplication()` to stop the ticker, call Pixi destroy only when both stage and renderer are available, and silently ignore unmount cleanup races.
+  - Verification: runtime network/console smoke at `390x844` and `1366x768` reported zero `Asset not found`, `alphaMode`, null render, or Pixi destroy warnings; player-web typecheck, lint, unit tests, and Playwright e2e passed.
+  - Rollback note: revert this cleanup guard if Pixi teardown behavior needs to be debug-logged again.
+- `2026-06-05` **Task C adaptive graphics source selection**
+  - Intent: choose lighter runtime assets automatically on constrained devices without changing game logic or layout.
+  - Hypothesis: phones, low-memory devices, and small low-DPR viewports benefit more from reduced decode/upload pressure than from loading the optimized high set.
+  - Code change: added `selectRuntimeGraphicsQuality()` in `asset-manifest.ts`, read runtime DPR/device-memory/viewport hints in `page.tsx`, routed symbol sources and the Pixi remount key through `effectiveSymbolGraphicsQuality`, and kept shell/background/ouroboros assets on the saved quality so default high uses the optimized WebP shell instead of heavy lite backgrounds. The Pixi board now waits for runtime hints before mounting, avoiding both high-then-low mobile preload and low-then-high desktop preload.
+  - Verification: selector smoke returned `low` for phone and low-memory hints, `high` for desktop hints, and `low` for forced-low preference. Runtime payload inspection reported `390x844` = `2.02 MB` with lite symbols only and optimized WebP shell assets; `1366x768` = `1.19 MB` with optimized high WebP symbols only. Delayed asset reload smoke passed 15/15 with zero console warnings. Player-web typecheck, lint, unit tests, and Playwright e2e passed.
+  - Rollback note: revert the Task C commit to return to direct user-selected `graphicsQuality` source selection.
+- `2026-06-05` **Task B Pixi DPR cap**
+  - Intent: prevent high-DPR devices from allocating oversized Pixi render targets for a board that is visually constrained by the responsive shell.
+  - Hypothesis: uncapped `window.devicePixelRatio` increases GPU memory and upload cost on 3x/4x devices without meaningful symbol clarity gains after asset downsizing.
+  - Code change: added `MAX_RENDER_DPR = 2` in `pixi-temple-board.tsx` and capped Pixi `app.init({ resolution })` with `Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR)`.
+  - Verification: player-web typecheck, lint, unit tests, Playwright e2e, and viewport screenshots passed after the cap; no render errors appeared during spin smoke or delayed asset reload smoke.
+  - Rollback note: revert the Task B commit if a target high-DPR device shows unacceptable board softness; keep the optimized assets independent of DPR rollback.
+- `2026-06-05` **Task A asset optimization pipeline**
+  - Intent: reduce player startup payload by replacing oversized non-lite PNG runtime art with optimized WebP primary assets and compressed PNG fallbacks.
+  - Hypothesis: the board renders symbols around 96px and shell art at bounded viewport sizes, so multi-megabyte source PNGs waste bandwidth, memory, and GPU upload time without visible benefit.
+  - Code change: added `apps/player-web/scripts/optimize-assets.mjs` using `sharp`, wired `optimize:assets` scripts, added direct `sharp@0.33.5`, generated WebP siblings, compressed/downscaled non-lite PNG fallbacks, and updated `asset-manifest.ts` to prefer WebP then PNG for high-quality sources while leaving `public/assets/lite/` intact.
+  - Verification: `corepack pnpm --filter player-web optimize:assets` reduced non-lite PNG fallbacks from **35.31 MB** to **1.91 MB** and emitted **1.67 MB** of WebP primary assets (**3.57 MB combined**). `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit` passed. `corepack pnpm --filter player-web lint` passed with only pre-existing `<img>` and hook dependency warnings.
+  - Rollback note: revert the Task A commit to restore the original PNG assets, remove WebP source priority, and remove the optimizer script/dependency.
 - `2026-06-04` **Premium spin dock polish checkpoint**
   - Intent: preserve the approved premium spin dock state, then make the requested polish fixes without losing the current layout.
   - Hypothesis: the dock only needed scoped visual refinement: clearer hover/active feedback, a narrower SVG silhouette, slightly tighter board contact, and an adaptive Ritual Log row count based on available space.

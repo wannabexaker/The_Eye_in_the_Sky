@@ -1,11 +1,12 @@
 .badge {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  right: max(10px, env(safe-area-inset-right));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
   z-index: calc(var(--z-modal, 100) + 80);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  box-sizing: border-box;
   min-height: 28px;
   padding: 6px 10px;
   border: 1px solid rgba(226, 190, 112, 0.3);
@@ -29,12 +30,28 @@
   box-shadow: 0 0 12px rgba(226, 190, 112, 0.6);
 }
 
-@media (max-width: 767px) {
+.badge > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (orientation: portrait) and (max-width: 1024px) {
   .badge {
     top: max(8px, env(safe-area-inset-top));
-    right: max(8px, env(safe-area-inset-right));
+    left: max(8px, env(safe-area-inset-left));
+    right: auto;
+    bottom: auto;
     min-height: 24px;
     padding: 5px 8px;
     font-size: 0.58rem;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .badge {
+    top: max(8px, env(safe-area-inset-top));
+    max-width: 104px;
   }
 }

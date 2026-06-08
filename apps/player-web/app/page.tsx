@@ -53,6 +53,7 @@ import {
   getShellAssetSources,
   getShellAssets,
   getSymbolAssetSources,
+  selectRuntimeGraphicsQuality,
   type GraphicsQuality
 } from "@/lib/assets/asset-manifest";
 import { ensureGuestSession, loadGuestSession } from "@/lib/identity/guest-session";
@@ -108,6 +109,31 @@ const graphicsQualityOptions: readonly GraphicsQuality[] = ["high", "low"];
 const graphicsQualityLabels: Record<GraphicsQuality, string> = {
   high: "High",
   low: "Low"
+};
+
+type RuntimeGraphicsHints = {
+  deviceMemory?: number;
+  devicePixelRatio: number;
+  viewportWidth: number;
+};
+
+const DEFAULT_RUNTIME_GRAPHICS_HINTS: RuntimeGraphicsHints = {
+  devicePixelRatio: 1,
+  viewportWidth: 0
+};
+
+const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
+  if (typeof window === "undefined") {
+    return DEFAULT_RUNTIME_GRAPHICS_HINTS;
+  }
+
+  const nav = window.navigator as Navigator & { deviceMemory?: number };
+
+  return {
+    deviceMemory: nav.deviceMemory,
+    devicePixelRatio: window.devicePixelRatio || 1,
+    viewportWidth: Math.round(window.visualViewport?.width ?? window.innerWidth)
+  };
 };
 
 export default function HomePage() {
@@ -199,6 +225,27 @@ export default function HomePage() {
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
   const slot = useSlotMachine(activeGameConfig);
   const viewport = useViewport();
+  const [runtimeGraphicsHints, setRuntimeGraphicsHints] = useState<RuntimeGraphicsHints>(
+    DEFAULT_RUNTIME_GRAPHICS_HINTS
+  );
+  const [runtimeGraphicsHintsReady, setRuntimeGraphicsHintsReady] = useState(false);
+  const effectiveSymbolGraphicsQuality = useMemo(
+    () =>
+      runtimeGraphicsHintsReady
+        ? selectRuntimeGraphicsQuality(graphicsQuality, {
+            deviceMemory: runtimeGraphicsHints.deviceMemory,
+            devicePixelRatio: runtimeGraphicsHints.devicePixelRatio,
+            viewportWidth: runtimeGraphicsHints.viewportWidth
+          })
+        : "low",
+    [
+      graphicsQuality,
+      runtimeGraphicsHints.deviceMemory,
+      runtimeGraphicsHints.devicePixelRatio,
+      runtimeGraphicsHints.viewportWidth,
+      runtimeGraphicsHintsReady
+    ]
+  );
   const activeShellAssets = useMemo(
     () => getShellAssets(graphicsQuality),
     [graphicsQuality]
@@ -208,8 +255,8 @@ export default function HomePage() {
     [graphicsQuality]
   );
   const activeSymbolAssetSources = useMemo(
-    () => getSymbolAssetSources(graphicsQuality),
-    [graphicsQuality]
+    () => getSymbolAssetSources(effectiveSymbolGraphicsQuality),
+    [effectiveSymbolGraphicsQuality]
   );
   const ouroborosRingAsset = useMemo(
     () => getOuroborosRingAsset(graphicsQuality),
@@ -232,7 +279,23 @@ export default function HomePage() {
     ? "Guest session. Wallet is stored only in this tab session."
     : authUser
       ? `Authenticated as ${authUser.displayName} (${authUser.email}). Wallet and round state are stored on PostgreSQL.`
-      : "Login is required to restore PostgreSQL-backed wallet and round state.";
+    : "Login is required to restore PostgreSQL-backed wallet and round state.";
+
+  useEffect(() => {
+    const syncGraphicsHints = () => {
+      setRuntimeGraphicsHints(readRuntimeGraphicsHints());
+      setRuntimeGraphicsHintsReady(true);
+    };
+
+    syncGraphicsHints();
+    window.addEventListener("resize", syncGraphicsHints);
+    window.visualViewport?.addEventListener("resize", syncGraphicsHints);
+
+    return () => {
+      window.removeEventListener("resize", syncGraphicsHints);
+      window.visualViewport?.removeEventListener("resize", syncGraphicsHints);
+    };
+  }, []);
 
   useEffect(() => {
     setAuthenticatedUserId(isAuthenticated && authUser ? authUser.id : null);
@@ -372,6 +435,11 @@ export default function HomePage() {
     Boolean(slot.gameState.bonusState) &&
     !slot.bonusEntryPending &&
     !bonusAnnouncementVisible;
+  const needsDepositAttention =
+    inputAllowed &&
+    !bonusModeActive &&
+    !slot.canSpin &&
+    (slot.needsDepositPrompt || wallet.balance < slot.bet);
   const visibleBonusSpins = bonusModeActive ? slot.activeBonusSpins : 0;
   const bonusFrameActive = bonusModeActive;
   const boardFrameBackground = bonusFrameActive
@@ -1006,7 +1074,9 @@ export default function HomePage() {
       className={`slotViewport ${embedMode ? "is-embed-mode" : ""} ${fullscreenEnabled ? "is-fullscreen" : ""} ${bonusModeActive ? "is-bonus-active" : ""} ${bonusEnterCinematic ? "is-bonus-enter-cinematic" : ""} ${bonusExitCinematic ? "is-bonus-exit-cinematic" : ""} ${slot.bonusAnnouncement || slot.bonusSummary ? "is-bonus-entry" : ""} ${slot.winPresentation || slot.bonusSummary ? "is-win-presenting" : ""} ${slot.bonusAnnouncementLocked ? "is-bonus-announce-lock" : ""} ${isConstellationVariant ? "is-constellation-variant" : "is-main-cluster-variant"}`}
       data-embed={embedMode ? "1" : "0"}
       data-config-source={usingRemoteConfig ? "api" : "env"}
+      data-deposit-attention={needsDepositAttention ? "1" : "0"}
       data-graphics-quality={graphicsQuality}
+      data-symbol-graphics-quality={effectiveSymbolGraphicsQuality}
       data-math-profile={activeGameConfigProfile.profileId}
       data-orientation={viewport.orientation}
       data-viewport-band={viewport.band}
@@ -1059,18 +1129,22 @@ export default function HomePage() {
                 style={{ backgroundImage: `url(${boardFrameBackground})` }}
               />
 
-              <PixiTempleBoard
-                board={board}
-                bonusActive={bonusModeActive}
-                floatingTextFadeMs={slot.floatingTextFadeMs}
-                floatingTextHoldMs={slot.floatingTextHoldMs}
-                key={graphicsQuality}
-                phaseMessage={slot.phaseMessage}
-                presentationTimings={slot.presentationTimings}
-                result={slot.lastResult}
-                spinPhase={slot.spinPhase}
-                symbolAssetSources={activeSymbolAssetSources}
-              />
+              {runtimeGraphicsHintsReady ? (
+                <PixiTempleBoard
+                  board={board}
+                  bonusActive={bonusModeActive}
+                  floatingTextFadeMs={slot.floatingTextFadeMs}
+                  floatingTextHoldMs={slot.floatingTextHoldMs}
+                  key={effectiveSymbolGraphicsQuality}
+                  phaseMessage={slot.phaseMessage}
+                  presentationTimings={slot.presentationTimings}
+                  result={slot.lastResult}
+                  spinPhase={slot.spinPhase}
+                  symbolAssetSources={activeSymbolAssetSources}
+                />
+              ) : (
+                <div aria-hidden="true" className="boardAssetLoading" />
+              )}
             </div>
           </div>
         </div>

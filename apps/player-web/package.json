@@ -10,12 +10,14 @@
     "build:clean": "node ./scripts/guard-no-dev-server.cjs && node -e \"const fs = require('fs'); fs.rmSync('.next', {recursive: true, force: true});\" && next build",
     "start": "next start",
     "lint": "next lint",
+    "optimize:assets": "node ./scripts/optimize-assets.mjs",
     "test": "node --import tsx --test ./lib/**/*.test.ts"
   },
   "dependencies": {
     "@eye/game-engine": "workspace:*",
     "@eye/shared-types": "workspace:*",
     "@eye/ui": "workspace:*",
+    "motion": "^12.40.0",
     "next": "15.2.2",
     "pixi.js": "8.10.1",
     "react": "19.0.0",
@@ -29,6 +31,7 @@
     "@types/react-dom": "19.0.4",
     "eslint": "9.22.0",
     "eslint-config-next": "15.2.2",
+    "sharp": "0.33.5",
     "tailwindcss": "4.1.1",
     "tsx": "4.19.3",
     "typescript": "5.8.2"
