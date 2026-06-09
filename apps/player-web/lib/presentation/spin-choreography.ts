@@ -271,7 +271,6 @@ export const buildSpinChoreography = (
     });
     cursor += pacing.prebreakMs;
 
-    runningWin += cascade.stepWin;
     pushEvent({
       type: "symbol_break",
       atMs: cursor,
@@ -279,13 +278,12 @@ export const buildSpinChoreography = (
       cascadeIndex,
       wins: cascade.wins,
       cells,
-      stepWin: cascade.stepWin,
-      runningWin,
       intensity,
       sound: { event: "symbol_break", intensity, pan }
     });
     cursor += pacing.breakMs;
 
+    runningWin += cascade.stepWin;
     pushEvent({
       type: "cascade_payout",
       atMs: cursor,

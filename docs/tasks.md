@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Cascade break/audio sync and nonstop active state**
+  - Intent: make the symbol break sound, visual break, and payout reveal read in the correct order, and make the Nonstop dock toggle visibly active when enabled.
+  - Hypothesis: the choreography event order was correct, but Pixi only emitted particles on `symbol_break` and kept the winning symbols visible until the later drop, so players perceived the payout total as appearing before the symbols broke; the Nonstop toggle's active styling was being overridden by the later floating-dock stylesheet.
+  - Code change: moved win amount metadata out of `symbol_break` and into `cascade_payout`, added a Pixi break/fade state for winning cells on the same event beat as the break sound, added `aria-pressed`/`nonstopButton`, and added final `fluid-shell.css` active styling for dock toggles.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter player-web lint`, and `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000` passed; an ad-hoc Playwright check confirmed the Nonstop toggle reports `aria-pressed=true` and keeps a bright active hover background.
+  - Rollback note: revert this task's commit to restore the previous particle-only break beat and generic active dock styling.
 - `2026-06-08` **Merge-train API auth controller cleanup**
   - Intent: keep the `cleanup-pro` auth endpoint additions without duplicating controller methods after the ordered merge train.
   - Hypothesis: `feat/cleanup-pro` and the current base both carried password-management routes, so the merge preserved two method blocks and broke API TypeScript compilation.

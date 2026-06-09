@@ -513,7 +513,8 @@ export function ControlPanel({
 
             <button
               aria-label={autoContinueNeverStop ? "Disable nonstop" : "Enable nonstop"}
-              className={`dockSmallButton iconOnlyAction ${autoContinueNeverStop ? "is-active" : ""}`}
+              aria-pressed={autoContinueNeverStop}
+              className={`dockSmallButton iconOnlyAction nonstopButton ${autoContinueNeverStop ? "is-active" : ""}`}
               onMouseDown={suppressSelectionOnPointerDown}
               onClick={onToggleAutoContinueNeverStop}
               title={autoContinueNeverStop ? "Nonstop enabled: skip win overlays" : "Nonstop disabled"}

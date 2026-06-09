@@ -125,6 +125,19 @@ test("one-cascade choreography includes visual and audio beats", () => {
   ] as const) {
     assert.ok(eventTypes.includes(type), `Missing ${type}`);
   }
+  const breakEvent = run.events.find((event) => event.type === "symbol_break");
+  const payoutEvent = run.events.find((event) => event.type === "cascade_payout");
+  assert.ok(breakEvent);
+  assert.ok(payoutEvent);
+  assert.equal(breakEvent.sound?.event, "symbol_break");
+  assert.equal(breakEvent.stepWin, undefined);
+  assert.equal(breakEvent.runningWin, undefined);
+  assert.ok(
+    payoutEvent.atMs >= breakEvent.atMs + breakEvent.durationMs,
+    "payout text must wait until the break beat completes"
+  );
+  assert.equal(payoutEvent.stepWin, 0.12);
+  assert.equal(payoutEvent.runningWin, 0.12);
   assert.ok(run.events.filter((event) => event.sound).length >= 7);
 });
 

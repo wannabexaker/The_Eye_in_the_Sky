@@ -107,6 +107,8 @@ type CellSprite = {
   hovered: boolean;
   highlighted: boolean;
   pulseUntil: number;
+  breakStart: number;
+  breakDuration: number;
   breathingSeed: number;
   row: number;
   col: number;
@@ -478,6 +480,27 @@ export function PixiTempleBoard({
     cellRefs.current.forEach((cell) => {
       cell.highlighted = false;
       cell.pulseUntil = 0;
+    });
+  };
+
+  const clearBreakingCells = () => {
+    cellRefs.current.forEach((cell) => {
+      cell.breakStart = 0;
+      cell.breakDuration = 0;
+    });
+  };
+
+  const startBreakingCells = (wins: CascadeWin[], durationMs: number) => {
+    const cells = wins.flatMap((win) => win.cells);
+    const now = performance.now();
+    const duration = Math.max(120, durationMs);
+
+    cells.forEach((cell) => {
+      const sprite = cellRefs.current[cell.row * cols + cell.col];
+      if (sprite) {
+        sprite.breakStart = now - Math.min(40, duration * 0.24);
+        sprite.breakDuration = duration;
+      }
     });
   };
 
@@ -870,12 +893,14 @@ export function PixiTempleBoard({
                 }
                 setDisplayBoard(cascade.boardBefore);
                 clearWinningCells();
+                clearBreakingCells();
                 return;
               case "win_scan":
               case "symbol_prebreak":
                 markWinningCells(cascade.wins);
                 return;
               case "symbol_break":
+                startBreakingCells(cascade.wins, event.durationMs);
                 emitWinParticles(cascade.wins);
                 return;
               case "cascade_payout":
@@ -884,6 +909,7 @@ export function PixiTempleBoard({
               case "cascade_drop":
                 activeCascadeDropDurationRef.current = event.durationMs;
                 clearWinningCells();
+                clearBreakingCells();
                 pendingCascadeWaveRef.current = true;
                 setDisplayBoard(cascade.boardAfter);
                 return;
@@ -1191,6 +1217,8 @@ export function PixiTempleBoard({
             hovered: false,
             highlighted: false,
             pulseUntil: 0,
+            breakStart: 0,
+            breakDuration: 0,
             breathingSeed: Math.random() * Math.PI * 2,
             row,
             col
@@ -1356,18 +1384,36 @@ export function PixiTempleBoard({
           const scale = 1 + breathing + hoverBoost + focusBoost;
           const animationAlpha = animating ? 0.38 + progress * 0.62 : 1;
           const focusAlpha = focusActive && !cell.highlighted ? 0.42 : 1;
+          const breakActive =
+            cell.breakDuration > 0 &&
+            now >= cell.breakStart &&
+            now <= cell.breakStart + cell.breakDuration;
+          const breakProgress = breakActive
+            ? Math.min(1, Math.max(0, (now - cell.breakStart) / cell.breakDuration))
+            : 0;
+          const breakEase = easeOutCubic(breakProgress);
+          const breakAlpha = breakActive ? Math.max(0.08, 1 - breakEase * 0.94) : 1;
+          const breakScale = breakActive ? 1 + Math.sin(breakProgress * Math.PI) * 0.18 : 1;
+          const breakShake = breakActive ? Math.sin(now / 12 + cell.row * 1.7 + cell.col) * (1 - breakProgress) * 3.2 : 0;
+          const breakShakeY = breakActive ? Math.cos(now / 13 + cell.col * 1.4) * (1 - breakProgress) * 2.4 : 0;
 
-          cell.container.x = cell.baseX + shake;
-          cell.container.y = animatedY + shakeY;
-          cell.container.scale.set(scale);
-          cell.container.alpha = Math.min(animationAlpha, focusAlpha);
+          cell.container.x = cell.baseX + shake + breakShake;
+          cell.container.y = animatedY + shakeY + breakShakeY;
+          cell.container.scale.set(scale * breakScale);
+          cell.container.alpha = Math.min(animationAlpha, focusAlpha, breakAlpha);
 
           cell.glow.alpha =
             (cell.hovered ? 0.14 : 0.04) +
-            (cell.highlighted ? (pulseActive ? 0.28 : 0.2) : 0);
+            (cell.highlighted ? (pulseActive ? 0.28 : 0.2) : 0) +
+            (breakActive ? (1 - breakProgress) * 0.28 : 0);
 
           if (progress >= 1) {
             cell.animating = false;
+          }
+
+          if (cell.breakDuration > 0 && now > cell.breakStart + cell.breakDuration) {
+            cell.breakStart = 0;
+            cell.breakDuration = 0;
           }
         });
 
