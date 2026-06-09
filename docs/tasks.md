@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Info/menu separation and utility rail swap**
+  - Intent: make the bottom-left Info button behave as a true game-information entry point and move the audio mixer into the old Info position.
+  - Hypothesis: mixing rules/paytable/symbol explanations inside Menu made Menu feel like a help drawer instead of a settings/action panel, while Info incorrectly opened round status/history.
+  - Code change: added a dedicated `infoOpen` modal state, changed both support rails to order utility actions as Menu -> Info -> Audio -> Fullscreen, moved Game Rules, Active Variant, Paytable, Special Symbols & Bonus into a new `Game Info` modal, added FAQ rows, and left Menu with settings/actions only.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web test`, ad-hoc Playwright desktop/mobile Info/Menu smoke, and graphify rebuild passed. Lint still reports existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore Info as round/history access and return rules/paytable/symbols to Menu.
 - `2026-06-09` **Choreography sync, bonus entry, multiplier safety, and SFX mix hotfix**
   - Intent: make break SFX line up with visible symbol cracking/breaking, prevent Samsara bonus entry from freezing after no-win triggers, stop the x2/x3 Win Multiplier EV exploit, and make SFX audible over 25% music.
   - Hypothesis: board-critical audio was still split between React timers and Pixi timers, no-win choreography returned before scheduling `bonus_trigger`, and the engine applied requested win multipliers directly without a tuned risk profile.

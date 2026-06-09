@@ -191,6 +191,7 @@ export default function HomePage() {
     hasHydrated,
     debugPanelOpen,
     historyOpen,
+    infoOpen,
     settingsOpen,
     depositOpen,
     withdrawOpen,
@@ -280,6 +281,7 @@ export default function HomePage() {
     welcomeBlockingOpen ||
     debugPanelOpen ||
     historyOpen ||
+    infoOpen ||
     settingsOpen ||
     depositOpen ||
     withdrawOpen ||
@@ -496,6 +498,47 @@ export default function HomePage() {
           effect: "Converts part of one random column into wilds. During bonus it also adds +1 sticky multiplier."
         }
       ];
+  const infoFaqRows = isConstellationVariant
+    ? ([
+        {
+          label: "What counts as a win?",
+          value: `${activeGameConfig.clusterThreshold}+ matching symbols anywhere on the board. Symbols do not need to touch.`
+        },
+        {
+          label: "What starts Sky Opens?",
+          value: `4+ Samsara scatters trigger Sky Opens. Higher scatter counts can award stronger starts: ${simpleScatterSummary}.`
+        },
+        {
+          label: "Do cascades change the result?",
+          value:
+            "No. The engine resolves the round first. Cascades only show the already-resolved sequence clearly."
+        },
+        {
+          label: "Why are x2 and x3 locked?",
+          value:
+            "They stay locked until separate risk-mode math lowers hit rate and passes RTP simulation. Active play uses x1."
+        }
+      ] as const)
+    : ([
+        {
+          label: "What counts as a win?",
+          value: `${activeGameConfig.clusterThreshold}+ matching symbols connected orthogonally on the board.`
+        },
+        {
+          label: "What starts Sky Opens?",
+          value: `${activeGameConfig.bonusMeterTarget} collected Samsara symbols fill the meter and open ${activeGameConfig.bonusSpinsAwarded} free spins.`
+        },
+        {
+          label: "Do animations change payouts?",
+          value:
+            "No. The engine resolves the round first. Choreography, sound, and overlays only present the resolved result."
+        },
+        {
+          label: "Why are x2 and x3 locked?",
+          value:
+            "They stay locked until separate risk-mode math lowers hit rate and passes RTP simulation. Active play uses x1."
+        }
+      ] as const);
 
   const board = slot.lastResult?.board ?? Array.from({ length: activeGameConfig.rows }, () =>
     Array.from({ length: activeGameConfig.cols }, () => "ashen_sigil")
@@ -884,6 +927,7 @@ export default function HomePage() {
     debugPanelOpen,
     depositOpen,
     historyOpen,
+    infoOpen,
     paymentMethodsOpen,
     settingsOpen,
     slot,
@@ -1246,7 +1290,7 @@ export default function HomePage() {
             onSetMusicVolume={setMusicVolume}
             onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
-            onToggleHistory={toggleHistory}
+            onToggleInfo={() => toggleModal("infoOpen")}
             onToggleSettings={toggleSettings}
             onToggleSound={handleToggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
@@ -1278,7 +1322,7 @@ export default function HomePage() {
             onSetMusicVolume={setMusicVolume}
             onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
-            onToggleHistory={toggleHistory}
+            onToggleInfo={() => toggleModal("infoOpen")}
             onToggleSettings={toggleSettings}
             onToggleSound={handleToggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
@@ -1463,6 +1507,42 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="modalSection menuSectionAnalytics">
+          <p className="eyebrow">Session Analytics</p>
+          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+            {roundsLog.length > 0
+              ? `${roundsLog.length.toLocaleString()} rounds tracked. View RTP trend, win distribution, cascade histogram, and export CSV.`
+              : "Play rounds to start tracking analytics."}
+          </p>
+          <button
+            className="welcomeButton compactPrimary"
+            onClick={() => {
+              toggleSettings();
+              toggleModal("analyticsOpen");
+            }}
+            type="button"
+          >
+            Open Session Analytics
+          </button>
+        </section>
+
+        <section className="modalSection menuSectionWakeLock">
+          <p className="eyebrow">Screen Wake Lock</p>
+          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+            Keep the screen awake during gameplay on supported devices.
+          </p>
+          <div className="chipRow">
+            <WakeLockToggle {...wakeLock} />
+          </div>
+        </section>
+
+      </OverlayModal>
+
+      <OverlayModal
+        onClose={() => toggleModal("infoOpen")}
+        open={infoOpen}
+        title="Game Info"
+      >
         <section className="modalSection menuSectionRules">
           <p className="eyebrow">{isConstellationVariant ? "Constellation Rules" : "Game Rules"}</p>
           <div className="menuRuleTable">
@@ -1474,6 +1554,31 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+
+        {isConstellationVariant ? (
+          <section className="modalSection menuSectionVariant">
+            <p className="eyebrow">Active Variant</p>
+            <div className="menuVariantHero">
+              <div className="menuVariantHeader">
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="menuVariantIcon"
+                  src={activeSymbolAssetSources.samsara[0]}
+                />
+                <div>
+                  <strong>Constellation Simple</strong>
+                  <span>Count-anywhere pays with scatter-led Sky Opens.</span>
+                </div>
+              </div>
+              <div className="menuVariantPills">
+                <span>Scatter Trigger</span>
+                <span>Anywhere Pays</span>
+                <span>Seraphim Eye Multipliers</span>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="modalSection menuSectionPaytable">
           <p className="eyebrow">{isConstellationVariant ? "Constellation Paytable" : "Paytable"}</p>
@@ -1511,7 +1616,7 @@ export default function HomePage() {
                       const multiplier = entry.payouts[size];
                       return (
                         <td key={`${entry.symbol}-${size}`}>
-                          {typeof multiplier === "number" ? formatMoney(slot.bet * multiplier) : "—"}
+                          {typeof multiplier === "number" ? formatMoney(slot.bet * multiplier) : "-"}
                         </td>
                       );
                     })}
@@ -1521,60 +1626,6 @@ export default function HomePage() {
             </table>
           </div>
         </section>
-
-        <section className="modalSection menuSectionAnalytics">
-          <p className="eyebrow">Session Analytics</p>
-          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
-            {roundsLog.length > 0
-              ? `${roundsLog.length.toLocaleString()} rounds tracked. View RTP trend, win distribution, cascade histogram, and export CSV.`
-              : "Play rounds to start tracking analytics."}
-          </p>
-          <button
-            className="welcomeButton compactPrimary"
-            onClick={() => {
-              toggleSettings();
-              toggleModal("analyticsOpen");
-            }}
-            type="button"
-          >
-            Open Session Analytics
-          </button>
-        </section>
-
-        <section className="modalSection menuSectionWakeLock">
-          <p className="eyebrow">Screen Wake Lock</p>
-          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
-            Keep the screen awake during gameplay on supported devices.
-          </p>
-          <div className="chipRow">
-            <WakeLockToggle {...wakeLock} />
-          </div>
-        </section>
-
-        {isConstellationVariant ? (
-          <section className="modalSection menuSectionVariant">
-            <p className="eyebrow">Active Variant</p>
-            <div className="menuVariantHero">
-              <div className="menuVariantHeader">
-                <img
-                  alt=""
-                  aria-hidden="true"
-                  className="menuVariantIcon"
-                  src={activeSymbolAssetSources.samsara[0]}
-                />
-                <div>
-                  <strong>Constellation Simple</strong>
-                  <span>Count-anywhere pays with scatter-led Sky Opens.</span>
-                </div>
-              </div>
-              <div className="menuVariantPills">
-                <span>Scatter Trigger</span>
-                <span>Anywhere Pays</span>
-                <span>Seraphim Eye Multipliers</span>
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         <section className="modalSection menuSectionSymbols">
           <p className="eyebrow">
@@ -1611,6 +1662,18 @@ export default function HomePage() {
                   : `Triggering the meter awards ${activeGameConfig.bonusSpinsAwarded} free spins. The collected Samsara pool becomes the bonus budget, split across the bonus and spent per spin. Ouroboros and Panepoptis can raise the sticky bonus multiplier up to x${activeGameConfig.maxBonusMultiplier}.`}
               </p>
             </article>
+          </div>
+        </section>
+
+        <section className="modalSection menuSectionFaq">
+          <p className="eyebrow">FAQ</p>
+          <div className="menuRuleTable">
+            {infoFaqRows.map((row) => (
+              <div className="menuRuleRow" key={row.label}>
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
+              </div>
+            ))}
           </div>
         </section>
       </OverlayModal>

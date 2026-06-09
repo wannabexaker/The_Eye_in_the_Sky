@@ -82,6 +82,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
 - Spin CTA identity layers should remain mounted across pulse effects; remount only transient pulse/ripple layers, not the persistent ouroboros ring.
+- Utility rail information/settings split: `Info` is read-only game information only (rules, active variant, paytable, special symbols/bonus, FAQ). `Menu` keeps only settings, session actions, and tool entry points. The support rail order is `Menu`, `Info`, `Audio`, `Fullscreen`.
 
 ## Presentation Choreography Contract
 - Spin presentation is driven by a single conductor: `buildSpinChoreography(result, profile, options)`.

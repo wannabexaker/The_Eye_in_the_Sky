@@ -37,7 +37,7 @@ type LeftSupportRailProps = {
   onToggleSound: () => void;
   onSetMusicVolume: (volume: number) => void;
   onSetSfxVolume: (volume: number) => void;
-  onToggleHistory: () => void;
+  onToggleInfo: () => void;
   onToggleSettings: () => void;
   onToggleFullscreen: () => void;
 };
@@ -93,12 +93,11 @@ export function LeftSupportRail({
   onToggleSound,
   onSetMusicVolume,
   onSetSfxVolume,
-  onToggleHistory,
+  onToggleInfo,
   onToggleSettings,
   onToggleFullscreen
 }: LeftSupportRailProps) {
   const [showMore, setShowMore] = useState(false);
-  const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const [adaptiveVisibleEntries, setAdaptiveVisibleEntries] = useState(MIN_VISIBLE_ENTRIES);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -106,12 +105,6 @@ export function LeftSupportRail({
   const portraitView =
     viewport.orientation === "portrait" && viewport.width / Math.max(viewport.height, 1) <= 10 / 16;
   const handheldPortraitView = portraitView && viewport.band === "phone";
-
-  useEffect(() => {
-    if (!handheldPortraitView) {
-      setMobileRoundStatusOpen(false);
-    }
-  }, [handheldPortraitView]);
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
   const defaultVisibleEntries = Math.max(MIN_VISIBLE_ENTRIES, adaptiveVisibleEntries);
@@ -228,7 +221,7 @@ export function LeftSupportRail({
 
   return (
     <aside
-      className={`leftRail supportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
+      className={`leftRail supportRail ${handheldPortraitView ? "is-handheld-portrait" : ""}`}
     >
       <section
         className="compactPanel supportBlock treasuryBlock"
@@ -385,53 +378,32 @@ export function LeftSupportRail({
       </section>
 
       <div className="supportRailUtilityBar">
-        {handheldPortraitView && mobileRoundStatusOpen ? (
-          <section
-            className="compactPanel supportBlock supportStatusContextWindow"
-            title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows bonus spins currently active."
-          >
-            <div className="panelHeader">
-              <p className="eyebrow">Round Status</p>
-            </div>
-            <div className="supportStatusStrip">
-              <div
-                className="miniStat supportMiniStat supportMiniStatRound"
-                title="Round total win from the latest resolved spin."
-              >
-                <span>Round</span>
-                <strong>{roundWin.toFixed(2)}</strong>
-              </div>
-              <div className="supportStatusBottomRow">
-                <div
-                  className="miniStat supportMiniStat supportMiniStatCascade"
-                  title="Cascade count from the latest resolved spin."
-                >
-                  <span>Cascade</span>
-                  <strong>{cascades}</strong>
-                </div>
-                <div
-                  className="miniStat supportMiniStat"
-                  title="Bonus spins currently active or gained after bonus triggers."
-                >
-                  <span>Spins</span>
-                  <strong>{freeSpins}</strong>
-                </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
         <button
           aria-label="Menu"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
           onClick={onToggleSettings}
-          title="Open settings and game menu"
+          title="Open settings menu"
           type="button"
         >
           <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
             <path d="M5 8h14" />
             <path d="M5 12h14" />
             <path d="M5 16h14" />
+          </svg>
+        </button>
+
+        <button
+          aria-label="Info"
+          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
+          onClick={onToggleInfo}
+          title="Open game rules, paytable, symbols, and FAQ"
+          type="button"
+        >
+          <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" fill="none" r="8" />
+            <path d="M12 10v5" />
+            <path d="M11 15h2" />
+            <circle cx="12" cy="7.4" fill="currentColor" r="1" stroke="none" />
           </svg>
         </button>
 
@@ -443,34 +415,6 @@ export function LeftSupportRail({
           sfxVolume={sfxVolume}
           soundEnabled={soundEnabled}
         />
-
-        <button
-          aria-label="Info"
-          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
-          onClick={() => {
-            if (handheldPortraitView) {
-              setMobileRoundStatusOpen((current) => !current);
-              return;
-            }
-
-            onToggleHistory();
-          }}
-          title={
-            handheldPortraitView
-              ? mobileRoundStatusOpen
-                ? "Hide round status panel"
-                : "Show round status panel"
-              : "Open round info and recent history"
-          }
-          type="button"
-        >
-          <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" fill="none" r="8" />
-            <path d="M12 10v5" />
-            <path d="M11 15h2" />
-            <circle cx="12" cy="7.4" fill="currentColor" r="1" stroke="none" />
-          </svg>
-        </button>
 
         <button
           aria-label={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}

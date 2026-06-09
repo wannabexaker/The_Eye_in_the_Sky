@@ -103,6 +103,7 @@ export type PlayerAuthSource = "internal" | "external" | null;
 type ModalKey =
   | "debugPanelOpen"
   | "settingsOpen"
+  | "infoOpen"
   | "historyOpen"
   | "depositOpen"
   | "withdrawOpen"
@@ -146,6 +147,7 @@ type PlayerUiState = {
   autoContinueNeverStop: boolean;
   debugPanelOpen: boolean;
   settingsOpen: boolean;
+  infoOpen: boolean;
   historyOpen: boolean;
   depositOpen: boolean;
   withdrawOpen: boolean;
@@ -460,6 +462,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       autoContinueNeverStop: false,
       debugPanelOpen: false,
       settingsOpen: false,
+      infoOpen: false,
       historyOpen: false,
       depositOpen: false,
       withdrawOpen: false,
@@ -993,6 +996,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             paymentMethodsOpen: false,
             walletHistoryOpen: false,
             analyticsOpen: false,
+            infoOpen: false,
             historyOpen: false
           };
         }),
@@ -1024,6 +1028,7 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           paymentMethodsOpen: false,
           walletHistoryOpen: false,
           analyticsOpen: false,
+          infoOpen: false,
           historyOpen: false
         });
       },
@@ -1072,7 +1077,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           withdrawOpen: false,
           paymentMethodsOpen: false,
           walletHistoryOpen: false,
-          analyticsOpen: false
+          analyticsOpen: false,
+          infoOpen: false,
+          historyOpen: false
         })),
       setAuthSource: (source) => set({ authSource: source }),
       setAuthenticatedUserId: (userId) =>

@@ -271,6 +271,7 @@
     .supportRail.is-handheld-portrait {
       left: 50%;
       bottom: var(--portrait-rail-bottom);
+      z-index: var(--z-dock-popover);
       transform: translateX(-50%);
       width: var(--portrait-rail-width);
       max-width: none;
@@ -478,6 +479,7 @@
     .supportRail.is-handheld-portrait .supportRailUtilityBar {
       position: relative;
       grid-area: utility;
+      z-index: var(--z-dock-popover);
       justify-content: center;
       gap: 5px;
       padding-top: 0;

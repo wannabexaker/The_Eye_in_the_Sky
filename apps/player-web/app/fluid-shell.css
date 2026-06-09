@@ -595,6 +595,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 }
 
 .fluidShell .supportRailUtilityButton {
+  z-index: var(--z-dock-popover);
   width: 24px;
   height: 24px;
   min-width: 24px;
@@ -1142,8 +1143,13 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 
   .fluidShell .supportRailUtilityBar {
+    z-index: var(--z-dock-popover);
     min-height: 22px;
     align-self: end;
+  }
+
+  .fluidShell .supportRail.is-handheld-portrait {
+    z-index: var(--z-dock-popover);
   }
 
   .fluidShell .floatingGameDockInner {

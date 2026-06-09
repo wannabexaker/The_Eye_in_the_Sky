@@ -2355,7 +2355,8 @@ p {
   margin-top: 14px;
 }
 
-.overlayModal[aria-label="Menu"] .overlayBody {
+.overlayModal[aria-label="Menu"] .overlayBody,
+.overlayModal[aria-label="Game Info"] .overlayBody {
   display: flex;
   flex-direction: column;
 }
@@ -2380,20 +2381,24 @@ p {
   order: 5;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionVariant {
-  order: 6;
+.overlayModal[aria-label="Game Info"] .menuSectionRules {
+  order: 1;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionRules {
-  order: 7;
+.overlayModal[aria-label="Game Info"] .menuSectionVariant {
+  order: 2;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionSymbols {
-  order: 8;
+.overlayModal[aria-label="Game Info"] .menuSectionPaytable {
+  order: 3;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionPaytable {
-  order: 9;
+.overlayModal[aria-label="Game Info"] .menuSectionSymbols {
+  order: 4;
+}
+
+.overlayModal[aria-label="Game Info"] .menuSectionFaq {
+  order: 5;
 }
 
 .compactModalPanel {
