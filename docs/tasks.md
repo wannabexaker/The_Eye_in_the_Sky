@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **CI auth validation response fix**
+  - Intent: make the pushed `main` pass the GitHub Actions `CI` quality job after the verified merge train release.
+  - Hypothesis: `/auth/register` used a custom fallback validation error body that returned `{ error, details }` instead of the documented `{ code, message, fieldErrors }` auth error contract, causing the isolated API e2e step to fail.
+  - Code change: added field-error extraction to `parseRegisterOrBadRequest()` and made register validation failures include `code`, `message`, and `fieldErrors` while preserving existing specialized password/display-name metadata.
+  - Verification: `corepack pnpm --filter api test:e2e`, `corepack pnpm -r --if-present typecheck`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, and graphify rebuild passed. Lint still reports existing player-web `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this fix commit only if register-specific weak-password/display-name codes are redesigned with matching e2e expectations and frontend field-error mapping.
 - `2026-06-09` **Info/menu separation and utility rail swap**
   - Intent: make the bottom-left Info button behave as a true game-information entry point and move the audio mixer into the old Info position.
   - Hypothesis: mixing rules/paytable/symbol explanations inside Menu made Menu feel like a help drawer instead of a settings/action panel, while Info incorrectly opened round status/history.

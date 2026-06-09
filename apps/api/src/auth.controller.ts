@@ -16,6 +16,15 @@ const getValidationDetails = (issues: Array<{ path: readonly PropertyKey[]; mess
     message: issue.message
   }));
 
+const getFieldErrors = (issues: Array<{ path: readonly PropertyKey[]; message: string }>) =>
+  issues.reduce<Record<string, string>>((accumulator, issue) => {
+    const path = issue.path.join(".") || "form";
+    if (!accumulator[path]) {
+      accumulator[path] = issue.message;
+    }
+    return accumulator;
+  }, {});
+
 const parseRegisterOrBadRequest = (body: unknown) => {
   const result = validators.authRegister.safeParse(body);
   if (result.success) {
@@ -23,6 +32,7 @@ const parseRegisterOrBadRequest = (body: unknown) => {
   }
 
   const details = getValidationDetails(result.error.issues);
+  const fieldErrors = getFieldErrors(result.error.issues);
   const hasPasswordIssue = result.error.issues.some((issue) => issue.path.join(".") === "password");
   const hasDisplayNameIssue = result.error.issues.some((issue) => issue.path.join(".") === "displayName");
 
@@ -31,6 +41,7 @@ const parseRegisterOrBadRequest = (body: unknown) => {
       code: "WEAK_PASSWORD",
       message: "Password must be at least 8 characters.",
       reason: "Min 8 characters.",
+      fieldErrors,
       details
     });
   }
@@ -40,12 +51,15 @@ const parseRegisterOrBadRequest = (body: unknown) => {
       code: "INVALID_DISPLAY_NAME",
       message: "Display name contains invalid characters.",
       reason: "Use letters, numbers, spaces, underscores, or hyphens.",
+      fieldErrors,
       details
     });
   }
 
   throw new BadRequestException({
-    error: "Validation failed",
+    code: "VALIDATION_FAILED",
+    message: "Validation failed",
+    fieldErrors,
     details
   });
 };
