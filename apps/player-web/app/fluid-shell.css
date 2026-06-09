@@ -1069,6 +1069,10 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
       env(safe-area-inset-left, 0px);
   }
 
+  .fluidShell.machineStage {
+    row-gap: 10px;
+  }
+
   .fluidShell .brandingRail .brandLogo {
     width: min(100%, clamp(120px, 36vw, 140px));
   }
@@ -1128,9 +1132,36 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     height: 6px;
   }
 
+  .fluidShell .supportStatusBlock {
+    align-self: end;
+  }
+
+  .fluidShell .supportStatusBlock .panelHeader {
+    display: none;
+  }
+
+  .fluidShell .supportStatusStrip {
+    grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 0.95fr));
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .fluidShell .supportStatusBottomRow {
+    display: contents;
+  }
+
   .fluidShell .supportMiniStat {
-    min-height: 22px;
-    padding: 2px 5px;
+    min-height: 34px;
+    padding: 3px 4px;
+  }
+
+  .fluidShell .supportRail .supportMiniStat span {
+    font-size: 0.46rem;
+    letter-spacing: 0.08em;
+  }
+
+  .fluidShell .supportRail .supportMiniStat strong {
+    font-size: 0.72rem;
   }
 
   .fluidShell .supportHistory {
@@ -1149,6 +1180,10 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 
   .fluidShell .supportRail.is-handheld-portrait {
+    z-index: var(--z-dock);
+  }
+
+  .fluidShell .floatingGameDock {
     z-index: var(--z-dock-popover);
   }
 

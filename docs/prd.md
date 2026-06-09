@@ -106,6 +106,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Tablet/laptop portrait keeps rails visible with a wider bottom support layout instead of using the phone handheld rail compression.
 - Shell layering must use named `--z-*` tokens. Do not add raw numeric `z-index` values or inline `calc(var(--z-*) + n)` offsets in active layout rules.
 - Narrow phone support-rail controls, including the Samsara eye, must stay fully inside the viewport while preserving the full-width board.
+- Phone portrait must keep a positive visual gap between the support rail and spin dock. The primary spin CTA must never render behind `Round Status`, `Ritual Log`, or utility panels.
 
 ## Olamov Embed Contract
 - `player-web` supports iframe mode through `?embed=1`; this trims the shell by hiding the right branding rail while keeping board, left support rail, floating dock, and auth flows active.

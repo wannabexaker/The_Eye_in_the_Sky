@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Phone portrait spin dock/support rail separation**
+  - Intent: fix the mobile portrait UI issue where the SPIN button could render behind the lower support rail in Brave/phone view.
+  - Hypothesis: the active `fluid-shell.css` phone portrait layer used only a 4px row gap and placed `.supportRail.is-handheld-portrait` above the dock, so the spin CTA overhang was visually clipped by `Round Status`.
+  - Code change: increased the phone portrait shell row gap, put the floating dock above the handheld support rail using existing named z-index tokens, and compacted `Round / Cascade / Spins` into one phone-only status row so it no longer overflows into the dock zone.
+  - Verification: `390x844` geometry showed `supportSpin/statusSpin/statusDock/utilityDock = 0`; `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web test`, and `corepack pnpm --filter player-web exec playwright test e2e/fluid-shell.spec.ts e2e/responsive.spec.ts --reporter=line --timeout=300000` passed. Lint still reports existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this CSS/docs entry if the next mobile screenshot shows the dock covering support controls instead of separating cleanly.
 - `2026-06-09` **Live verify retry window hardening**
   - Intent: prevent the GitHub Actions `Build` workflow from failing after successful image builds just because `eye.olamov.com` needs more than 60 seconds to return HTTP 200 or the live deployment is separate from image publishing.
   - Hypothesis: the pushed `v0.1.6` commit built and pushed the API image successfully, and the live site returned HTTP 200 shortly after the workflow failed, so the verify step was too impatient and too strict for deployment propagation.
