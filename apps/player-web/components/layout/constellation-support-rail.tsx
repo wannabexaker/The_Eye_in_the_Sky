@@ -8,6 +8,7 @@ Uses: wallet actions, status state, and scatter trigger summary
 
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
+import { AudioControlPopover } from "@/components/audio/audio-control-popover";
 import type { SymbolAssetSources } from "@/lib/assets/asset-manifest";
 import { useViewport } from "@/hooks/useViewport";
 
@@ -28,10 +29,14 @@ type ConstellationSupportRailProps = {
   }>;
   history: SpinResult[];
   soundEnabled: boolean;
+  musicVolume: number;
+  sfxVolume: number;
   fullscreenEnabled: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
   onToggleSound: () => void;
+  onSetMusicVolume: (volume: number) => void;
+  onSetSfxVolume: (volume: number) => void;
   onToggleHistory: () => void;
   onToggleSettings: () => void;
   onToggleFullscreen: () => void;
@@ -76,10 +81,14 @@ export function ConstellationSupportRail({
   scatterRewards,
   history,
   soundEnabled,
+  musicVolume,
+  sfxVolume,
   fullscreenEnabled,
   onDeposit,
   onWithdraw,
   onToggleSound,
+  onSetMusicVolume,
+  onSetSfxVolume,
   onToggleHistory,
   onToggleSettings,
   onToggleFullscreen
@@ -449,27 +458,14 @@ export function ConstellationSupportRail({
           </svg>
         </button>
 
-        <button
-          aria-label={soundEnabled ? "Mute sound" : "Unmute sound"}
-          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
-          onClick={onToggleSound}
-          title={soundEnabled ? "Mute game sound" : "Unmute game sound"}
-          type="button"
-        >
-          {soundEnabled ? (
-            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
-              <path d="M4 10h4l5-4v12l-5-4H4z" />
-              <path d="M16.5 9a4 4 0 0 1 0 6" />
-              <path d="M18.7 6.8a7 7 0 0 1 0 10.4" />
-            </svg>
-          ) : (
-            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
-              <path d="M4 10h4l5-4v12l-5-4H4z" />
-              <path d="M16 9l4 6" />
-              <path d="M20 9l-4 6" />
-            </svg>
-          )}
-        </button>
+        <AudioControlPopover
+          musicVolume={musicVolume}
+          onSetMusicVolume={onSetMusicVolume}
+          onSetSfxVolume={onSetSfxVolume}
+          onToggleSound={onToggleSound}
+          sfxVolume={sfxVolume}
+          soundEnabled={soundEnabled}
+        />
 
         <button
           aria-label="Info"

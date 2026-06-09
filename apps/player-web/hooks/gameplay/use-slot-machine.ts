@@ -497,6 +497,7 @@ const buildWinPresentation = (
 export function useSlotMachine(gameConfig: GameConfig) {
   const {
     soundEnabled,
+    sfxVolume,
     spinAnimationSpeed,
     setSpinAnimationSpeed,
     autoContinueNeverStop,
@@ -1122,7 +1123,7 @@ const validateAutospinCount = useCallback(
       const applyChoreographyEvent = (event: SpinChoreographyEvent) => {
         setSpinPhase(event.phase);
 
-        if (event.sound) {
+        if (event.sound && event.type !== "symbol_break") {
           soundManager.play(event.sound.event, soundEnabled, {
             pan: event.sound.pan,
             intensity: event.sound.intensity ?? event.intensity
@@ -1197,6 +1198,10 @@ const validateAutospinCount = useCallback(
       soundEnabled
     ]
   );
+
+  useEffect(() => {
+    soundManager.setVolume(sfxVolume);
+  }, [sfxVolume]);
 
   const runSpin = useCallback(() => {
     const currentState =

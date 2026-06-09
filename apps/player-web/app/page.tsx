@@ -30,6 +30,8 @@ import { useSlotMachine } from "@/hooks/gameplay/use-slot-machine";
 import { useRuntimeGameConfig } from "@/hooks/use-runtime-game-config";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
 import { useViewport } from "@/hooks/useViewport";
+import { musicManager } from "@/lib/audio/music-manager";
+import { soundManager } from "@/lib/audio/sound-manager";
 import {
   changePlayerPassword,
   claimPlayerWelcomeBonus,
@@ -57,6 +59,7 @@ import {
   type GraphicsQuality
 } from "@/lib/assets/asset-manifest";
 import { ensureGuestSession, loadGuestSession } from "@/lib/identity/guest-session";
+import type { SpinChoreographyEvent } from "@/lib/presentation/spin-choreography";
 import { initPlayerStoreCrossTabSync, usePlayerUiStore } from "@/lib/state/player-store";
 
 const formatWalletRow = (
@@ -196,6 +199,8 @@ export default function HomePage() {
     analyticsOpen,
     welcomeOpen,
     soundEnabled,
+    musicVolume,
+    sfxVolume,
     graphicsQuality,
     autoContinueNeverStop,
     wallet,
@@ -213,7 +218,9 @@ export default function HomePage() {
     toggleDebugPanel,
     toggleHistory,
     toggleSettings,
-    toggleSound,
+    setSoundEnabled,
+    setMusicVolume,
+    setSfxVolume,
     toggleModal,
     setGraphicsQuality,
     setAutoContinueNeverStop,
@@ -286,6 +293,62 @@ export default function HomePage() {
       (slot.canSpin || Boolean(slot.bonusAnnouncement || slot.bonusSummary || slot.winPresentation)),
     [inputAllowed, slot.bonusAnnouncement, slot.bonusSummary, slot.canSpin, slot.winPresentation]
   );
+
+  useEffect(() => {
+    soundManager.setVolume(sfxVolume);
+  }, [sfxVolume]);
+
+  useEffect(() => {
+    musicManager.configure({ enabled: soundEnabled, volume: musicVolume });
+  }, [musicVolume, soundEnabled]);
+
+  useEffect(() => {
+    const primeAudio = () => {
+      soundManager.prime();
+      musicManager.prime();
+    };
+
+    window.addEventListener("pointerdown", primeAudio, { passive: true });
+    window.addEventListener("keydown", primeAudio);
+
+    return () => {
+      window.removeEventListener("pointerdown", primeAudio);
+      window.removeEventListener("keydown", primeAudio);
+    };
+  }, []);
+
+  const handleChoreographySound = useCallback(
+    (event: SpinChoreographyEvent) => {
+      if (!event.sound) {
+        return;
+      }
+
+      soundManager.setVolume(sfxVolume);
+      soundManager.play(event.sound.event, soundEnabled, {
+        pan: event.sound.pan,
+        intensity: event.sound.intensity ?? event.intensity
+      });
+    },
+    [sfxVolume, soundEnabled]
+  );
+
+  const handleToggleSound = useCallback(() => {
+    const nextSoundEnabled = !soundEnabled;
+
+    setSoundEnabled(nextSoundEnabled);
+
+    if (!nextSoundEnabled) {
+      musicManager.configure({ enabled: false, volume: musicVolume });
+      soundManager.setVolume(0);
+      return;
+    }
+
+    soundManager.setVolume(sfxVolume);
+    musicManager.configure({ enabled: true, volume: musicVolume });
+    soundManager.prime();
+    musicManager.prime();
+  }, [musicVolume, setSoundEnabled, sfxVolume, soundEnabled]);
+
   const sessionCardTitle = isSimulatorMode
     ? "Guest session. Wallet is stored only in this tab session."
     : authUser
@@ -1154,6 +1217,7 @@ export default function HomePage() {
                   floatingTextFadeMs={slot.floatingTextFadeMs}
                   floatingTextHoldMs={slot.floatingTextHoldMs}
                   key={effectiveSymbolGraphicsQuality}
+                  onChoreographySound={handleChoreographySound}
                   phaseMessage={slot.phaseMessage}
                   presentationTimings={slot.presentationTimings}
                   result={slot.lastResult}
@@ -1177,14 +1241,18 @@ export default function HomePage() {
             currentBet={formatMoneyCompactEur(slot.bet)}
             freeSpins={visibleBonusSpins}
             history={slot.history}
+            musicVolume={musicVolume}
             onDeposit={() => toggleModal("depositOpen")}
+            onSetMusicVolume={setMusicVolume}
+            onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
             onToggleHistory={toggleHistory}
             onToggleSettings={toggleSettings}
-            onToggleSound={toggleSound}
+            onToggleSound={handleToggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
             roundWin={latestRound?.totalWin ?? 0}
             scatterRewards={activeGameConfig.scatterRewards}
+            sfxVolume={sfxVolume}
             symbolAssetSources={activeSymbolAssetSources}
             fullscreenEnabled={fullscreenEnabled}
             soundEnabled={soundEnabled}
@@ -1205,13 +1273,17 @@ export default function HomePage() {
             meterEyeSrc={activeShellAssets.meterEye}
             meterRatio={slot.meterRatio}
             meterTarget={activeGameConfig.bonusMeterTarget}
+            musicVolume={musicVolume}
             onDeposit={() => toggleModal("depositOpen")}
+            onSetMusicVolume={setMusicVolume}
+            onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
             onToggleHistory={toggleHistory}
             onToggleSettings={toggleSettings}
-            onToggleSound={toggleSound}
+            onToggleSound={handleToggleSound}
             onWithdraw={() => toggleModal("withdrawOpen")}
             roundWin={latestRound?.totalWin ?? 0}
+            sfxVolume={sfxVolume}
             fullscreenEnabled={fullscreenEnabled}
             soundEnabled={soundEnabled}
           />

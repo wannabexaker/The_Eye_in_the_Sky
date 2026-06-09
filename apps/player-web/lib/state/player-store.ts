@@ -33,6 +33,13 @@ const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
 const ANALYTICS_LOG_PERSIST_KEY = "eye-in-the-sky-rounds-log";
 const SAMSARA_PROGRESS_TTL_MS = 60 * 60 * 1000;
 const ANALYTICS_MAX_ROUNDS = 10000;
+const DEFAULT_MUSIC_VOLUME = 0.35;
+const DEFAULT_SFX_VOLUME = 0.85;
+
+const clampAudioVolume = (value: unknown, fallback: number) =>
+  typeof value === "number" && Number.isFinite(value)
+    ? Math.min(1, Math.max(0, value))
+    : fallback;
 
 // Rounds log is persisted in a separate localStorage key to avoid serializing
 // potentially thousands of entries on every spin, which blocks the main thread.
@@ -132,6 +139,8 @@ type PlayerUiState = {
   authenticatedUserId: string | null;
   hasHydrated: boolean;
   soundEnabled: boolean;
+  musicVolume: number;
+  sfxVolume: number;
   graphicsQuality: GraphicsQuality;
   spinAnimationSpeed: SpinAnimationSpeed;
   autoContinueNeverStop: boolean;
@@ -163,6 +172,9 @@ type PlayerUiState = {
   withdrawalDraft: WithdrawalDraft;
   paymentMethodDraft: PaymentMethodDraft;
   toggleSound: () => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  setMusicVolume: (volume: number) => void;
+  setSfxVolume: (volume: number) => void;
   setGraphicsQuality: (quality: GraphicsQuality) => void;
   setSpinAnimationSpeed: (speed: SpinAnimationSpeed) => void;
   setAutoContinueNeverStop: (value: boolean) => void;
@@ -439,7 +451,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       runtimeMode: "authenticated",
       authSource: null,
       authenticatedUserId: null,
-      soundEnabled: false,
+      soundEnabled: true,
+      musicVolume: DEFAULT_MUSIC_VOLUME,
+      sfxVolume: DEFAULT_SFX_VOLUME,
       graphicsQuality: "high",
       hasHydrated: false,
       spinAnimationSpeed: DEFAULT_SPIN_ANIMATION_SPEED,
@@ -478,6 +492,9 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       withdrawalDraft: baseWithdrawalDraft(),
       paymentMethodDraft: basePaymentMethodDraft(),
       toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      setMusicVolume: (volume) => set({ musicVolume: clampAudioVolume(volume, DEFAULT_MUSIC_VOLUME) }),
+      setSfxVolume: (volume) => set({ sfxVolume: clampAudioVolume(volume, DEFAULT_SFX_VOLUME) }),
       setGraphicsQuality: (quality) =>
         set({ graphicsQuality: quality === "low" ? "low" : "high" }),
       setSpinAnimationSpeed: (speed) => set({ spinAnimationSpeed: speed }),
@@ -1154,6 +1171,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
           ...currentState,
           ...persisted,
           runtimeMode,
+          musicVolume: clampAudioVolume(persisted.musicVolume, DEFAULT_MUSIC_VOLUME),
+          sfxVolume: clampAudioVolume(persisted.sfxVolume, DEFAULT_SFX_VOLUME),
           graphicsQuality: persisted.graphicsQuality === "low" ? "low" : "high",
           authenticatedUserId: runtimeMode === "simulator" ? null : persistedAuthenticatedUserId,
           authSource: runtimeMode === "simulator" ? null : persisted.authSource ?? currentState.authSource,
@@ -1211,6 +1230,8 @@ export const usePlayerUiStore = create<PlayerUiState>()(
       partialize: (state) => ({
         runtimeMode: state.runtimeMode,
         soundEnabled: state.soundEnabled,
+        musicVolume: state.musicVolume,
+        sfxVolume: state.sfxVolume,
         graphicsQuality: state.graphicsQuality,
         spinAnimationSpeed: state.spinAnimationSpeed,
         autoContinueNeverStop: state.autoContinueNeverStop,

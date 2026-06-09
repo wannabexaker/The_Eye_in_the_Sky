@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Background music mixer and Pixi-synced break SFX**
+  - Intent: make cascade break sound and symbol break start on the same visual frame, and replace the old one-button mute with a compact Music/SFX mixer that also controls automatic background music.
+  - Hypothesis: `symbol_break` SFX fired from the React choreography timer could lead the Pixi visual update by a render/effect beat, so moving that sound trigger into the Pixi break handler should remove the perceived audio-first delay; music and SFX need separate persisted volume values behind the same global mute.
+  - Code change: routed `symbol_break` sound through `PixiTempleBoard.onChoreographySound`, skipped that event in the hook-level sound scheduler, added persisted `musicVolume`/`sfxVolume`, added an HTMLAudioElement music playlist manager, organized the 4 root MP3s under `player-web/public/assets/audio/music/`, and replaced the support-rail sound button with a two-slider audio popover.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000`, and an ad-hoc Playwright audio mixer check passed. Lint still reports pre-existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore hook-scheduled break SFX, the old mute-only rail button, and no automatic background playlist.
 - `2026-06-09` **Cascade break/audio sync and nonstop active state**
   - Intent: make the symbol break sound, visual break, and payout reveal read in the correct order, and make the Nonstop dock toggle visibly active when enabled.
   - Hypothesis: the choreography event order was correct, but Pixi only emitted particles on `symbol_break` and kept the winning symbols visible until the later drop, so players perceived the payout total as appearing before the symbols broke; the Nonstop toggle's active styling was being overridden by the later floating-dock stylesheet.

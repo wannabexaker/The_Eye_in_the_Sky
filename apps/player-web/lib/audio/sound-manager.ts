@@ -49,6 +49,8 @@ class SoundManager {
 
   private noiseBuffer: AudioBuffer | null = null;
 
+  private volume = 1;
+
   private getContext() {
     if (typeof window === "undefined") {
       return null;
@@ -75,6 +77,10 @@ class SoundManager {
     }
   }
 
+  setVolume(volume: number) {
+    this.volume = Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : 1;
+  }
+
   /*
   Purpose: plays a named game sound preset
   Layer: frontend (player-web)
@@ -94,7 +100,10 @@ class SoundManager {
     const now = context.currentTime;
     const output = context.createGain();
     const intensity = Math.max(0.2, Math.min(2, options.intensity ?? 1));
-    const volume = Math.min(0.12, preset.volume * (0.72 + intensity * 0.38));
+    const volume = Math.min(0.12, preset.volume * (0.72 + intensity * 0.38)) * this.volume;
+    if (volume <= 0.0001) {
+      return;
+    }
     const panner = typeof StereoPannerNode !== "undefined"
       ? new StereoPannerNode(context, { pan: options.pan ?? 0 })
       : null;

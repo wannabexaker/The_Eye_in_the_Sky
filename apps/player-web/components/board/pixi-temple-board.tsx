@@ -147,6 +147,7 @@ type Props = {
   phaseMessage: string;
   bonusActive: boolean;
   choreographyRun: SpinChoreographyRun | null;
+  onChoreographySound?: (event: SpinChoreographyEvent) => void;
   presentationTimings: SpinPresentationTimings;
   floatingTextHoldMs: number;
   floatingTextFadeMs: number;
@@ -314,6 +315,7 @@ export function PixiTempleBoard({
   phaseMessage,
   bonusActive,
   choreographyRun,
+  onChoreographySound,
   presentationTimings,
   floatingTextHoldMs,
   floatingTextFadeMs,
@@ -363,6 +365,11 @@ export function PixiTempleBoard({
   const [hoveredSymbol, setHoveredSymbol] = useState<{ label: string; x: number; y: number } | null>(null);
   const [texturesReady, setTexturesReady] = useState(false);
   const displayBoardRef = useRef(displayBoard);
+  const onChoreographySoundRef = useRef(onChoreographySound);
+
+  useEffect(() => {
+    onChoreographySoundRef.current = onChoreographySound;
+  }, [onChoreographySound]);
 
   const safeDestroyApplication = useCallback((target: Application | null) => {
     if (!target) {
@@ -901,6 +908,7 @@ export function PixiTempleBoard({
                 return;
               case "symbol_break":
                 startBreakingCells(cascade.wins, event.durationMs);
+                onChoreographySoundRef.current?.(event);
                 emitWinParticles(cascade.wins);
                 return;
               case "cascade_payout":
