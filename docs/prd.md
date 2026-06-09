@@ -82,6 +82,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
 - Grid area isolation: use `.` (empty grid cell) to prevent child elements from extending into unintended rows
 - Spin CTA identity layers should remain mounted across pulse effects; remount only transient pulse/ripple layers, not the persistent ouroboros ring.
+- Utility rail information/settings split: `Info` is read-only game information only (rules, active variant, paytable, special symbols/bonus, FAQ). `Menu` keeps only settings, session actions, and tool entry points. The support rail order is `Menu`, `Info`, `Audio`, `Fullscreen`.
 
 ## Presentation Choreography Contract
 - Spin presentation is driven by a single conductor: `buildSpinChoreography(result, profile, options)`.
@@ -804,6 +805,18 @@ and not only on naive width breakpoints.
   - isolate one layer at a time
   - restore the previous layer before testing the next one
   - keep code comments on board-layer ownership so shell debugging does not restart from zero
+
+## Architecture Updates (2026-06-01)
+- Auth error contract now intentionally returns typed client-facing codes for internal auth failures:
+  - `EMAIL_NOT_FOUND` -> 404
+  - `WRONG_PASSWORD` -> 401
+  - `EMAIL_TAKEN` -> 409
+  - `WEAK_PASSWORD` / `INVALID_DISPLAY_NAME` -> 400
+  - zod validation failures keep the existing field-level issue list shape.
+- Password change is session-retaining by design: `POST /auth/change-password` rotates only `passwordHash` after current-password verification. Existing `AuthSession` rows remain valid.
+- Forgot/reset password uses a DB-backed `PasswordResetToken` model with 30-minute TTL. Non-production responses may include the raw token because no SMTP provider exists; production omits it. Successful reset rotates `passwordHash`, marks the token used, and invalidates all sessions for that player.
+- Guest mode is a player-web-only local runtime mode. It uses sessionStorage and in-memory state, never creates `User` / `Player` rows, and must not call player persistence endpoints.
+- Olamov iframe integration uses the existing `eye.olamov.com` build. Player-web sends `Content-Security-Policy: frame-ancestors 'self' https://*.olamov.com https://olamov.com`; API CORS allows `https://olamov.com` and `https://eye.olamov.com`; cookies switch to `SameSite=None; Secure` when `COOKIE_SECURE=true`.
 
 - `2026-03-27`
   - Wired live math-profile activation end to end so the admin-selected profile now drives `player-web` at runtime through the API instead of remaining an env-only/static choice

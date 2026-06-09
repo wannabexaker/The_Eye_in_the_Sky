@@ -164,10 +164,7 @@ export const resolveSpin = (
 ): SpinResult => {
   const seedUsed = options.seed ?? createRuntimeSeed();
   const random = createSeededRandom(seedUsed);
-  const requestedWinMultiplier = options.winMultiplier ?? 1;
-  const appliedWinMultiplier = config.winMultiplierOptions.includes(requestedWinMultiplier)
-    ? requestedWinMultiplier
-    : 1;
+  const appliedWinMultiplier = 1;
   const mode = options.state.bonusState?.freeSpinsRemaining ? "bonus" : "base";
   let chargedBet = mode === "bonus" ? 0 : options.bet;
   let effectiveBet = options.bet;

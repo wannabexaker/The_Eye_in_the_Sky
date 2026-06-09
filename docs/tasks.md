@@ -62,6 +62,36 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Info/menu separation and utility rail swap**
+  - Intent: make the bottom-left Info button behave as a true game-information entry point and move the audio mixer into the old Info position.
+  - Hypothesis: mixing rules/paytable/symbol explanations inside Menu made Menu feel like a help drawer instead of a settings/action panel, while Info incorrectly opened round status/history.
+  - Code change: added a dedicated `infoOpen` modal state, changed both support rails to order utility actions as Menu -> Info -> Audio -> Fullscreen, moved Game Rules, Active Variant, Paytable, Special Symbols & Bonus into a new `Game Info` modal, added FAQ rows, and left Menu with settings/actions only.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web test`, ad-hoc Playwright desktop/mobile Info/Menu smoke, and graphify rebuild passed. Lint still reports existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore Info as round/history access and return rules/paytable/symbols to Menu.
+- `2026-06-09` **Choreography sync, bonus entry, multiplier safety, and SFX mix hotfix**
+  - Intent: make break SFX line up with visible symbol cracking/breaking, prevent Samsara bonus entry from freezing after no-win triggers, stop the x2/x3 Win Multiplier EV exploit, and make SFX audible over 25% music.
+  - Hypothesis: board-critical audio was still split between React timers and Pixi timers, no-win choreography returned before scheduling `bonus_trigger`, and the engine applied requested win multipliers directly without a tuned risk profile.
+  - Code change: routed cascade board-critical sounds through the Pixi RAF event runner, added visible prebreak cracking, made no-win bonus spins emit `bonus_trigger`/`bonus_open` instead of `loss`, locked engine/player/UI win multipliers to x1, set music default to 25%, raised SFX presets, and added a WebAudio compressor.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter @eye/game-engine lint`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter @eye/game-engine test`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000`, an ad-hoc Playwright audio/multiplier UI check, and x1/x3 lock simulations passed. Lint still reports pre-existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore the previous React/Pixi split timing, no-win loss flow, active x2/x3 multiplier behavior, and quieter SFX mix.
+- `2026-06-09` **Background music mixer and Pixi-synced break SFX**
+  - Intent: make cascade break sound and symbol break start on the same visual frame, and replace the old one-button mute with a compact Music/SFX mixer that also controls automatic background music.
+  - Hypothesis: `symbol_break` SFX fired from the React choreography timer could lead the Pixi visual update by a render/effect beat, so moving that sound trigger into the Pixi break handler should remove the perceived audio-first delay; music and SFX need separate persisted volume values behind the same global mute.
+  - Code change: routed `symbol_break` sound through `PixiTempleBoard.onChoreographySound`, skipped that event in the hook-level sound scheduler, added persisted `musicVolume`/`sfxVolume`, added an HTMLAudioElement music playlist manager, organized the 4 root MP3s under `player-web/public/assets/audio/music/`, and replaced the support-rail sound button with a two-slider audio popover.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000`, and an ad-hoc Playwright audio mixer check passed. Lint still reports pre-existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore hook-scheduled break SFX, the old mute-only rail button, and no automatic background playlist.
+- `2026-06-09` **Cascade break/audio sync and nonstop active state**
+  - Intent: make the symbol break sound, visual break, and payout reveal read in the correct order, and make the Nonstop dock toggle visibly active when enabled.
+  - Hypothesis: the choreography event order was correct, but Pixi only emitted particles on `symbol_break` and kept the winning symbols visible until the later drop, so players perceived the payout total as appearing before the symbols broke; the Nonstop toggle's active styling was being overridden by the later floating-dock stylesheet.
+  - Code change: moved win amount metadata out of `symbol_break` and into `cascade_payout`, added a Pixi break/fade state for winning cells on the same event beat as the break sound, added `aria-pressed`/`nonstopButton`, and added final `fluid-shell.css` active styling for dock toggles.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter player-web lint`, and `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000` passed; an ad-hoc Playwright check confirmed the Nonstop toggle reports `aria-pressed=true` and keeps a bright active hover background.
+  - Rollback note: revert this task's commit to restore the previous particle-only break beat and generic active dock styling.
+- `2026-06-08` **Merge-train API auth controller cleanup**
+  - Intent: keep the `cleanup-pro` auth endpoint additions without duplicating controller methods after the ordered merge train.
+  - Hypothesis: `feat/cleanup-pro` and the current base both carried password-management routes, so the merge preserved two method blocks and broke API TypeScript compilation.
+  - Code change: removed the stale duplicate `change-password`, `forgot-password`, and `reset-password` controller block while keeping the newer `changePassword(payload, currentUser)` call signature.
+  - Verification: discovered by `corepack pnpm -r lint`; rerun required after this cleanup.
+  - Rollback note: revert this cleanup only if the auth controller is rebuilt from a single source branch and TypeScript confirms there is one route implementation per endpoint.
 - `2026-06-08` **Refactor spin choreography into a central conductor**
   - Intent: make no-win and multi-cascade spins feel professional-fast while keeping win clarity, audio sync, and the existing premium win/bonus summary presentation.
   - Hypothesis: React phase timers, Pixi cascade timers, and sound cues were scheduled independently, so cascade chains accumulated dead time and the player could not clearly read each break/payout beat.

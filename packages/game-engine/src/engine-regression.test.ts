@@ -131,6 +131,27 @@ test("bonus state transitions correctly from base spin into bonus spin and bonus
   assert.equal(bonusResult.walletDelta, bonusResult.totalWin);
 });
 
+test("requested win multipliers above x1 are locked until tuned risk profiles exist", () => {
+  const state = initialGameState(1000);
+  const standardResult = resolveSpin({
+    bet: 20,
+    state,
+    seed: 8181,
+    winMultiplier: 1
+  });
+  const lockedResult = resolveSpin({
+    bet: 20,
+    state,
+    seed: 8181,
+    winMultiplier: 3
+  });
+
+  assert.equal(lockedResult.appliedWinMultiplier, 1);
+  assert.equal(lockedResult.roundSummary.appliedWinMultiplier, 1);
+  assert.equal(lockedResult.totalWin, standardResult.totalWin);
+  assert.equal(lockedResult.balanceAfter, standardResult.balanceAfter);
+});
+
 test("base-spin bonus trigger never over-awards extra free-spin bundles in the same spin", () => {
   const baseState = {
     ...initialGameState(1000),

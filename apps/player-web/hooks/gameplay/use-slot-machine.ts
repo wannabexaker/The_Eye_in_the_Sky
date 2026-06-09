@@ -259,6 +259,19 @@ const hasMultiplierEvent = (result: SpinResult) =>
 const isConstellationVariant = (gameConfig: GameConfig) =>
   gameConfig.variantId === "constellation_simple";
 
+const ACTIVE_WIN_MULTIPLIER = 1;
+
+const isPixiBoardCriticalEvent = (event: SpinChoreographyEvent) =>
+  event.cascadeIndex !== undefined &&
+  (
+    event.type === "board_drop" ||
+    event.type === "win_scan" ||
+    event.type === "symbol_prebreak" ||
+    event.type === "symbol_break" ||
+    event.type === "cascade_payout" ||
+    event.type === "cascade_drop"
+  );
+
 const getFreeSpinLabel = (gameConfig: GameConfig) =>
   isConstellationVariant(gameConfig) ? "Constellation Spins" : "Free Spins";
 
@@ -497,6 +510,7 @@ const buildWinPresentation = (
 export function useSlotMachine(gameConfig: GameConfig) {
   const {
     soundEnabled,
+    sfxVolume,
     spinAnimationSpeed,
     setSpinAnimationSpeed,
     autoContinueNeverStop,
@@ -605,7 +619,7 @@ export function useSlotMachine(gameConfig: GameConfig) {
     gameStateRef.current = resetState;
     previousBonusStateRef.current = resetState.bonusState;
     betRef.current = MIN_BET;
-    winMultiplierRef.current = gameConfig.winMultiplierOptions[0] ?? 1;
+    winMultiplierRef.current = ACTIVE_WIN_MULTIPLIER;
 
     setGameState(resetState);
     setLastResult(null);
@@ -616,7 +630,7 @@ export function useSlotMachine(gameConfig: GameConfig) {
     setBetValidationTooltip("");
     setBetRiskMessage("");
     setBetRiskTooltip("");
-    setWinMultiplier(gameConfig.winMultiplierOptions[0] ?? 1);
+    setWinMultiplier(ACTIVE_WIN_MULTIPLIER);
     setRequestedAutospinCount(DEFAULT_AUTOSPIN_COUNT);
     setAutospinCountInput(String(DEFAULT_AUTOSPIN_COUNT));
     setAutospinValidationMessage("");
@@ -1025,9 +1039,10 @@ const validateAutospinCount = useCallback(
         !result.bonusStateBefore &&
         Boolean(result.nextState.bonusState);
       const shouldRunBonusEntryCue = hasBonusTrigger(result) || bonusEntryTransition;
+      const hasBonusTriggerCue = choreography.events.some((event) => event.type === "bonus_trigger");
 
       setChoreographyRun(choreography);
-      setBonusEntryPending(bonusEntryTransition);
+      setBonusEntryPending(bonusEntryTransition && hasBonusTriggerCue);
 
       const roundOutcomeMessage = result.bonusTriggered
         ? "Sky Opens ignites."
@@ -1122,7 +1137,7 @@ const validateAutospinCount = useCallback(
       const applyChoreographyEvent = (event: SpinChoreographyEvent) => {
         setSpinPhase(event.phase);
 
-        if (event.sound) {
+        if (event.sound && !isPixiBoardCriticalEvent(event)) {
           soundManager.play(event.sound.event, soundEnabled, {
             pan: event.sound.pan,
             intensity: event.sound.intensity ?? event.intensity
@@ -1188,6 +1203,14 @@ const validateAutospinCount = useCallback(
           }, event.atMs)
         );
       });
+
+      if (shouldRunBonusEntryCue && bonusEntryTransition && !hasBonusTriggerCue) {
+        phaseTimersRef.current.push(
+          window.setTimeout(() => {
+            showBonusAnnouncement();
+          }, 0)
+        );
+      }
     },
     [
       autoContinueNeverStop,
@@ -1198,6 +1221,10 @@ const validateAutospinCount = useCallback(
     ]
   );
 
+  useEffect(() => {
+    soundManager.setVolume(sfxVolume);
+  }, [sfxVolume]);
+
   const runSpin = useCallback(() => {
     const currentState =
       gameStateRef.current.balance === availableBalance
@@ -1207,7 +1234,7 @@ const validateAutospinCount = useCallback(
             balance: availableBalance
           };
     const currentBet = betRef.current;
-    const currentWinMultiplier = winMultiplierRef.current;
+    const currentWinMultiplier = ACTIVE_WIN_MULTIPLIER;
     const canRun = Boolean(currentState.bonusState) || availableBalance >= currentBet;
 
     if (!canRun) {
@@ -1735,7 +1762,9 @@ const validateAutospinCount = useCallback(
       setAutospinValidationMessage("");
     },
     applyManualAutospinCount,
-    setWinMultiplier,
+    setWinMultiplier: (_value: number) => {
+      setWinMultiplier(ACTIVE_WIN_MULTIPLIER);
+    },
     setSpinAnimationSpeed,
     presentationTimings,
     floatingTextHoldMs: presentationProfile.floatingTextHoldMs,

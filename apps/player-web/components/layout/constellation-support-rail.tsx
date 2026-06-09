@@ -8,6 +8,7 @@ Uses: wallet actions, status state, and scatter trigger summary
 
 import type { SpinResult } from "@eye/game-engine";
 import { useEffect, useRef, useState } from "react";
+import { AudioControlPopover } from "@/components/audio/audio-control-popover";
 import type { SymbolAssetSources } from "@/lib/assets/asset-manifest";
 import { useViewport } from "@/hooks/useViewport";
 
@@ -28,11 +29,15 @@ type ConstellationSupportRailProps = {
   }>;
   history: SpinResult[];
   soundEnabled: boolean;
+  musicVolume: number;
+  sfxVolume: number;
   fullscreenEnabled: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
   onToggleSound: () => void;
-  onToggleHistory: () => void;
+  onSetMusicVolume: (volume: number) => void;
+  onSetSfxVolume: (volume: number) => void;
+  onToggleInfo: () => void;
   onToggleSettings: () => void;
   onToggleFullscreen: () => void;
 };
@@ -76,16 +81,19 @@ export function ConstellationSupportRail({
   scatterRewards,
   history,
   soundEnabled,
+  musicVolume,
+  sfxVolume,
   fullscreenEnabled,
   onDeposit,
   onWithdraw,
   onToggleSound,
-  onToggleHistory,
+  onSetMusicVolume,
+  onSetSfxVolume,
+  onToggleInfo,
   onToggleSettings,
   onToggleFullscreen
 }: ConstellationSupportRailProps) {
   const [showMore, setShowMore] = useState(false);
-  const [mobileRoundStatusOpen, setMobileRoundStatusOpen] = useState(false);
   const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const [adaptiveVisibleEntries, setAdaptiveVisibleEntries] = useState(MIN_VISIBLE_ENTRIES);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -93,12 +101,6 @@ export function ConstellationSupportRail({
   const portraitView =
     viewport.orientation === "portrait" && viewport.width / Math.max(viewport.height, 1) <= 10 / 16;
   const handheldPortraitView = portraitView && viewport.band === "phone";
-
-  useEffect(() => {
-    if (!handheldPortraitView) {
-      setMobileRoundStatusOpen(false);
-    }
-  }, [handheldPortraitView]);
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
   const defaultVisibleEntries = Math.max(MIN_VISIBLE_ENTRIES, adaptiveVisibleEntries);
@@ -215,7 +217,7 @@ export function ConstellationSupportRail({
 
   return (
     <aside
-      className={`leftRail supportRail constellationSupportRail ${handheldPortraitView ? "is-handheld-portrait" : ""} ${mobileRoundStatusOpen ? "is-mobile-status-open" : ""}`}
+      className={`leftRail supportRail constellationSupportRail ${handheldPortraitView ? "is-handheld-portrait" : ""}`}
     >
       <section
         className="compactPanel supportBlock treasuryBlock constellationTreasuryBlock"
@@ -399,47 +401,11 @@ export function ConstellationSupportRail({
       </section>
 
       <div className="supportRailUtilityBar constellationSupportUtilityBar">
-        {handheldPortraitView && mobileRoundStatusOpen ? (
-          <section
-            className="compactPanel supportBlock supportStatusContextWindow"
-            title="Round status for the current resolved spin. Round shows the payout total, Cascade shows how many chained clears happened, and Spins shows active constellation spins."
-          >
-            <div className="panelHeader">
-              <p className="eyebrow">Round Status</p>
-            </div>
-            <div className="supportStatusStrip">
-              <div
-                className="miniStat supportMiniStat supportMiniStatRound"
-                title="Round total win from the latest resolved spin."
-              >
-                <span>Round</span>
-                <strong>{roundWin.toFixed(2)}</strong>
-              </div>
-              <div className="supportStatusBottomRow">
-                <div
-                  className="miniStat supportMiniStat supportMiniStatCascade"
-                  title="Cascade count from the latest resolved spin."
-                >
-                  <span>Cascade</span>
-                  <strong>{cascades}</strong>
-                </div>
-                <div
-                  className="miniStat supportMiniStat"
-                  title="Bonus spins currently active or gained after bonus triggers."
-                >
-                  <span>Spins</span>
-                  <strong>{freeSpins}</strong>
-                </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
         <button
           aria-label="Menu"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
           onClick={onToggleSettings}
-          title="Open settings and game menu"
+          title="Open settings menu"
           type="button"
         >
           <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
@@ -450,45 +416,10 @@ export function ConstellationSupportRail({
         </button>
 
         <button
-          aria-label={soundEnabled ? "Mute sound" : "Unmute sound"}
-          className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
-          onClick={onToggleSound}
-          title={soundEnabled ? "Mute game sound" : "Unmute game sound"}
-          type="button"
-        >
-          {soundEnabled ? (
-            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
-              <path d="M4 10h4l5-4v12l-5-4H4z" />
-              <path d="M16.5 9a4 4 0 0 1 0 6" />
-              <path d="M18.7 6.8a7 7 0 0 1 0 10.4" />
-            </svg>
-          ) : (
-            <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
-              <path d="M4 10h4l5-4v12l-5-4H4z" />
-              <path d="M16 9l4 6" />
-              <path d="M20 9l-4 6" />
-            </svg>
-          )}
-        </button>
-
-        <button
           aria-label="Info"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"
-          onClick={() => {
-            if (handheldPortraitView) {
-              setMobileRoundStatusOpen((current) => !current);
-              return;
-            }
-
-            onToggleHistory();
-          }}
-          title={
-            handheldPortraitView
-              ? mobileRoundStatusOpen
-                ? "Hide round status panel"
-                : "Show round status panel"
-              : "Open round info and recent history"
-          }
+          onClick={onToggleInfo}
+          title="Open game rules, paytable, symbols, and FAQ"
           type="button"
         >
           <svg aria-hidden="true" className="utilityIcon" viewBox="0 0 24 24">
@@ -498,6 +429,15 @@ export function ConstellationSupportRail({
             <circle cx="12" cy="7.4" fill="currentColor" r="1" stroke="none" />
           </svg>
         </button>
+
+        <AudioControlPopover
+          musicVolume={musicVolume}
+          onSetMusicVolume={onSetMusicVolume}
+          onSetSfxVolume={onSetSfxVolume}
+          onToggleSound={onToggleSound}
+          sfxVolume={sfxVolume}
+          soundEnabled={soundEnabled}
+        />
 
         <button
           aria-label={fullscreenEnabled ? "Exit fullscreen" : "Enter fullscreen"}

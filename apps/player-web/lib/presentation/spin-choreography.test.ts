@@ -109,6 +109,50 @@ test("no-win choreography stays short and ordered", () => {
   ]);
 });
 
+test("no-win bonus trigger opens bonus cue instead of loss", () => {
+  const result = buildResult([], {
+    bonusTriggered: true,
+    bonusStateAfter: {
+      mode: "sky_opens",
+      freeSpinsRemaining: 7,
+      totalBonusWin: 0,
+      stickyMultiplier: 1,
+      betPerSpin: 0.1,
+      initialBonusBudget: 1,
+      remainingBonusBudget: 1,
+      preBonusBet: 0.1
+    },
+    roundSummary: {
+      ...buildResult([]).roundSummary,
+      roundId: "no-win-bonus",
+      bonusTriggered: true
+    },
+    nextState: {
+      balance: 100,
+      bonusMeter: 0,
+      bonusState: {
+        mode: "sky_opens",
+        freeSpinsRemaining: 7,
+        totalBonusWin: 0,
+        stickyMultiplier: 1,
+        betPerSpin: 0.1,
+        initialBonusBudget: 1,
+        remainingBonusBudget: 1,
+        preBonusBet: 0.1
+      },
+      lastTotalWin: 0,
+      samsaraCollectedBets: 1,
+      samsaraContributionLog: [1]
+    }
+  });
+  const run = build(result);
+  const eventTypes = run.events.map((event) => event.type);
+
+  assert.ok(eventTypes.includes("bonus_trigger"));
+  assert.ok(!run.events.some((event) => event.sound?.event === "loss"));
+  assert.ok(run.events.some((event) => event.type === "bonus_trigger" && event.sound?.event === "bonus_open"));
+});
+
 test("one-cascade choreography includes visual and audio beats", () => {
   const run = build(buildResult([buildCascade(0, 0.12)]));
   const eventTypes = run.events.map((event) => event.type);
@@ -125,6 +169,19 @@ test("one-cascade choreography includes visual and audio beats", () => {
   ] as const) {
     assert.ok(eventTypes.includes(type), `Missing ${type}`);
   }
+  const breakEvent = run.events.find((event) => event.type === "symbol_break");
+  const payoutEvent = run.events.find((event) => event.type === "cascade_payout");
+  assert.ok(breakEvent);
+  assert.ok(payoutEvent);
+  assert.equal(breakEvent.sound?.event, "symbol_break");
+  assert.equal(breakEvent.stepWin, undefined);
+  assert.equal(breakEvent.runningWin, undefined);
+  assert.ok(
+    payoutEvent.atMs >= breakEvent.atMs + breakEvent.durationMs,
+    "payout text must wait until the break beat completes"
+  );
+  assert.equal(payoutEvent.stepWin, 0.12);
+  assert.equal(payoutEvent.runningWin, 0.12);
   assert.ok(run.events.filter((event) => event.sound).length >= 7);
 });
 

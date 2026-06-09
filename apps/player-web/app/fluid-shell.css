@@ -234,7 +234,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   padding: 0;
   align-content: stretch;
   justify-self: stretch;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   transform: none;
 }
@@ -582,6 +582,8 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 }
 
 .fluidShell .supportRailUtilityBar {
+  position: relative;
+  z-index: var(--z-autoplay-popover);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -589,13 +591,117 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   min-height: 24px;
   padding: 0;
   margin: 0;
+  overflow: visible;
 }
 
 .fluidShell .supportRailUtilityButton {
+  z-index: var(--z-dock-popover);
   width: 24px;
   height: 24px;
   min-width: 24px;
   min-height: 24px;
+}
+
+.fluidShell .audioControlWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.fluidShell .audioControlButton.is-open,
+.fluidShell .audioControlButton.is-audio-on:not(.is-muted) {
+  border-color: rgba(226, 190, 112, 0.46);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(246, 222, 151, 0.18), transparent 64%),
+    rgba(226, 190, 112, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 12px rgba(226, 190, 112, 0.18);
+  color: rgba(255, 239, 190, 0.98);
+}
+
+.fluidShell .audioControlButton.is-muted {
+  opacity: 0.78;
+}
+
+.fluidShell .audioMixerPopover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: var(--z-autoplay-popover);
+  width: 132px;
+  min-height: 160px;
+  padding: 8px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(226, 190, 112, 0.22);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(226, 190, 112, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(15, 15, 19, 0.98), rgba(8, 10, 13, 0.98));
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.4);
+  display: grid;
+  gap: 8px;
+}
+
+.fluidShell .audioMuteButton {
+  width: 100%;
+  min-height: 26px;
+  border: 1px solid rgba(226, 190, 112, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(244, 239, 230, 0.9);
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.fluidShell .audioMuteButton:hover {
+  border-color: rgba(226, 190, 112, 0.42);
+  background: rgba(226, 190, 112, 0.12);
+}
+
+.fluidShell .audioSliderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  justify-items: center;
+}
+
+.fluidShell .audioSliderColumn {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fluidShell .audioSliderColumn strong {
+  color: rgba(244, 239, 230, 0.9);
+  font-size: 0.56rem;
+  line-height: 1;
+}
+
+.fluidShell .audioVerticalSlider {
+  width: 26px;
+  height: 88px;
+  accent-color: #e2be70;
+  cursor: pointer;
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+.fluidShell .audioSliderColumn:nth-child(2) .audioVerticalSlider {
+  accent-color: #78d7df;
 }
 
 .fluidShell .supportStatusContextWindow {
@@ -749,6 +855,32 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     inset 0 1px 0 rgba(255, 236, 184, 0.20);
   color: rgba(255, 231, 154, 0.98);
   transform: none;
+}
+
+.fluidShell .dockSmallButton.is-active {
+  border-color: rgba(255, 222, 132, 0.78);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 239, 188, 0.42), transparent 58%),
+    linear-gradient(180deg, rgba(235, 196, 101, 0.96), rgba(155, 111, 43, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(255, 232, 169, 0.2),
+    0 0 14px rgba(226, 190, 112, 0.42),
+    inset 0 1px 0 rgba(255, 246, 214, 0.42),
+    inset 0 -2px 4px rgba(71, 42, 12, 0.48);
+  color: #20130a;
+}
+
+.fluidShell .dockSmallButton.is-active:hover:not(:disabled) {
+  border-color: rgba(255, 232, 169, 0.86);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 246, 214, 0.5), transparent 58%),
+    linear-gradient(180deg, rgba(245, 207, 112, 0.98), rgba(166, 121, 46, 0.98));
+  color: #20130a;
+}
+
+.fluidShell .nonstopButton.is-active .dockSmallIcon {
+  stroke-width: 2.15;
+  filter: drop-shadow(0 0 2px rgba(255, 247, 217, 0.45));
 }
 
 .fluidShell .dockSmallButton:active:not(:disabled),
@@ -1011,8 +1143,13 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 
   .fluidShell .supportRailUtilityBar {
+    z-index: var(--z-dock-popover);
     min-height: 22px;
     align-self: end;
+  }
+
+  .fluidShell .supportRail.is-handheld-portrait {
+    z-index: var(--z-dock-popover);
   }
 
   .fluidShell .floatingGameDockInner {

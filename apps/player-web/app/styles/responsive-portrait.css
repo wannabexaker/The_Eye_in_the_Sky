@@ -1,6 +1,10 @@
 /* Portrait-specific responsive ownership (phone portrait + vertical monitor portrait lock). */
 
 @media (orientation: portrait) and (max-aspect-ratio: 10/16) {
+  .authModal {
+    max-width: 92vw;
+  }
+
   .slotViewport {
     --machine-stage-columns: 1fr;
     --machine-footer-columns: 1fr;
@@ -267,6 +271,7 @@
     .supportRail.is-handheld-portrait {
       left: 50%;
       bottom: var(--portrait-rail-bottom);
+      z-index: var(--z-dock-popover);
       transform: translateX(-50%);
       width: var(--portrait-rail-width);
       max-width: none;
@@ -474,6 +479,7 @@
     .supportRail.is-handheld-portrait .supportRailUtilityBar {
       position: relative;
       grid-area: utility;
+      z-index: var(--z-dock-popover);
       justify-content: center;
       gap: 5px;
       padding-top: 0;
@@ -614,21 +620,6 @@
     .floatingGameDock .dockMetaInfo {
       display: none;
     }
-  }
-
-  .utilityZone,
-  .betAdjustZone,
-  .autoplayZone {
-    justify-content: center;
-  }
-
-  .betAdjustZone,
-  .autoplayZone {
-    justify-items: center;
-  }
-
-  .betMetaRow {
-    justify-content: center;
   }
 }
 
