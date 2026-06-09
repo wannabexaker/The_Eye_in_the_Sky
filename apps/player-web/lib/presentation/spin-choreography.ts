@@ -144,6 +144,7 @@ const hasMultiplierEvent = (result: SpinResult) =>
 
 const hasBonusTriggerEvent = (result: SpinResult) =>
   result.bonusTriggered ||
+  (!result.bonusStateBefore && Boolean(result.bonusStateAfter)) ||
   result.cascades.some((cascade) =>
     cascade.modifierEvents.some((event) => event.type === "samsara_bonus_trigger")
   );
@@ -192,6 +193,8 @@ export const buildSpinChoreography = (
     sound: { event: "spin_charge", intensity: 0.95 }
   });
 
+  const hasBonusTrigger = hasBonusTriggerEvent(result);
+
   if (result.cascades.length === 0) {
     pushEvent({
       type: "board_drop",
@@ -209,6 +212,32 @@ export const buildSpinChoreography = (
       intensity: 0.55,
       sound: { event: "win_scan", intensity: 0.5 }
     });
+
+    if (hasBonusTrigger) {
+      const bonusAtMs = scanAtMs + scaleMs(260, speed);
+      pushEvent({
+        type: "bonus_trigger",
+        atMs: bonusAtMs,
+        durationMs: scaleMs(680, speed),
+        intensity: 1.45,
+        sound: { event: "bonus_open", intensity: 1.35 }
+      });
+      pushEvent({
+        type: "round_end",
+        atMs: bonusAtMs + scaleMs(760, speed),
+        durationMs: scaleMs(80, speed),
+        intensity: 0.65
+      });
+
+      return {
+        runId: result.roundSummary.roundId,
+        speed,
+        summaryAtMs: bonusAtMs,
+        totalDurationMs: bonusAtMs + scaleMs(760, speed),
+        events
+      };
+    }
+
     pushEvent({
       type: "round_end",
       atMs: NO_WIN_TOTAL_MS[speed],
@@ -324,7 +353,7 @@ export const buildSpinChoreography = (
     cursor += scaleMs(260, speed);
   }
 
-  if (hasBonusTriggerEvent(result)) {
+  if (hasBonusTrigger) {
     pushEvent({
       type: "bonus_trigger",
       atMs: cursor,

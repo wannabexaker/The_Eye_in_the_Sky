@@ -107,6 +107,8 @@ type CellSprite = {
   hovered: boolean;
   highlighted: boolean;
   pulseUntil: number;
+  crackStart: number;
+  crackDuration: number;
   breakStart: number;
   breakDuration: number;
   breathingSeed: number;
@@ -492,20 +494,36 @@ export function PixiTempleBoard({
 
   const clearBreakingCells = () => {
     cellRefs.current.forEach((cell) => {
+      cell.crackStart = 0;
+      cell.crackDuration = 0;
       cell.breakStart = 0;
       cell.breakDuration = 0;
+    });
+  };
+
+  const startCrackingCells = (wins: CascadeWin[], durationMs: number) => {
+    const cells = wins.flatMap((win) => win.cells);
+    const now = performance.now();
+    const duration = Math.max(48, durationMs);
+
+    cells.forEach((cell) => {
+      const sprite = cellRefs.current[cell.row * cols + cell.col];
+      if (sprite) {
+        sprite.crackStart = now;
+        sprite.crackDuration = duration;
+      }
     });
   };
 
   const startBreakingCells = (wins: CascadeWin[], durationMs: number) => {
     const cells = wins.flatMap((win) => win.cells);
     const now = performance.now();
-    const duration = Math.max(120, durationMs);
+    const duration = Math.max(48, durationMs);
 
     cells.forEach((cell) => {
       const sprite = cellRefs.current[cell.row * cols + cell.col];
       if (sprite) {
-        sprite.breakStart = now - Math.min(40, duration * 0.24);
+        sprite.breakStart = now;
         sprite.breakDuration = duration;
       }
     });
@@ -796,6 +814,11 @@ export function PixiTempleBoard({
 
       setDisplayBoard(board);
       clearWinningCells();
+      clearBreakingCells();
+      if (result?.bonusTriggered) {
+        bonusFlashUntilRef.current = performance.now() + presentationTimings.bonusTrigger;
+        emitBonusBurst();
+      }
       return;
     }
 
@@ -878,55 +901,87 @@ export function PixiTempleBoard({
       activeCascadeDropDurationRef.current = null;
       setDisplayBoard(firstCascade.boardBefore);
       clearWinningCells();
+      clearBreakingCells();
 
-      activeChoreography.events.forEach((event) => {
-        if (event.cascadeIndex === undefined) {
+      const boardEvents = activeChoreography.events
+        .filter((event) => event.cascadeIndex !== undefined)
+        .sort((left, right) => left.atMs - right.atMs);
+      const runStartedAt = performance.now();
+      let nextEventIndex = 0;
+      let frameId = 0;
+
+      const applyBoardEvent = (event: SpinChoreographyEvent) => {
+        const cascadeIndex = event.cascadeIndex;
+        if (cascadeIndex === undefined) {
           return;
         }
 
-        const cascade = result.cascades[event.cascadeIndex];
+        const cascade = result.cascades[cascadeIndex];
         if (!cascade) {
           return;
         }
 
-        timeoutsRef.current.push(
-          window.setTimeout(() => {
-            switch (event.type) {
-              case "board_drop":
-                activeBoardDropDurationRef.current = event.durationMs;
-                if (event.cascadeIndex !== 0) {
-                  suppressDropAnimationRef.current = true;
-                  shouldResetSuppressAfterPaintRef.current = true;
-                }
-                setDisplayBoard(cascade.boardBefore);
-                clearWinningCells();
-                clearBreakingCells();
-                return;
-              case "win_scan":
-              case "symbol_prebreak":
-                markWinningCells(cascade.wins);
-                return;
-              case "symbol_break":
-                startBreakingCells(cascade.wins, event.durationMs);
-                onChoreographySoundRef.current?.(event);
-                emitWinParticles(cascade.wins);
-                return;
-              case "cascade_payout":
-                queueCascadePayoutText(cascade, event);
-                return;
-              case "cascade_drop":
-                activeCascadeDropDurationRef.current = event.durationMs;
-                clearWinningCells();
-                clearBreakingCells();
-                pendingCascadeWaveRef.current = true;
-                setDisplayBoard(cascade.boardAfter);
-                return;
+        switch (event.type) {
+          case "board_drop":
+            activeBoardDropDurationRef.current = event.durationMs;
+            if (event.cascadeIndex !== 0) {
+              suppressDropAnimationRef.current = true;
+              shouldResetSuppressAfterPaintRef.current = true;
             }
-          }, event.atMs)
-        );
-      });
+            setDisplayBoard(cascade.boardBefore);
+            clearWinningCells();
+            clearBreakingCells();
+            onChoreographySoundRef.current?.(event);
+            return;
+          case "win_scan":
+            markWinningCells(cascade.wins);
+            onChoreographySoundRef.current?.(event);
+            return;
+          case "symbol_prebreak":
+            markWinningCells(cascade.wins);
+            startCrackingCells(cascade.wins, event.durationMs);
+            onChoreographySoundRef.current?.(event);
+            return;
+          case "symbol_break":
+            startBreakingCells(cascade.wins, event.durationMs);
+            onChoreographySoundRef.current?.(event);
+            emitWinParticles(cascade.wins);
+            return;
+          case "cascade_payout":
+            queueCascadePayoutText(cascade, event);
+            onChoreographySoundRef.current?.(event);
+            return;
+          case "cascade_drop":
+            activeCascadeDropDurationRef.current = event.durationMs;
+            clearWinningCells();
+            clearBreakingCells();
+            pendingCascadeWaveRef.current = true;
+            onChoreographySoundRef.current?.(event);
+            setDisplayBoard(cascade.boardAfter);
+            return;
+        }
+      };
+
+      const runBoardEvents = (now: number) => {
+        const elapsed = now - runStartedAt;
+
+        while (
+          nextEventIndex < boardEvents.length &&
+          elapsed >= boardEvents[nextEventIndex].atMs
+        ) {
+          applyBoardEvent(boardEvents[nextEventIndex]);
+          nextEventIndex += 1;
+        }
+
+        if (nextEventIndex < boardEvents.length) {
+          frameId = window.requestAnimationFrame(runBoardEvents);
+        }
+      };
+
+      frameId = window.requestAnimationFrame(runBoardEvents);
 
       return () => {
+        window.cancelAnimationFrame(frameId);
         timeoutsRef.current.forEach((timer) => window.clearTimeout(timer));
         timeoutsRef.current = [];
       };
@@ -1225,6 +1280,8 @@ export function PixiTempleBoard({
             hovered: false,
             highlighted: false,
             pulseUntil: 0,
+            crackStart: 0,
+            crackDuration: 0,
             breakStart: 0,
             breakDuration: 0,
             breathingSeed: Math.random() * Math.PI * 2,
@@ -1392,6 +1449,13 @@ export function PixiTempleBoard({
           const scale = 1 + breathing + hoverBoost + focusBoost;
           const animationAlpha = animating ? 0.38 + progress * 0.62 : 1;
           const focusAlpha = focusActive && !cell.highlighted ? 0.42 : 1;
+          const crackActive =
+            cell.crackDuration > 0 &&
+            now >= cell.crackStart &&
+            now <= cell.crackStart + cell.crackDuration;
+          const crackProgress = crackActive
+            ? Math.min(1, Math.max(0, (now - cell.crackStart) / cell.crackDuration))
+            : 0;
           const breakActive =
             cell.breakDuration > 0 &&
             now >= cell.breakStart &&
@@ -1402,17 +1466,20 @@ export function PixiTempleBoard({
           const breakEase = easeOutCubic(breakProgress);
           const breakAlpha = breakActive ? Math.max(0.08, 1 - breakEase * 0.94) : 1;
           const breakScale = breakActive ? 1 + Math.sin(breakProgress * Math.PI) * 0.18 : 1;
+          const crackShake = crackActive ? Math.sin(now / 10 + cell.row * 1.6 + cell.col) * (1 - crackProgress) * 2.4 : 0;
+          const crackShakeY = crackActive ? Math.cos(now / 11 + cell.col * 1.3) * (1 - crackProgress) * 1.8 : 0;
           const breakShake = breakActive ? Math.sin(now / 12 + cell.row * 1.7 + cell.col) * (1 - breakProgress) * 3.2 : 0;
           const breakShakeY = breakActive ? Math.cos(now / 13 + cell.col * 1.4) * (1 - breakProgress) * 2.4 : 0;
 
-          cell.container.x = cell.baseX + shake + breakShake;
-          cell.container.y = animatedY + shakeY + breakShakeY;
+          cell.container.x = cell.baseX + shake + crackShake + breakShake;
+          cell.container.y = animatedY + shakeY + crackShakeY + breakShakeY;
           cell.container.scale.set(scale * breakScale);
           cell.container.alpha = Math.min(animationAlpha, focusAlpha, breakAlpha);
 
           cell.glow.alpha =
             (cell.hovered ? 0.14 : 0.04) +
             (cell.highlighted ? (pulseActive ? 0.28 : 0.2) : 0) +
+            (crackActive ? (1 - crackProgress) * 0.22 : 0) +
             (breakActive ? (1 - breakProgress) * 0.28 : 0);
 
           if (progress >= 1) {
@@ -1422,6 +1489,11 @@ export function PixiTempleBoard({
           if (cell.breakDuration > 0 && now > cell.breakStart + cell.breakDuration) {
             cell.breakStart = 0;
             cell.breakDuration = 0;
+          }
+
+          if (cell.crackDuration > 0 && now > cell.crackStart + cell.crackDuration) {
+            cell.crackStart = 0;
+            cell.crackDuration = 0;
           }
         });
 

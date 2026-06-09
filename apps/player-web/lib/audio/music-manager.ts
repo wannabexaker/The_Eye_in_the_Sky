@@ -21,7 +21,7 @@ class MusicManager {
 
   private enabled = false;
 
-  private volume = 0.35;
+  private volume = 0.25;
 
   private trackIndex = 0;
 
@@ -44,7 +44,7 @@ class MusicManager {
 
   configure(options: { enabled: boolean; volume: number }) {
     this.enabled = options.enabled;
-    this.volume = Number.isFinite(options.volume) ? Math.min(1, Math.max(0, options.volume)) : 0.35;
+    this.volume = Number.isFinite(options.volume) ? Math.min(1, Math.max(0, options.volume)) : 0.25;
 
     if (!this.enabled || this.volume <= 0) {
       this.pause();

@@ -49,6 +49,8 @@ class SoundManager {
 
   private noiseBuffer: AudioBuffer | null = null;
 
+  private compressor: DynamicsCompressorNode | null = null;
+
   private volume = 1;
 
   private getContext() {
@@ -66,6 +68,22 @@ class SoundManager {
     }
 
     return this.audioContext;
+  }
+
+  private getOutputNode(context: AudioContext) {
+    if (this.compressor) {
+      return this.compressor;
+    }
+
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-13, context.currentTime);
+    compressor.knee.setValueAtTime(18, context.currentTime);
+    compressor.ratio.setValueAtTime(7, context.currentTime);
+    compressor.attack.setValueAtTime(0.004, context.currentTime);
+    compressor.release.setValueAtTime(0.18, context.currentTime);
+    compressor.connect(context.destination);
+    this.compressor = compressor;
+    return compressor;
   }
 
   prime() {
@@ -98,9 +116,10 @@ class SoundManager {
 
     const preset = this.getPreset(event);
     const now = context.currentTime;
+    const destination = this.getOutputNode(context);
     const output = context.createGain();
     const intensity = Math.max(0.2, Math.min(2, options.intensity ?? 1));
-    const volume = Math.min(0.12, preset.volume * (0.72 + intensity * 0.38)) * this.volume;
+    const volume = Math.min(0.2, preset.volume * (0.78 + intensity * 0.48)) * this.volume;
     if (volume <= 0.0001) {
       return;
     }
@@ -117,9 +136,9 @@ class SoundManager {
 
     if (panner) {
       output.connect(panner);
-      panner.connect(context.destination);
+      panner.connect(destination);
     } else {
-      output.connect(context.destination);
+      output.connect(destination);
     }
 
     // add a small harmonic stack for richer tone
@@ -170,13 +189,13 @@ class SoundManager {
       },
       spin_charge: {
         baseFrequency: 118,
-        duration: 0.28,
-        volume: 0.052,
-        sweep: 76,
+        duration: 0.34,
+        volume: 0.074,
+        sweep: 92,
         type: "triangle",
         harmonics: [1.5, 2],
         attack: 0.012,
-        release: 0.24
+        release: 0.3
       },
       drop: {
         baseFrequency: 180,
@@ -188,14 +207,14 @@ class SoundManager {
       },
       reel_drop: {
         baseFrequency: 176,
-        duration: 0.16,
-        volume: 0.044,
-        sweep: -42,
+        duration: 0.2,
+        volume: 0.07,
+        sweep: -58,
         type: "sine",
         harmonics: [0.5, 1.5],
         noise: true,
         attack: 0.008,
-        release: 0.14
+        release: 0.18
       },
       win: {
         baseFrequency: 610,
@@ -210,7 +229,7 @@ class SoundManager {
       win_scan: {
         baseFrequency: 520,
         duration: 0.18,
-        volume: 0.034,
+        volume: 0.046,
         sweep: 80,
         type: "sine",
         harmonics: [2],
@@ -241,20 +260,20 @@ class SoundManager {
       },
       cascade_tick: {
         baseFrequency: 338,
-        duration: 0.12,
-        volume: 0.038,
-        sweep: 42,
+        duration: 0.14,
+        volume: 0.064,
+        sweep: 54,
         type: "sine",
         harmonics: [2],
         noise: true,
         attack: 0.006,
-        release: 0.11
+        release: 0.13
       },
       symbol_crack: {
         baseFrequency: 260,
-        duration: 0.13,
-        volume: 0.04,
-        sweep: -72,
+        duration: 0.12,
+        volume: 0.07,
+        sweep: -88,
         type: "triangle",
         harmonics: [2, 3],
         noise: true,
@@ -263,24 +282,24 @@ class SoundManager {
       },
       symbol_break: {
         baseFrequency: 310,
-        duration: 0.16,
-        volume: 0.05,
-        sweep: -120,
+        duration: 0.18,
+        volume: 0.086,
+        sweep: -145,
         type: "triangle",
         harmonics: [1.5, 2.5],
         noise: true,
         attack: 0.004,
-        release: 0.15
+        release: 0.17
       },
       payout_tick: {
         baseFrequency: 690,
-        duration: 0.18,
-        volume: 0.046,
-        sweep: 110,
+        duration: 0.2,
+        volume: 0.072,
+        sweep: 128,
         type: "triangle",
         harmonics: [1.5, 2],
         attack: 0.006,
-        release: 0.17
+        release: 0.19
       },
       multiplier: {
         baseFrequency: 840,
@@ -295,7 +314,7 @@ class SoundManager {
       multiplier_apply: {
         baseFrequency: 860,
         duration: 0.5,
-        volume: 0.058,
+        volume: 0.078,
         sweep: 220,
         type: "triangle",
         harmonics: [1.5, 2, 3, 4],
@@ -315,8 +334,8 @@ class SoundManager {
       bonus_open: {
         baseFrequency: 520,
         duration: 1.08,
-        volume: 0.052,
-        sweep: 320,
+        volume: 0.09,
+        sweep: 360,
         type: "sine",
         harmonics: [1.25, 1.5, 2, 3],
         noise: true,

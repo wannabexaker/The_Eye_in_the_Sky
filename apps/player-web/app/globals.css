@@ -1058,6 +1058,12 @@ p {
   font-weight: 700;
 }
 
+.controlChip.is-locked {
+  border-color: rgba(226, 190, 112, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(244, 239, 230, 0.52);
+}
+
 .controlChip.subtle {
   background: rgba(115, 35, 47, 0.12);
 }

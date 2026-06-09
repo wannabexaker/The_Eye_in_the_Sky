@@ -1377,16 +1377,25 @@ export default function HomePage() {
         <section className="modalSection menuSectionControls">
           <p className="eyebrow">Win Multiplier</p>
           <div className="chipRow">
-            {slot.winMultiplierOptions.map((option) => (
-              <button
-                className={`controlChip ${slot.winMultiplier === option ? "is-active" : ""}`}
-                key={option}
-                onClick={() => slot.setWinMultiplier(option)}
-                type="button"
-              >
-                x{option}
-              </button>
-            ))}
+            {slot.winMultiplierOptions.map((option) => {
+              const locked = option !== 1;
+
+              return (
+                <button
+                  aria-disabled={locked}
+                  aria-pressed={slot.winMultiplier === option && !locked}
+                  className={`controlChip ${slot.winMultiplier === option && !locked ? "is-active" : ""} ${locked ? "is-locked" : ""}`}
+                  disabled={locked}
+                  key={option}
+                  onClick={() => slot.setWinMultiplier(option)}
+                  title={locked ? "Locked until risk-mode math is tuned." : "Standard payout mode"}
+                  type="button"
+                >
+                  x{option}
+                  {locked ? " Locked" : ""}
+                </button>
+              );
+            })}
           </div>
         </section>
 

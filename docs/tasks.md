@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Choreography sync, bonus entry, multiplier safety, and SFX mix hotfix**
+  - Intent: make break SFX line up with visible symbol cracking/breaking, prevent Samsara bonus entry from freezing after no-win triggers, stop the x2/x3 Win Multiplier EV exploit, and make SFX audible over 25% music.
+  - Hypothesis: board-critical audio was still split between React timers and Pixi timers, no-win choreography returned before scheduling `bonus_trigger`, and the engine applied requested win multipliers directly without a tuned risk profile.
+  - Code change: routed cascade board-critical sounds through the Pixi RAF event runner, added visible prebreak cracking, made no-win bonus spins emit `bonus_trigger`/`bonus_open` instead of `loss`, locked engine/player/UI win multipliers to x1, set music default to 25%, raised SFX presets, and added a WebAudio compressor.
+  - Verification: `corepack pnpm --filter player-web exec -- tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter @eye/game-engine lint`, `corepack pnpm --filter player-web test`, `corepack pnpm --filter @eye/game-engine test`, `corepack pnpm --filter player-web lint`, `corepack pnpm --filter player-web exec playwright test e2e/choreography-smoke.spec.ts --reporter=line --timeout=300000`, an ad-hoc Playwright audio/multiplier UI check, and x1/x3 lock simulations passed. Lint still reports pre-existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task's commit to restore the previous React/Pixi split timing, no-win loss flow, active x2/x3 multiplier behavior, and quieter SFX mix.
 - `2026-06-09` **Background music mixer and Pixi-synced break SFX**
   - Intent: make cascade break sound and symbol break start on the same visual frame, and replace the old one-button mute with a compact Music/SFX mixer that also controls automatic background music.
   - Hypothesis: `symbol_break` SFX fired from the React choreography timer could lead the Pixi visual update by a render/effect beat, so moving that sound trigger into the Pixi break handler should remove the perceived audio-first delay; music and SFX need separate persisted volume values behind the same global mute.

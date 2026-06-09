@@ -33,8 +33,8 @@ const PLAYER_STORE_PERSIST_KEY = "eye-in-the-sky-player-store";
 const ANALYTICS_LOG_PERSIST_KEY = "eye-in-the-sky-rounds-log";
 const SAMSARA_PROGRESS_TTL_MS = 60 * 60 * 1000;
 const ANALYTICS_MAX_ROUNDS = 10000;
-const DEFAULT_MUSIC_VOLUME = 0.35;
-const DEFAULT_SFX_VOLUME = 0.85;
+const DEFAULT_MUSIC_VOLUME = 0.25;
+const DEFAULT_SFX_VOLUME = 1;
 
 const clampAudioVolume = (value: unknown, fallback: number) =>
   typeof value === "number" && Number.isFinite(value)
