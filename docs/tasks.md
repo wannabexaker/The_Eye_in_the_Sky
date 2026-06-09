@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-09` **Live verify retry window hardening**
+  - Intent: prevent the GitHub Actions `Build` workflow from failing after successful image builds just because `eye.olamov.com` needs more than 60 seconds to return HTTP 200.
+  - Hypothesis: the pushed `v0.1.6` commit built and pushed the API image successfully, and the live site returned HTTP 200 shortly after the workflow failed, so the verify step was too impatient for deployment propagation.
+  - Code change: increased the `Verify live site` timeout to 8 minutes and changed the live check to 30 attempts with curl connect/max-time limits and accurate logging.
+  - Verification: pending next GitHub Actions `Build` run.
+  - Rollback note: revert this workflow change if deployment verification should remain a strict 60-second gate and the deploy target is made synchronous.
 - `2026-06-09` **CI auth validation response fix**
   - Intent: make the pushed `main` pass the GitHub Actions `CI` quality job after the verified merge train release.
   - Hypothesis: `/auth/register` used a custom fallback validation error body that returned `{ error, details }` instead of the documented `{ code, message, fieldErrors }` auth error contract, causing the isolated API e2e step to fail.

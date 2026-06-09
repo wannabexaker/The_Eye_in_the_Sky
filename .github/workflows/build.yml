@@ -276,21 +276,21 @@ jobs:
     needs: build-and-push
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build-and-push.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
 
     steps:
       - name: Check eye.olamov.com
         run: |
-          for attempt in {1..6}; do
-            status="$(curl -L -sS -o /dev/null -w '%{http_code}' https://eye.olamov.com || true)"
+          for attempt in {1..30}; do
+            status="$(curl -L -sS --connect-timeout 5 --max-time 15 -o /dev/null -w '%{http_code}' https://eye.olamov.com || true)"
             if [[ "${status}" == "200" ]]; then
               echo "eye.olamov.com returned HTTP 200"
               exit 0
             fi
 
-            echo "Attempt ${attempt}/6 returned HTTP ${status}; retrying in 10s"
+            echo "Attempt ${attempt}/30 returned HTTP ${status}; retrying in 10s"
             sleep 10
           done
 
-          echo "::error::eye.olamov.com did not return HTTP 200 within 60s"
+          echo "::error::eye.olamov.com did not return HTTP 200 within 5 minutes"
           exit 1
