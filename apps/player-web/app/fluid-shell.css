@@ -134,9 +134,11 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 }
 
 .fluidShell .brandingRail .brandLogo {
-  width: min(100%, clamp(180px, 16vw, 300px));
+  /* Height-driven so the logo shrinks on short viewports and yields vertical
+     space to the board (the hero), instead of staying a fixed 79px tall. */
+  width: auto;
   max-width: 100%;
-  height: auto;
+  height: clamp(40px, 8dvh, 88px);
   aspect-ratio: 16 / 7;
   opacity: 1;
   --brand-logo-scale: 1;
@@ -972,13 +974,16 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
   .fluidShell .brandPanel,
   .fluidShell .constellationBrandPanel {
-    min-height: clamp(64px, 12dvh, 112px);
+    min-height: clamp(76px, 13dvh, 132px);
     flex-direction: column;
   }
 
-  .fluidShell .brandLogo {
-    width: min(100%, clamp(180px, 16vw, 300px));
-    height: clamp(42px, 8dvh, 72px);
+  /* Fill the brand side column. Scoped to .brandingRail (0,3,0) so it beats the
+     portrait base logo rule; width-driven so the logo reads large on desktop. */
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(168px, 13.5vw, 268px));
+    height: auto;
+    aspect-ratio: 16 / 7;
   }
 
   .fluidShell .floatingGameDockInner {
@@ -1006,9 +1011,10 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     padding: 3px;
   }
 
-  .fluidShell .brandLogo {
-    width: 64px;
-    height: 30px;
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(72px, 11vw, 132px));
+    height: auto;
+    aspect-ratio: 16 / 7;
   }
 
   .fluidShell .supportRail {
@@ -1047,6 +1053,41 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     width: 52px;
     min-width: 52px;
     max-width: 52px;
+  }
+}
+
+/* Narrow landscape (<900px wide): the dedicated brand column wastes a full
+   180px strip just to hold the logo, leaving the board width-bound and small.
+   Drop to 2 columns (info | board) and float the logo over the top-right sky
+   instead — the board claims the freed width. */
+@media (orientation: landscape) and (max-width: 899.98px) {
+  .fluidShell.machineStage {
+    grid-template-areas:
+      "info board"
+      "info deck";
+    grid-template-columns: var(--fluid-info-width) minmax(0, 1fr);
+  }
+
+  .fluidShell .brandingRail {
+    grid-area: auto;
+    position: absolute;
+    top: calc(var(--fluid-gap) + env(safe-area-inset-top, 0px));
+    right: calc(var(--fluid-gap) + env(safe-area-inset-right, 0px));
+    width: auto;
+    height: auto;
+    z-index: var(--z-center-stage);
+    pointer-events: none;
+  }
+
+  .fluidShell .brandPanel,
+  .fluidShell .constellationBrandPanel {
+    min-height: 0;
+  }
+
+  .fluidShell .brandingRail .brandLogo {
+    width: clamp(96px, 15vw, 150px);
+    height: auto;
+    aspect-ratio: 16 / 7;
   }
 }
 
@@ -1220,6 +1261,135 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
   .fluidShell .floatingGameDock {
     max-width: min(100%, 620px);
+  }
+}
+
+/* Portrait tablets (>=431px): keep the support rail compact. The base grid lets
+   the ritual log span ALL rows (treasury -> utility) and stretches to fill the
+   "info" track, so Balance/Bet, Samsara, Round Status and the log inflate with
+   empty space. We adopt the compact phone stacking: the log spans only
+   treasury/balance/meter (a short recent list), Round Status + utilities get
+   their own row, the strip collapses to a single Round|Cascade|Spins line, and
+   nothing stretches. Full history still scrolls when expanded. */
+@media (orientation: portrait) and (min-width: 431px) {
+  .fluidShell .supportRail {
+    grid-template-rows: repeat(4, min-content);
+    grid-template-areas:
+      "treasury history"
+      "balance history"
+      "meter history"
+      "status utility";
+    align-content: start;
+    align-self: start;
+  }
+
+  .fluidShell .supportBalanceBlock,
+  .fluidShell .supportMeterBlock,
+  .fluidShell .constellationTriggerBlock,
+  .fluidShell .supportStatusBlock {
+    align-self: start;
+  }
+
+  /* Trim vertical padding on the wallet + meter cards so they read tight.
+     Scoped under .supportRail to beat the base `.supportRail .supportBlock`
+     padding (equal specificity, later in source). */
+  .fluidShell .supportRail .supportBalanceBlock,
+  .fluidShell .supportRail .supportMeterBlock {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .fluidShell .supportMeterBlock .panelHeader {
+    margin-bottom: 2px;
+  }
+
+  .fluidShell .supportBalanceZone,
+  .fluidShell .supportRail .bottomBarStat {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportMeterBlock .samsaraMeter,
+  .fluidShell .constellationTriggerBlock {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportStatusBlock .panelHeader {
+    display: none;
+  }
+
+  .fluidShell .supportStatusStrip {
+    grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 0.95fr));
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .fluidShell .supportStatusBottomRow {
+    display: contents;
+  }
+
+  .fluidShell .supportMiniStat {
+    min-height: 32px;
+  }
+
+  /* Safety cap so a very tall left stack never makes the default log huge. */
+  .fluidShell .supportHistory:not(.is-scrollable) {
+    max-height: 150px;
+  }
+}
+
+/* Near-square portrait (aspect >= 3/4) that is wide enough (>= 560px): the
+   board is height-bound in a stacked layout and wastes the horizontal space
+   beside it. Switch to a 2-column layout — board (hero) on the left, the
+   support rail as a vertical sidebar on the right, dock under the board — so
+   the board claims the width and nothing is wasted. Tall phones (aspect < 3/4)
+   keep the stacked layout above. */
+@media (orientation: portrait) and (min-aspect-ratio: 3 / 4) and (min-width: 560px) {
+  .slotViewport {
+    --dock-board-overlap: clamp(10px, 2dvh, 22px);
+  }
+
+  .fluidShell.machineStage {
+    grid-template-areas:
+      "brand brand"
+      "board info"
+      "deck  info";
+    grid-template-columns: minmax(0, 1fr) clamp(198px, 30vw, 252px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .fluidShell .centerStage {
+    justify-self: stretch;
+  }
+
+  /* Support rail = vertical sidebar. The ritual log sits in a BOUNDED track
+     (clamp, not 1fr) so it can't stretch to the full sidebar height — it shows
+     a moderate recent list and the rail packs to the top, leaving the rest as
+     background. Balance/Bet, Samsara and Round Status stay compact. */
+  .fluidShell .supportRail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, min-content) clamp(150px, 32dvh, 300px) min-content;
+    grid-template-areas:
+      "treasury"
+      "balance"
+      "meter"
+      "status"
+      "history"
+      "utility";
+    align-content: start;
+    align-self: start;
+    justify-self: stretch;
+    height: auto;
+    max-width: none;
+  }
+
+  .fluidShell .supportHistoryBlock {
+    min-height: 0;
+  }
+
+  /* Log fills the bounded history track; expanded Full history scrolls. */
+  .fluidShell .supportHistory:not(.is-scrollable) {
+    max-height: none;
   }
 }
 
