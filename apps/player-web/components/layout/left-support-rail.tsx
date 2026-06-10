@@ -40,6 +40,7 @@ type LeftSupportRailProps = {
   onToggleInfo: () => void;
   onToggleSettings: () => void;
   onToggleFullscreen: () => void;
+  onOpenAnalytics: () => void;
 };
 
 const formatWin = (result: SpinResult) =>
@@ -65,7 +66,8 @@ const getRitualTooltip = (result: SpinResult) => {
 };
 
 const MAX_RITUAL_LOG_ENTRIES = 100;
-const MIN_VISIBLE_ENTRIES = 2;
+const MIN_VISIBLE_ENTRIES = 3;
+const MAX_VISIBLE_ENTRIES = 5;
 const FALLBACK_HISTORY_ROW_HEIGHT = 26;
 
 export function LeftSupportRail({
@@ -95,10 +97,9 @@ export function LeftSupportRail({
   onSetSfxVolume,
   onToggleInfo,
   onToggleSettings,
-  onToggleFullscreen
+  onToggleFullscreen,
+  onOpenAnalytics
 }: LeftSupportRailProps) {
-  const [showMore, setShowMore] = useState(false);
-  const [expandedHistoryMaxHeight, setExpandedHistoryMaxHeight] = useState<number | null>(null);
   const [adaptiveVisibleEntries, setAdaptiveVisibleEntries] = useState(MIN_VISIBLE_ENTRIES);
   const supportHistoryRef = useRef<HTMLDivElement | null>(null);
   const viewport = useViewport();
@@ -107,10 +108,7 @@ export function LeftSupportRail({
   const handheldPortraitView = portraitView && viewport.band === "phone";
 
   const ritualEntries = history.slice(0, MAX_RITUAL_LOG_ENTRIES);
-  const defaultVisibleEntries = Math.max(MIN_VISIBLE_ENTRIES, adaptiveVisibleEntries);
-  const visibleEntries = showMore ? ritualEntries : ritualEntries.slice(0, defaultVisibleEntries);
-  const canToggleHistory = ritualEntries.length > defaultVisibleEntries;
-  const historyToggleTitle = showMore ? "Collapse ritual log" : "Expand ritual log";
+  const visibleEntries = ritualEntries.slice(0, adaptiveVisibleEntries);
 
   const emotionVariant = bonusActive
     ? "bonus"
@@ -143,12 +141,6 @@ export function LeftSupportRail({
           : "Tap spin to start.";
 
   useEffect(() => {
-    if (ritualEntries.length <= defaultVisibleEntries && showMore) {
-      setShowMore(false);
-    }
-  }, [defaultVisibleEntries, ritualEntries.length, showMore]);
-
-  useEffect(() => {
     const historyElement = supportHistoryRef.current;
 
     if (!historyElement) {
@@ -165,9 +157,12 @@ export function LeftSupportRail({
         const rowGap = Number.parseFloat(historyStyles.rowGap || historyStyles.gap || "0") || 0;
         const rowHeight = rowElement?.getBoundingClientRect().height ?? FALLBACK_HISTORY_ROW_HEIGHT;
         const availableHeight = historyElement.getBoundingClientRect().height;
-        const nextVisibleEntries = Math.max(
-          MIN_VISIBLE_ENTRIES,
-          Math.floor((availableHeight + rowGap) / Math.max(1, rowHeight + rowGap))
+        const nextVisibleEntries = Math.min(
+          MAX_VISIBLE_ENTRIES,
+          Math.max(
+            MIN_VISIBLE_ENTRIES,
+            Math.floor((availableHeight + rowGap) / Math.max(1, rowHeight + rowGap))
+          )
         );
 
         setAdaptiveVisibleEntries((current) => (
@@ -190,34 +185,6 @@ export function LeftSupportRail({
       resizeObserver?.disconnect();
     };
   }, [ritualEntries.length]);
-
-  useEffect(() => {
-    if (!showMore) {
-      setExpandedHistoryMaxHeight(null);
-      return;
-    }
-
-    const updateExpandedHeight = () => {
-      if (!supportHistoryRef.current) {
-        return;
-      }
-
-      const { top } = supportHistoryRef.current.getBoundingClientRect();
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const availableHeight = Math.max(120, Math.floor(viewportHeight - top - 12));
-      setExpandedHistoryMaxHeight(availableHeight);
-    };
-
-    const frame = window.requestAnimationFrame(updateExpandedHeight);
-    window.addEventListener("resize", updateExpandedHeight);
-    window.addEventListener("orientationchange", updateExpandedHeight);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateExpandedHeight);
-      window.removeEventListener("orientationchange", updateExpandedHeight);
-    };
-  }, [showMore, ritualEntries.length]);
 
   return (
     <aside
@@ -328,20 +295,18 @@ export function LeftSupportRail({
       >
         <div className="panelHeader supportHistoryHeader">
           <button
-            aria-expanded={showMore}
-            aria-label={showMore ? "Collapse ritual log" : "Expand ritual log"}
+            aria-label="Open session analytics"
             className="supportHistoryHeaderButton"
-            disabled={!canToggleHistory}
-            onClick={() => setShowMore((current) => !current)}
-            title={historyToggleTitle}
+            onClick={onOpenAnalytics}
+            title="Open session analytics for the full round history"
             type="button"
           >
             <span className="eyebrow">Ritual Log</span>
-            <span className="supportHistoryHeaderHint">
-              {canToggleHistory ? (showMore ? "Collapse" : "Full history") : "Recent"}
-            </span>
+            <span className="supportHistoryHeaderHint">Analytics</span>
             <svg aria-hidden="true" className="supportToggleIcon" viewBox="0 0 24 24">
-              <path d="M6 9l6 6 6-6" />
+              <path d="M5 19V10" />
+              <path d="M12 19V5" />
+              <path d="M19 19v-6" />
             </svg>
           </button>
         </div>
@@ -350,15 +315,7 @@ export function LeftSupportRail({
           <strong>{emotionLabel}</strong>
           <span className="supportEmotionHint">{emotionHint}</span>
         </div>
-        <div
-          className={`supportHistory ${showMore ? "is-scrollable" : ""}`}
-          ref={supportHistoryRef}
-          style={
-            showMore && expandedHistoryMaxHeight
-              ? { maxHeight: `${expandedHistoryMaxHeight}px` }
-              : undefined
-          }
-        >
+        <div className="supportHistory" ref={supportHistoryRef}>
           {history.length === 0 ? (
             <span className="supportMuted" title="No resolved rounds in this session yet.">No rounds yet.</span>
           ) : (

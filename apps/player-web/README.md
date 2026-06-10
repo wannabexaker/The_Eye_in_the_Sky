@@ -9,13 +9,19 @@ app/
   layout.tsx
   page.tsx
   globals.css
+  fluid-shell.css   responsive board-first shell grid
+  styles/           legacy responsive stylesheets
 
 components/
+  analytics/     session analytics overlay (RTP trend, distributions, CSV)
+  audio/         audio control popover
+  auth/          login/register overlays
   board/         board renderer and board-local UI
   controls/      bottom machine bar and spin controls
   layout/        left/right shell rails
   modals/        wallet and shell overlays
   presentation/  win/bonus presentation system
+  runtime/       runtime status surfaces (API offline badge)
   debug/         debug-only surfaces
   archive/       old or currently unused components kept for reference
 

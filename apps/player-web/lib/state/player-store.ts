@@ -862,21 +862,22 @@ export const usePlayerUiStore = create<PlayerUiState>()(
             balanceAfter: result.balanceAfter
           };
 
-          const shouldTrackAnalytics = state.runtimeMode !== "simulator";
+          // Guests (simulator runtime) get session-only analytics: rounds are
+          // tracked in memory so Session Analytics works, but never persisted —
+          // rehydrate would otherwise leak them into an authenticated session.
+          const shouldPersistAnalytics = state.runtimeMode !== "simulator";
           const previousEntry = state.roundsLog[state.roundsLog.length - 1];
           const nextRoundsLog =
-            shouldTrackAnalytics && previousEntry?.id !== analyticsEntry.id
+            previousEntry?.id !== analyticsEntry.id
               ? [...state.roundsLog, analyticsEntry]
               : state.roundsLog;
-          const trimmedRoundsLog = shouldTrackAnalytics
-            ? nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS)
-            : [];
+          const trimmedRoundsLog = nextRoundsLog.slice(-ANALYTICS_MAX_ROUNDS);
 
           // Write rounds log asynchronously in its own key — never blocks the spin
-          if (shouldTrackAnalytics) {
+          if (shouldPersistAnalytics) {
             scheduleRoundsLogFlush(trimmedRoundsLog);
-            void storeAnalyticsRoundForRuntime(analyticsEntry, state.runtimeMode);
           }
+          void storeAnalyticsRoundForRuntime(analyticsEntry, state.runtimeMode);
 
           const simulatorWallet =
             state.runtimeMode === "simulator"

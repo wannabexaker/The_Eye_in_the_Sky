@@ -952,7 +952,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
   .fluidShell .supportRail {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(4, min-content) minmax(0, 1fr) min-content;
+    grid-template-rows: repeat(5, min-content) min-content;
     grid-template-areas:
       "treasury"
       "balance"
@@ -961,11 +961,18 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
       "history"
       "utility";
     height: 100%;
-    align-content: stretch;
+    align-content: start;
   }
 
   .fluidShell .supportHistoryBlock {
     min-height: 0;
+  }
+
+  /* Fixed-height recent list (~5 rows). The log never expands; full history
+     lives in Session Analytics via the header button. */
+  .fluidShell .supportHistory {
+    flex: none;
+    height: 150px;
   }
 
   .fluidShell .brandingRail {
@@ -1331,8 +1338,8 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     min-height: 32px;
   }
 
-  /* Safety cap so a very tall left stack never makes the default log huge. */
-  .fluidShell .supportHistory:not(.is-scrollable) {
+  /* Safety cap so a very tall left stack never makes the log huge. */
+  .fluidShell .supportHistory {
     max-height: 150px;
   }
 }
@@ -1362,13 +1369,12 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     justify-self: stretch;
   }
 
-  /* Support rail = vertical sidebar. The ritual log sits in a BOUNDED track
-     (clamp, not 1fr) so it can't stretch to the full sidebar height — it shows
-     a moderate recent list and the rail packs to the top, leaving the rest as
-     background. Balance/Bet, Samsara and Round Status stay compact. */
+  /* Support rail = vertical sidebar packed to the top. The ritual log is a
+     fixed-height recent list (~5 rows); full history lives in Session
+     Analytics. Balance/Bet, Samsara and Round Status stay compact. */
   .fluidShell .supportRail {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(4, min-content) clamp(150px, 32dvh, 300px) min-content;
+    grid-template-rows: repeat(5, min-content) min-content;
     grid-template-areas:
       "treasury"
       "balance"
@@ -1387,9 +1393,9 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     min-height: 0;
   }
 
-  /* Log fills the bounded history track; expanded Full history scrolls. */
-  .fluidShell .supportHistory:not(.is-scrollable) {
-    max-height: none;
+  .fluidShell .supportHistory {
+    flex: none;
+    height: 150px;
   }
 }
 

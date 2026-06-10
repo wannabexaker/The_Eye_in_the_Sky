@@ -1287,6 +1287,7 @@ export default function HomePage() {
             history={slot.history}
             musicVolume={musicVolume}
             onDeposit={() => toggleModal("depositOpen")}
+            onOpenAnalytics={() => toggleModal("analyticsOpen")}
             onSetMusicVolume={setMusicVolume}
             onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
@@ -1319,6 +1320,7 @@ export default function HomePage() {
             meterTarget={activeGameConfig.bonusMeterTarget}
             musicVolume={musicVolume}
             onDeposit={() => toggleModal("depositOpen")}
+            onOpenAnalytics={() => toggleModal("analyticsOpen")}
             onSetMusicVolume={setMusicVolume}
             onSetSfxVolume={setSfxVolume}
             onToggleFullscreen={toggleFullscreen}
