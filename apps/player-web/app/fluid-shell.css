@@ -138,7 +138,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
      space to the board (the hero), instead of staying a fixed 79px tall. */
   width: auto;
   max-width: 100%;
-  height: clamp(38px, 7.5dvh, 70px);
+  height: clamp(40px, 8dvh, 88px);
   aspect-ratio: 16 / 7;
   opacity: 1;
   --brand-logo-scale: 1;
@@ -974,13 +974,16 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 
   .fluidShell .brandPanel,
   .fluidShell .constellationBrandPanel {
-    min-height: clamp(64px, 12dvh, 112px);
+    min-height: clamp(76px, 13dvh, 132px);
     flex-direction: column;
   }
 
-  .fluidShell .brandLogo {
-    width: min(100%, clamp(180px, 16vw, 300px));
-    height: clamp(42px, 8dvh, 72px);
+  /* Fill the brand side column. Scoped to .brandingRail (0,3,0) so it beats the
+     portrait base logo rule; width-driven so the logo reads large on desktop. */
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(168px, 13.5vw, 268px));
+    height: auto;
+    aspect-ratio: 16 / 7;
   }
 
   .fluidShell .floatingGameDockInner {
@@ -1008,9 +1011,10 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     padding: 3px;
   }
 
-  .fluidShell .brandLogo {
-    width: 64px;
-    height: 30px;
+  .fluidShell .brandingRail .brandLogo {
+    width: min(100%, clamp(72px, 11vw, 132px));
+    height: auto;
+    aspect-ratio: 16 / 7;
   }
 
   .fluidShell .supportRail {
