@@ -1327,12 +1327,13 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     justify-self: stretch;
   }
 
-  /* Support rail = vertical sidebar filling the right column. The ritual log
-     (1fr row) absorbs the slack, so Balance/Bet, Samsara and Round Status keep
-     their natural compact height while the board takes the space. */
+  /* Support rail = vertical sidebar. The ritual log sits in a BOUNDED track
+     (clamp, not 1fr) so it can't stretch to the full sidebar height — it shows
+     a moderate recent list and the rail packs to the top, leaving the rest as
+     background. Balance/Bet, Samsara and Round Status stay compact. */
   .fluidShell .supportRail {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(4, min-content) minmax(0, 1fr) min-content;
+    grid-template-rows: repeat(4, min-content) clamp(150px, 32dvh, 300px) min-content;
     grid-template-areas:
       "treasury"
       "balance"
@@ -1340,10 +1341,10 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
       "status"
       "history"
       "utility";
-    align-content: stretch;
-    align-self: stretch;
+    align-content: start;
+    align-self: start;
     justify-self: stretch;
-    height: 100%;
+    height: auto;
     max-width: none;
   }
 
@@ -1351,7 +1352,7 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     min-height: 0;
   }
 
-  /* Sidebar has vertical room — let the log fill it (and scroll), no row cap. */
+  /* Log fills the bounded history track; expanded Full history scrolls. */
   .fluidShell .supportHistory:not(.is-scrollable) {
     max-height: none;
   }
