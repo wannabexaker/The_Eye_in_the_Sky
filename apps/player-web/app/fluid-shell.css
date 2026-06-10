@@ -134,9 +134,11 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
 }
 
 .fluidShell .brandingRail .brandLogo {
-  width: min(100%, clamp(180px, 16vw, 300px));
+  /* Height-driven so the logo shrinks on short viewports and yields vertical
+     space to the board (the hero), instead of staying a fixed 79px tall. */
+  width: auto;
   max-width: 100%;
-  height: auto;
+  height: clamp(38px, 7.5dvh, 70px);
   aspect-ratio: 16 / 7;
   opacity: 1;
   --brand-logo-scale: 1;
@@ -1293,6 +1295,61 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   /* Safety cap so a very tall left stack never makes the default log huge. */
   .fluidShell .supportHistory:not(.is-scrollable) {
     max-height: 150px;
+  }
+}
+
+/* Near-square portrait (aspect >= 3/4) that is wide enough (>= 560px): the
+   board is height-bound in a stacked layout and wastes the horizontal space
+   beside it. Switch to a 2-column layout — board (hero) on the left, the
+   support rail as a vertical sidebar on the right, dock under the board — so
+   the board claims the width and nothing is wasted. Tall phones (aspect < 3/4)
+   keep the stacked layout above. */
+@media (orientation: portrait) and (min-aspect-ratio: 3 / 4) and (min-width: 560px) {
+  .slotViewport {
+    --dock-board-overlap: clamp(10px, 2dvh, 22px);
+  }
+
+  .fluidShell.machineStage {
+    grid-template-areas:
+      "brand brand"
+      "board info"
+      "deck  info";
+    grid-template-columns: minmax(0, 1fr) clamp(198px, 30vw, 252px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  .fluidShell .centerStage {
+    justify-self: stretch;
+  }
+
+  /* Support rail = vertical sidebar filling the right column. The ritual log
+     (1fr row) absorbs the slack, so Balance/Bet, Samsara and Round Status keep
+     their natural compact height while the board takes the space. */
+  .fluidShell .supportRail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(4, min-content) minmax(0, 1fr) min-content;
+    grid-template-areas:
+      "treasury"
+      "balance"
+      "meter"
+      "status"
+      "history"
+      "utility";
+    align-content: stretch;
+    align-self: stretch;
+    justify-self: stretch;
+    height: 100%;
+    max-width: none;
+  }
+
+  .fluidShell .supportHistoryBlock {
+    min-height: 0;
+  }
+
+  /* Sidebar has vertical room — let the log fill it (and scroll), no row cap. */
+  .fluidShell .supportHistory:not(.is-scrollable) {
+    max-height: none;
   }
 }
 
