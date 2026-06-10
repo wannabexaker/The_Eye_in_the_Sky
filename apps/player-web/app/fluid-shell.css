@@ -1223,6 +1223,79 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 }
 
+/* Portrait tablets (>=431px): keep the support rail compact. The base grid lets
+   the ritual log span ALL rows (treasury -> utility) and stretches to fill the
+   "info" track, so Balance/Bet, Samsara, Round Status and the log inflate with
+   empty space. We adopt the compact phone stacking: the log spans only
+   treasury/balance/meter (a short recent list), Round Status + utilities get
+   their own row, the strip collapses to a single Round|Cascade|Spins line, and
+   nothing stretches. Full history still scrolls when expanded. */
+@media (orientation: portrait) and (min-width: 431px) {
+  .fluidShell .supportRail {
+    grid-template-rows: repeat(4, min-content);
+    grid-template-areas:
+      "treasury history"
+      "balance history"
+      "meter history"
+      "status utility";
+    align-content: start;
+    align-self: start;
+  }
+
+  .fluidShell .supportBalanceBlock,
+  .fluidShell .supportMeterBlock,
+  .fluidShell .constellationTriggerBlock,
+  .fluidShell .supportStatusBlock {
+    align-self: start;
+  }
+
+  /* Trim vertical padding on the wallet + meter cards so they read tight.
+     Scoped under .supportRail to beat the base `.supportRail .supportBlock`
+     padding (equal specificity, later in source). */
+  .fluidShell .supportRail .supportBalanceBlock,
+  .fluidShell .supportRail .supportMeterBlock {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .fluidShell .supportMeterBlock .panelHeader {
+    margin-bottom: 2px;
+  }
+
+  .fluidShell .supportBalanceZone,
+  .fluidShell .supportRail .bottomBarStat {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportMeterBlock .samsaraMeter,
+  .fluidShell .constellationTriggerBlock {
+    min-height: 26px;
+  }
+
+  .fluidShell .supportStatusBlock .panelHeader {
+    display: none;
+  }
+
+  .fluidShell .supportStatusStrip {
+    grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 0.95fr));
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .fluidShell .supportStatusBottomRow {
+    display: contents;
+  }
+
+  .fluidShell .supportMiniStat {
+    min-height: 32px;
+  }
+
+  /* Safety cap so a very tall left stack never makes the default log huge. */
+  .fluidShell .supportHistory:not(.is-scrollable) {
+    max-height: 150px;
+  }
+}
+
 .slotViewport.is-embed-mode .fluidShell {
   grid-template-areas:
     "board"
