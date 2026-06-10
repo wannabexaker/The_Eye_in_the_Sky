@@ -1056,6 +1056,41 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   }
 }
 
+/* Narrow landscape (<900px wide): the dedicated brand column wastes a full
+   180px strip just to hold the logo, leaving the board width-bound and small.
+   Drop to 2 columns (info | board) and float the logo over the top-right sky
+   instead — the board claims the freed width. */
+@media (orientation: landscape) and (max-width: 899.98px) {
+  .fluidShell.machineStage {
+    grid-template-areas:
+      "info board"
+      "info deck";
+    grid-template-columns: var(--fluid-info-width) minmax(0, 1fr);
+  }
+
+  .fluidShell .brandingRail {
+    grid-area: auto;
+    position: absolute;
+    top: calc(var(--fluid-gap) + env(safe-area-inset-top, 0px));
+    right: calc(var(--fluid-gap) + env(safe-area-inset-right, 0px));
+    width: auto;
+    height: auto;
+    z-index: var(--z-center-stage);
+    pointer-events: none;
+  }
+
+  .fluidShell .brandPanel,
+  .fluidShell .constellationBrandPanel {
+    min-height: 0;
+  }
+
+  .fluidShell .brandingRail .brandLogo {
+    width: clamp(96px, 15vw, 150px);
+    height: auto;
+    aspect-ratio: 16 / 7;
+  }
+}
+
 @media (orientation: portrait) and (max-width: 430px) {
   .slotViewport {
     --fluid-gap: 4px;
