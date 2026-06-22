@@ -2252,6 +2252,14 @@ p {
   width: min(560px, 100%);
 }
 
+.authTurnstile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 65px;
+  margin: 2px 0;
+}
+
 .authSecondaryAction {
   align-self: center;
   border: 1px solid rgba(226, 190, 112, 0.24);

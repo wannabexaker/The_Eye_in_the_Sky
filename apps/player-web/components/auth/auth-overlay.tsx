@@ -1,6 +1,58 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generateRandomDisplayName } from "@/lib/identity/random-display-name";
 import type { PlayerApiFieldErrors } from "@/lib/api/player-api";
+
+type TurnstileApi = {
+  render: (
+    container: HTMLElement,
+    options: {
+      sitekey: string;
+      callback: (token: string) => void;
+      "error-callback"?: () => void;
+      "expired-callback"?: () => void;
+      theme?: "auto" | "light" | "dark";
+      appearance?: "always" | "execute" | "interaction-only";
+    }
+  ) => string;
+  reset: (widgetId?: string) => void;
+  remove: (widgetId?: string) => void;
+};
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileApi;
+  }
+}
+
+const TURNSTILE_SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+let turnstileScriptPromise: Promise<void> | null = null;
+
+const loadTurnstileScript = (): Promise<void> => {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+  if (window.turnstile) {
+    return Promise.resolve();
+  }
+  if (turnstileScriptPromise) {
+    return turnstileScriptPromise;
+  }
+
+  turnstileScriptPromise = new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = TURNSTILE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      turnstileScriptPromise = null;
+      reject(new Error("Failed to load Turnstile script."));
+    };
+    document.head.appendChild(script);
+  });
+
+  return turnstileScriptPromise;
+};
 
 type AuthOverlayProps = {
   allowSkipLogin: boolean;
@@ -10,10 +62,16 @@ type AuthOverlayProps = {
   fieldErrors?: PlayerApiFieldErrors;
   onForgotPassword: (payload: { email: string }) => Promise<{ ok: boolean; resetToken?: string }>;
   onLogin: (payload: { email: string; password: string }) => Promise<void>;
-  onRegister: (payload: { email: string; password: string; displayName: string }) => Promise<void>;
+  onRegister: (payload: {
+    email: string;
+    password: string;
+    displayName: string;
+    turnstileToken?: string;
+  }) => Promise<void>;
   onResetPassword: (payload: { token: string; newPassword: string }) => Promise<void>;
   onSkipLogin: () => void;
   logoSrc?: string;
+  turnstileSiteKey?: string | null;
 };
 
 export function AuthOverlay({
@@ -27,7 +85,8 @@ export function AuthOverlay({
   onRegister,
   onResetPassword,
   onSkipLogin,
-  logoSrc = "/assets/ui/logo-eye-in-the-sky.png"
+  logoSrc = "/assets/ui/logo-eye-in-the-sky.png",
+  turnstileSiteKey = null
 }: AuthOverlayProps) {
   const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">("login");
   const [displayName, setDisplayName] = useState(() => generateRandomDisplayName());
@@ -38,6 +97,65 @@ export function AuthOverlay({
   const [devResetHint, setDevResetHint] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+
+  const turnstileRequired = Boolean(turnstileSiteKey);
+
+  // Render the Turnstile widget while on the register tab. It is invisible/managed
+  // and produces a one-time token the API verifies. No-op when no site key.
+  useEffect(() => {
+    if (mode !== "register" || !turnstileSiteKey) {
+      return;
+    }
+
+    let cancelled = false;
+    setTurnstileToken("");
+
+    loadTurnstileScript()
+      .then(() => {
+        if (cancelled || !turnstileContainerRef.current || !window.turnstile) {
+          return;
+        }
+        turnstileContainerRef.current.innerHTML = "";
+        turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+          sitekey: turnstileSiteKey,
+          theme: "dark",
+          callback: (token) => setTurnstileToken(token),
+          "error-callback": () => setTurnstileToken(""),
+          "expired-callback": () => setTurnstileToken("")
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLocalError("Could not load verification. Refresh and try again.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (turnstileWidgetIdRef.current && window.turnstile) {
+        try {
+          window.turnstile.remove(turnstileWidgetIdRef.current);
+        } catch {
+          // widget already gone
+        }
+      }
+      turnstileWidgetIdRef.current = null;
+    };
+  }, [mode, turnstileSiteKey]);
+
+  const resetTurnstile = () => {
+    setTurnstileToken("");
+    if (turnstileWidgetIdRef.current && window.turnstile) {
+      try {
+        window.turnstile.reset(turnstileWidgetIdRef.current);
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const submit = async () => {
     if (mode === "forgot") {
@@ -88,10 +206,16 @@ export function AuthOverlay({
       return;
     }
 
+    if (turnstileRequired && !turnstileToken) {
+      setLocalError("Please complete the verification below.");
+      return;
+    }
+
     await onRegister({
       email,
       password,
-      displayName: displayName.trim() || generateRandomDisplayName()
+      displayName: displayName.trim() || generateRandomDisplayName(),
+      ...(turnstileToken ? { turnstileToken } : {})
     });
   };
 
@@ -100,6 +224,10 @@ export function AuthOverlay({
       await submit();
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : "Authentication failed.");
+      // Token is single-use — reset so the user can retry after a failed submit.
+      if (mode === "register" && turnstileRequired) {
+        resetTurnstile();
+      }
     }
   };
 
@@ -282,6 +410,10 @@ export function AuthOverlay({
               First rollout persists wallet, rounds, welcome bonus, and resumable session state on the API.
             </span>
           </div>
+
+          {mode === "register" && turnstileSiteKey ? (
+            <div className="authTurnstile" ref={turnstileContainerRef} />
+          ) : null}
 
           <button className="welcomeButton" disabled={busy} onClick={() => void runSubmit()} type="button">
             {busy ? "Please wait..." : primaryLabel}

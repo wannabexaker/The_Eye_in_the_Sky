@@ -659,7 +659,7 @@ export default function HomePage() {
         setAuthModeBlocked(false);
 
         // Step 1: Fetch auth mode (non-fatal — defaults to INTERNAL_ONLY on failure)
-        let mode: AuthModePublicConfig = { mode: "INTERNAL_ONLY", fallbackEnabled: false, mockModeEnabled: false };
+        let mode: AuthModePublicConfig = { mode: "INTERNAL_ONLY", fallbackEnabled: false, mockModeEnabled: false, turnstileSiteKey: null };
         try {
           mode = await fetchAuthMode();
           if (!disposed) setAuthMode(mode);
@@ -978,7 +978,7 @@ export default function HomePage() {
   );
 
   const handleRegister = useCallback(
-    async (payload: { email: string; password: string; displayName: string }) => {
+    async (payload: { email: string; password: string; displayName: string; turnstileToken?: string }) => {
       setAuthBusy(true);
       clearAuthError();
       try {
@@ -1778,6 +1778,7 @@ export default function HomePage() {
           onRegister={handleRegister}
           onResetPassword={handleResetPassword}
           onSkipLogin={handleSkipLogin}
+          turnstileSiteKey={authMode?.turnstileSiteKey ?? null}
         />
       ) : null}
     </main>

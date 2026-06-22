@@ -168,9 +168,13 @@ export class AuthModeService {
   /**
    * Get sanitized config for public API response (excludes secrets).
    */
-  async getPublicConfig(): Promise<Omit<AuthModeConfig, "jwksUrl" | "introspectionUrl">> {
+  async getPublicConfig(): Promise<
+    Omit<AuthModeConfig, "jwksUrl" | "introspectionUrl"> & { turnstileSiteKey: string | null }
+  > {
     const config = await this.getConfig();
     const { jwksUrl: _, introspectionUrl: __, ...publicConfig } = config;
-    return publicConfig;
+    // Public Turnstile site key (safe to expose). Empty/unset → null = disabled.
+    const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY?.trim() || null;
+    return { ...publicConfig, turnstileSiteKey };
   }
 }
