@@ -140,7 +140,9 @@ const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
 };
 
 export default function HomePage() {
-  const allowSkipLogin = process.env.NODE_ENV !== "production";
+  // Guest ("Continue as Guest") is available everywhere, including the live
+  // production demo, so the game can be played instantly without signup.
+  const allowSkipLogin = true;
   const shellRef = useRef<HTMLElement | null>(null);
   const depositPromptShownRef = useRef(false);
   const previousBonusModeRef = useRef(false);
