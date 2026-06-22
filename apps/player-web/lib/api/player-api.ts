@@ -12,6 +12,7 @@ export type AuthModePublicConfig = {
   mode: "INTERNAL_ONLY" | "EXTERNAL_ONLY" | "HYBRID";
   fallbackEnabled: boolean;
   mockModeEnabled: boolean;
+  turnstileSiteKey?: string | null;
 };
 
 export type PlatformExchangeResult = {
@@ -124,6 +125,7 @@ export const registerPlayer = (payload: {
   email: string;
   password: string;
   displayName: string;
+  turnstileToken?: string;
 }) =>
   requestJson<AuthSessionDto>("/auth/register", {
     method: "POST",

@@ -50,6 +50,8 @@ services:
       AUTH_MODE: ${AUTH_MODE:-INTERNAL_ONLY}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     ports:
       - "3200:3200"
     volumes:

@@ -7,6 +7,7 @@ import { PlatformExchangeValidatorService } from "./platform-exchange-validator.
 import { AuthNonceReplayService } from "./auth-nonce-replay.service";
 import { AdminGuard, ExternalAuthPolicyGuard, InternalAuthPolicyGuard, SessionAuthGuard } from "./auth.guard";
 import { CurrentUser } from "./current-user.decorator";
+import { assertTurnstile } from "./turnstile";
 import type { RequestWithAuth, PlatformExchangeRequest, AuthMode } from "./auth.types";
 import type { CurrentAuthUser } from "./auth.types";
 
@@ -78,12 +79,15 @@ export class AuthController {
   @UseGuards(InternalAuthPolicyGuard)
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post("register")
-  register(
-    @Body() body: { email?: string; password?: string; displayName?: string },
+  async register(
+    @Body() body: { email?: string; password?: string; displayName?: string; turnstileToken?: string },
     @Req() request: RequestWithAuth,
     @Res({ passthrough: true }) response: any
   ) {
     const validatedBody = parseRegisterOrBadRequest(body);
+    // Edge spam defense: when Turnstile is configured, registration requires a
+    // valid challenge token. No-op when TURNSTILE_SECRET_KEY is unset.
+    await assertTurnstile(body.turnstileToken);
     return this.authService.registerPlayer(validatedBody, request, response);
   }
 
