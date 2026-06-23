@@ -22,6 +22,7 @@ model User {
   externalIdentities  ExternalIdentity[]
   wallet              Wallet?
   responsibleGaming   PlayerResponsibleGaming?
+  fairnessSeed        PlayerFairnessSeed?
   gameSessions        GameSession[]
   rounds              Round[]
   bonusStates         BonusState[]
@@ -47,6 +48,20 @@ model PlayerResponsibleGaming {
 
   @@index([selfExclusionUntil])
   @@index([cooloffUntil])
+}
+
+model PlayerFairnessSeed {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  serverSeed             String
+  serverSeedHash         String
+  clientSeed             String
+  nonce                  Int      @default(0)
+  previousServerSeed     String?
+  previousServerSeedHash String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model AuthSession {
@@ -173,6 +188,9 @@ model Round {
   profileId        String
   configVersion    String
   seedUsed         String
+  clientSeed       String?
+  serverSeedHash   String?
+  nonce            Int?
   mode             String
   chargedBet       Decimal       @db.Decimal(18, 2)
   bet              Decimal       @db.Decimal(18, 2)

@@ -97,6 +97,18 @@ export const validators = {
   profileSelect: z.object({
     profileId: z.string().trim().min(1).max(100)
   }),
+  fairnessClientSeed: z.object({
+    clientSeed: z
+      .string()
+      .trim()
+      .min(1, "Client seed is required")
+      .max(128, "Client seed is too long")
+      .regex(/^[a-zA-Z0-9:_-]+$/, "Client seed has invalid characters")
+  }),
+  serverSpin: z.object({
+    bet: moneySchema,
+    profileId: z.string().trim().min(1).max(100).optional()
+  }),
   analyticsIngest: z.object({
     entries: z
       .array(

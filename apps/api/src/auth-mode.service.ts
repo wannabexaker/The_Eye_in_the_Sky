@@ -172,6 +172,7 @@ export class AuthModeService {
     Omit<AuthModeConfig, "jwksUrl" | "introspectionUrl"> & {
       turnstileSiteKey: string | null;
       rgToolsEnabled: boolean;
+      provablyFairEnabled: boolean;
     }
   > {
     const config = await this.getConfig();
@@ -179,6 +180,7 @@ export class AuthModeService {
     // Public Turnstile site key (safe to expose). Empty/unset → null = disabled.
     const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY?.trim() || null;
     const rgToolsEnabled = process.env.RG_TOOLS_ENABLED === "true";
-    return { ...publicConfig, turnstileSiteKey, rgToolsEnabled };
+    const provablyFairEnabled = process.env.PROVABLY_FAIR_ENABLED === "true";
+    return { ...publicConfig, turnstileSiteKey, rgToolsEnabled, provablyFairEnabled };
   }
 }
