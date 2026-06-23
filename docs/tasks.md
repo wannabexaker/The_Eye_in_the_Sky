@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-23` **Responsible Gambling tools behind feature flag**
+  - Intent: add operator-ready Responsible Gambling controls and API enforcement without changing gameplay while the compliance flag is off.
+  - Hypothesis: mirroring the existing public-config flag pattern lets the API expose `rgToolsEnabled` to the player UI, while service-level `RG_TOOLS_ENABLED` checks keep deposit and round enforcement inert by default.
+  - Code change: added the `PlayerResponsibleGaming` Prisma model and migration, `RG_TOOLS_ENABLED` env wiring, authenticated Responsible Gaming API endpoints with zod validation and throttling, deposit/loss/session/cool-off/self-exclusion enforcement guarded by the flag, and a gated player-web menu section plus reality-check modal.
+  - Verification: `corepack pnpm --filter api prisma:generate`, `corepack pnpm --filter api lint`, `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, `corepack pnpm --filter api exec prisma migrate deploy`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, `corepack pnpm --filter api test:e2e`, and graphify rebuild passed. Repo-wide lint still reports existing player-web `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert this task commit and roll back the `20260623000001_responsible_gaming_tools` migration if operators choose a different Responsible Gambling data contract or enforcement window model.
 - `2026-06-09` **Phone portrait spin dock/support rail separation**
   - Intent: fix the mobile portrait UI issue where the SPIN button could render behind the lower support rail in Brave/phone view.
   - Hypothesis: the active `fluid-shell.css` phone portrait layer used only a 4px row gap and placed `.supportRail.is-handheld-portrait` above the dock, so the spin CTA overhang was visually clipped by `Round Status`.

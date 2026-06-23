@@ -22,6 +22,10 @@ const moneySchema = z
     message: "Amount must have at most 2 decimal places"
   });
 
+const optionalLimitSchema = moneySchema.nullable().optional();
+const optionalSessionMinutesSchema = z.number().int().min(5).max(1_440).nullable().optional();
+const optionalRealityCheckMinutesSchema = z.number().int().min(5).max(240).nullable().optional();
+
 const safeStringSchema = z
   .string()
   .trim()
@@ -73,6 +77,22 @@ export const validators = {
   persistRound: z.object({
     profileId: z.string().trim().max(100).optional(),
     result: z.unknown().optional()
+  }),
+  responsibleGamingSettingsUpdate: z.object({
+    depositLimitDaily: optionalLimitSchema,
+    depositLimitWeekly: optionalLimitSchema,
+    depositLimitMonthly: optionalLimitSchema,
+    lossLimitDaily: optionalLimitSchema,
+    lossLimitWeekly: optionalLimitSchema,
+    lossLimitMonthly: optionalLimitSchema,
+    sessionTimeLimitMinutes: optionalSessionMinutesSchema,
+    realityCheckIntervalMinutes: optionalRealityCheckMinutesSchema
+  }).strict(),
+  responsibleGamingCooloff: z.object({
+    durationHours: z.number().int().min(1).max(720)
+  }),
+  responsibleGamingSelfExclusion: z.object({
+    durationHours: z.number().int().min(24).max(87_600)
   }),
   profileSelect: z.object({
     profileId: z.string().trim().min(1).max(100)

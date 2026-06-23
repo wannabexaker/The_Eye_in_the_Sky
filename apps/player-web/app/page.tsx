@@ -40,6 +40,7 @@ import {
   fetchAuthMode,
   fetchAuthSession,
   fetchPlayerBootstrap,
+  fetchResponsibleGamingSettings,
   forgotPlayerPassword,
   loginPlayer,
   logoutPlayer,
@@ -47,8 +48,13 @@ import {
   persistPlayerRound,
   registerPlayer,
   resetPlayerPassword,
+  startResponsibleGamingCooloff,
+  startResponsibleGamingSelfExclusion,
+  updateResponsibleGamingSettings,
   withdrawPlayerWallet,
-  type AuthModePublicConfig
+  type AuthModePublicConfig,
+  type ResponsibleGamingSettings,
+  type ResponsibleGamingSettingsUpdate
 } from "@/lib/api/player-api";
 import {
   getOuroborosRingAsset,
@@ -120,6 +126,91 @@ type RuntimeGraphicsHints = {
   viewportWidth: number;
 };
 
+type ResponsibleGamingDraftField = keyof ResponsibleGamingSettingsUpdate;
+type ResponsibleGamingDraft = Record<ResponsibleGamingDraftField, string>;
+
+type RealityCheckSnapshot = {
+  openedAt: number;
+  sessionStartedAt: number;
+  sessionNet: number;
+  roundsPlayed: number;
+};
+
+const createResponsibleGamingDraft = (
+  settings?: ResponsibleGamingSettings | null
+): ResponsibleGamingDraft => ({
+  depositLimitDaily: settings?.depositLimitDaily?.toString() ?? "",
+  depositLimitWeekly: settings?.depositLimitWeekly?.toString() ?? "",
+  depositLimitMonthly: settings?.depositLimitMonthly?.toString() ?? "",
+  lossLimitDaily: settings?.lossLimitDaily?.toString() ?? "",
+  lossLimitWeekly: settings?.lossLimitWeekly?.toString() ?? "",
+  lossLimitMonthly: settings?.lossLimitMonthly?.toString() ?? "",
+  sessionTimeLimitMinutes: settings?.sessionTimeLimitMinutes?.toString() ?? "",
+  realityCheckIntervalMinutes: settings?.realityCheckIntervalMinutes?.toString() ?? ""
+});
+
+const parseOptionalMoneyLimit = (value: string, label: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be greater than zero. Leave it blank to remove the limit.`);
+  }
+
+  return Number(parsed.toFixed(2));
+};
+
+const parseOptionalMinuteLimit = (value: string, label: string, min: number, max: number) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${label} must be a whole number from ${min} to ${max}.`);
+  }
+
+  return parsed;
+};
+
+const buildResponsibleGamingPayload = (
+  draft: ResponsibleGamingDraft
+): ResponsibleGamingSettingsUpdate => ({
+  depositLimitDaily: parseOptionalMoneyLimit(draft.depositLimitDaily, "Daily deposit limit"),
+  depositLimitWeekly: parseOptionalMoneyLimit(draft.depositLimitWeekly, "Weekly deposit limit"),
+  depositLimitMonthly: parseOptionalMoneyLimit(draft.depositLimitMonthly, "Monthly deposit limit"),
+  lossLimitDaily: parseOptionalMoneyLimit(draft.lossLimitDaily, "Daily loss limit"),
+  lossLimitWeekly: parseOptionalMoneyLimit(draft.lossLimitWeekly, "Weekly loss limit"),
+  lossLimitMonthly: parseOptionalMoneyLimit(draft.lossLimitMonthly, "Monthly loss limit"),
+  sessionTimeLimitMinutes: parseOptionalMinuteLimit(
+    draft.sessionTimeLimitMinutes,
+    "Session time limit",
+    5,
+    1440
+  ),
+  realityCheckIntervalMinutes: parseOptionalMinuteLimit(
+    draft.realityCheckIntervalMinutes,
+    "Reality-check interval",
+    5,
+    240
+  )
+});
+
+const formatOptionalDateTime = (value: string | null) =>
+  value ? new Date(value).toLocaleString() : "Not active";
+
+const formatSignedMoney = (value: number) =>
+  `${value >= 0 ? "+" : "-"}${formatMoneyCompactEur(Math.abs(value))}`;
+
+const formatElapsedMinutes = (startedAt: number, endedAt: number) => {
+  const minutes = Math.max(1, Math.round((endedAt - startedAt) / 60_000));
+  return `${minutes} min`;
+};
+
 const DEFAULT_RUNTIME_GRAPHICS_HINTS: RuntimeGraphicsHints = {
   devicePixelRatio: 1,
   viewportWidth: 0
@@ -166,6 +257,18 @@ export default function HomePage() {
   const [authMode, setAuthMode] = useState<AuthModePublicConfig | null>(null);
   // True when mode is EXTERNAL_ONLY and platform exchange has failed — show blocked screen
   const [authModeBlocked, setAuthModeBlocked] = useState(false);
+  const [responsibleGamingSettings, setResponsibleGamingSettings] =
+    useState<ResponsibleGamingSettings | null>(null);
+  const [responsibleGamingDraft, setResponsibleGamingDraft] =
+    useState<ResponsibleGamingDraft>(() => createResponsibleGamingDraft(null));
+  const [responsibleGamingLoading, setResponsibleGamingLoading] = useState(false);
+  const [responsibleGamingBusy, setResponsibleGamingBusy] = useState(false);
+  const [responsibleGamingError, setResponsibleGamingError] = useState("");
+  const [responsibleGamingMessage, setResponsibleGamingMessage] = useState("");
+  const [realityCheckSnapshot, setRealityCheckSnapshot] =
+    useState<RealityCheckSnapshot | null>(null);
+  const responsibleGamingSessionStartedAtRef = useRef(Date.now());
+  const lastRealityCheckAtRef = useRef(Date.now());
 
   // Keep screen awake while game is active
   const wakeLock = useScreenWakeLock();
@@ -275,6 +378,8 @@ export default function HomePage() {
   const isSimulatorMode = runtimeMode === "simulator";
   const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
   const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
+  const rgToolsEnabled = authMode?.rgToolsEnabled === true;
+  const canUseResponsibleGamingTools = rgToolsEnabled && canUseServerPersistence;
   const presentationBlocked =
     slot.bonusEntryPending || slot.bonusAnnouncementLocked || slot.bonusSummaryLocked;
   const authBlocked = authLoading || !canPlayWithoutAuth;
@@ -289,7 +394,8 @@ export default function HomePage() {
     withdrawOpen ||
     paymentMethodsOpen ||
     walletHistoryOpen ||
-    analyticsOpen;
+    analyticsOpen ||
+    Boolean(realityCheckSnapshot);
   const inputAllowed = !authBlocked && !presentationBlocked && !blockingModalOpen;
   const spinInteractionAllowed = useMemo(
     () =>
@@ -395,6 +501,101 @@ export default function HomePage() {
     applyServerSnapshot(snapshot);
     setAuthUser(snapshot.user);
   }, [applyServerSnapshot, clearAuthError]);
+
+  useEffect(() => {
+    if (!rgToolsEnabled || !canUseServerPersistence) {
+      setResponsibleGamingSettings(null);
+      setResponsibleGamingDraft(createResponsibleGamingDraft(null));
+      setResponsibleGamingError("");
+      setResponsibleGamingMessage("");
+      setResponsibleGamingLoading(false);
+      setResponsibleGamingBusy(false);
+      setRealityCheckSnapshot(null);
+      return;
+    }
+
+    let disposed = false;
+    setResponsibleGamingLoading(true);
+    setResponsibleGamingError("");
+
+    const loadResponsibleGamingSettings = async () => {
+      try {
+        const settings = await fetchResponsibleGamingSettings();
+        if (disposed) {
+          return;
+        }
+        setResponsibleGamingSettings(settings);
+        setResponsibleGamingDraft(createResponsibleGamingDraft(settings));
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        setResponsibleGamingError(
+          error instanceof PlayerApiError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Responsible Gaming settings failed to load."
+        );
+      } finally {
+        if (!disposed) {
+          setResponsibleGamingLoading(false);
+        }
+      }
+    };
+
+    void loadResponsibleGamingSettings();
+
+    return () => {
+      disposed = true;
+    };
+  }, [canUseServerPersistence, rgToolsEnabled]);
+
+  useEffect(() => {
+    const now = Date.now();
+    responsibleGamingSessionStartedAtRef.current = now;
+    lastRealityCheckAtRef.current = now;
+    setRealityCheckSnapshot(null);
+  }, [authUser?.id, runtimeMode]);
+
+  useEffect(() => {
+    const intervalMinutes = responsibleGamingSettings?.realityCheckIntervalMinutes;
+    if (!rgToolsEnabled || !canPlayWithoutAuth || !intervalMinutes || realityCheckSnapshot) {
+      return;
+    }
+
+    const intervalMs = intervalMinutes * 60_000;
+    const openRealityCheckIfDue = () => {
+      const now = Date.now();
+      if (now - lastRealityCheckAtRef.current < intervalMs) {
+        return;
+      }
+
+      const sessionStartedAt = responsibleGamingSessionStartedAtRef.current;
+      const sessionRounds = roundsLog.filter((entry) => entry.timestamp >= sessionStartedAt);
+      const sessionNet = Number(
+        sessionRounds.reduce((total, entry) => total + entry.net, 0).toFixed(2)
+      );
+
+      setRealityCheckSnapshot({
+        openedAt: now,
+        sessionStartedAt,
+        sessionNet,
+        roundsPlayed: sessionRounds.length
+      });
+    };
+
+    const timer = window.setInterval(openRealityCheckIfDue, 15_000);
+    openRealityCheckIfDue();
+
+    return () => window.clearInterval(timer);
+  }, [
+    canPlayWithoutAuth,
+    realityCheckSnapshot,
+    responsibleGamingSettings?.realityCheckIntervalMinutes,
+    rgToolsEnabled,
+    roundsLog
+  ]);
 
   const isConstellationVariant = activeGameConfig.variantId === "constellation_simple";
   const paytableThresholds = Array.from(
@@ -659,7 +860,13 @@ export default function HomePage() {
         setAuthModeBlocked(false);
 
         // Step 1: Fetch auth mode (non-fatal — defaults to INTERNAL_ONLY on failure)
-        let mode: AuthModePublicConfig = { mode: "INTERNAL_ONLY", fallbackEnabled: false, mockModeEnabled: false, turnstileSiteKey: null };
+        let mode: AuthModePublicConfig = {
+          mode: "INTERNAL_ONLY",
+          fallbackEnabled: false,
+          mockModeEnabled: false,
+          turnstileSiteKey: null,
+          rgToolsEnabled: false
+        };
         try {
           mode = await fetchAuthMode();
           if (!disposed) setAuthMode(mode);
@@ -1097,6 +1304,125 @@ export default function HomePage() {
     []
   );
 
+  const handleResponsibleGamingDraftChange = useCallback(
+    (field: ResponsibleGamingDraftField, value: string) => {
+      setResponsibleGamingDraft((current) => ({
+        ...current,
+        [field]: value
+      }));
+      setResponsibleGamingError("");
+      setResponsibleGamingMessage("");
+    },
+    []
+  );
+
+  const handleResponsibleGamingSave = useCallback(async () => {
+    if (!canUseResponsibleGamingTools) {
+      return;
+    }
+
+    setResponsibleGamingBusy(true);
+    setResponsibleGamingError("");
+    setResponsibleGamingMessage("");
+
+    try {
+      const payload = buildResponsibleGamingPayload(responsibleGamingDraft);
+      const settings = await updateResponsibleGamingSettings(payload);
+      setResponsibleGamingSettings(settings);
+      setResponsibleGamingDraft(createResponsibleGamingDraft(settings));
+      setResponsibleGamingMessage("Responsible Gaming limits saved.");
+    } catch (error) {
+      setResponsibleGamingError(
+        error instanceof PlayerApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Responsible Gaming settings failed to save."
+      );
+    } finally {
+      setResponsibleGamingBusy(false);
+    }
+  }, [canUseResponsibleGamingTools, responsibleGamingDraft]);
+
+  const handleResponsibleGamingCooloff = useCallback(async () => {
+    if (!canUseResponsibleGamingTools) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Start a 24-hour cool-off? Round play will be blocked until it expires."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setResponsibleGamingBusy(true);
+    setResponsibleGamingError("");
+    setResponsibleGamingMessage("");
+
+    try {
+      const settings = await startResponsibleGamingCooloff(24);
+      setResponsibleGamingSettings(settings);
+      setResponsibleGamingDraft(createResponsibleGamingDraft(settings));
+      setResponsibleGamingMessage("24-hour cool-off started.");
+    } catch (error) {
+      setResponsibleGamingError(
+        error instanceof PlayerApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Cool-off request failed."
+      );
+    } finally {
+      setResponsibleGamingBusy(false);
+    }
+  }, [canUseResponsibleGamingTools]);
+
+  const handleResponsibleGamingSelfExclude = useCallback(async () => {
+    if (!canUseResponsibleGamingTools) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Self-exclude for 7 days? Round play will be blocked until the exclusion expires."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setResponsibleGamingBusy(true);
+    setResponsibleGamingError("");
+    setResponsibleGamingMessage("");
+
+    try {
+      const settings = await startResponsibleGamingSelfExclusion(24 * 7);
+      setResponsibleGamingSettings(settings);
+      setResponsibleGamingDraft(createResponsibleGamingDraft(settings));
+      setResponsibleGamingMessage("7-day self-exclusion started.");
+    } catch (error) {
+      setResponsibleGamingError(
+        error instanceof PlayerApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Self-exclusion request failed."
+      );
+    } finally {
+      setResponsibleGamingBusy(false);
+    }
+  }, [canUseResponsibleGamingTools]);
+
+  const handleRealityCheckContinue = useCallback(() => {
+    lastRealityCheckAtRef.current = Date.now();
+    setRealityCheckSnapshot(null);
+  }, []);
+
+  const handleRealityCheckBreak = useCallback(() => {
+    lastRealityCheckAtRef.current = Date.now();
+    setRealityCheckSnapshot(null);
+    void handleLogout();
+  }, [handleLogout]);
+
   const handleRenameGuest = useCallback(() => {
     const nextName = window.prompt("Guest display name", guestDisplayName);
     if (nextName === null) {
@@ -1530,6 +1856,184 @@ export default function HomePage() {
           </button>
         </section>
 
+        {rgToolsEnabled ? (
+          <section className="modalSection menuSectionResponsibleGaming">
+            <p className="eyebrow">Responsible Gaming</p>
+            <div className="responsibleGamingPanel">
+              <p className="responsibleGamingIntro">
+                Set personal limits for server-backed play. Leave a field blank to remove that limit.
+              </p>
+
+              {!canUseResponsibleGamingTools ? (
+                <div className="modalFeedback">
+                  <strong>Account required</strong>
+                  <span>Responsible Gaming settings apply to authenticated player accounts.</span>
+                </div>
+              ) : (
+                <>
+                  <div className="responsibleGamingStatusGrid">
+                    <div>
+                      <span>Cool-off</span>
+                      <strong>{formatOptionalDateTime(responsibleGamingSettings?.cooloffUntil ?? null)}</strong>
+                    </div>
+                    <div>
+                      <span>Self-exclusion</span>
+                      <strong>{formatOptionalDateTime(responsibleGamingSettings?.selfExclusionUntil ?? null)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="responsibleGamingGrid">
+                    <label className="inputGroup">
+                      <span>Daily Deposit Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("depositLimitDaily", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.depositLimitDaily}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Weekly Deposit Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("depositLimitWeekly", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.depositLimitWeekly}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Monthly Deposit Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("depositLimitMonthly", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.depositLimitMonthly}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Daily Loss Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("lossLimitDaily", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.lossLimitDaily}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Weekly Loss Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("lossLimitWeekly", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.lossLimitWeekly}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Monthly Loss Limit</span>
+                      <input
+                        inputMode="decimal"
+                        min="0"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("lossLimitMonthly", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.lossLimitMonthly}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Session Limit Minutes</span>
+                      <input
+                        inputMode="numeric"
+                        max="1440"
+                        min="5"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("sessionTimeLimitMinutes", event.target.value)
+                        }
+                        placeholder="No limit"
+                        type="number"
+                        value={responsibleGamingDraft.sessionTimeLimitMinutes}
+                      />
+                    </label>
+                    <label className="inputGroup">
+                      <span>Reality Check Minutes</span>
+                      <input
+                        inputMode="numeric"
+                        max="240"
+                        min="5"
+                        onChange={(event) =>
+                          handleResponsibleGamingDraftChange("realityCheckIntervalMinutes", event.target.value)
+                        }
+                        placeholder="Off"
+                        type="number"
+                        value={responsibleGamingDraft.realityCheckIntervalMinutes}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="modalFeedback responsibleGamingFeedback" aria-live="polite">
+                    <strong>
+                      {responsibleGamingError ||
+                        responsibleGamingMessage ||
+                        (responsibleGamingLoading ? "Loading Responsible Gaming settings..." : "Limits are optional")}
+                    </strong>
+                    <span>
+                      Deposit and loss limits are enforced by the API when Responsible Gaming tools are enabled.
+                    </span>
+                  </div>
+
+                  <div className="responsibleGamingActions">
+                    <button
+                      className="welcomeButton compactPrimary"
+                      disabled={responsibleGamingBusy || responsibleGamingLoading}
+                      onClick={() => void handleResponsibleGamingSave()}
+                      type="button"
+                    >
+                      {responsibleGamingBusy ? "Saving..." : "Save Limits"}
+                    </button>
+                    <button
+                      className="welcomeButton compactPrimary secondaryRgAction"
+                      disabled={responsibleGamingBusy}
+                      onClick={() => void handleResponsibleGamingCooloff()}
+                      type="button"
+                    >
+                      24h Cool-off
+                    </button>
+                    <button
+                      className="welcomeButton compactPrimary dangerRgAction"
+                      disabled={responsibleGamingBusy}
+                      onClick={() => void handleResponsibleGamingSelfExclude()}
+                      type="button"
+                    >
+                      7-day Self-exclusion
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        ) : null}
+
         <section className="modalSection menuSectionWakeLock">
           <p className="eyebrow">Screen Wake Lock</p>
           <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
@@ -1541,6 +2045,63 @@ export default function HomePage() {
         </section>
 
       </OverlayModal>
+
+      {rgToolsEnabled && realityCheckSnapshot ? (
+        <div className="overlayBackdrop" role="presentation">
+          <section
+            aria-label="Reality Check"
+            aria-modal="true"
+            className="overlayModal responsibleGamingRealityModal"
+            role="dialog"
+          >
+            <header className="overlayHeader">
+              <div className="overlayTitleBlock">
+                <h2>Reality Check</h2>
+                <span className="overlayEyebrow">Responsible Gaming</span>
+              </div>
+            </header>
+            <div className="overlayBody">
+              <section className="modalSection responsibleGamingRealityBody">
+                <div className="menuRuleTable">
+                  <div className="menuRuleRow">
+                    <span>Time played</span>
+                    <strong>
+                      {formatElapsedMinutes(
+                        realityCheckSnapshot.sessionStartedAt,
+                        realityCheckSnapshot.openedAt
+                      )}
+                    </strong>
+                  </div>
+                  <div className="menuRuleRow">
+                    <span>Session P/L</span>
+                    <strong>{formatSignedMoney(realityCheckSnapshot.sessionNet)}</strong>
+                  </div>
+                  <div className="menuRuleRow">
+                    <span>Rounds</span>
+                    <strong>{realityCheckSnapshot.roundsPlayed.toLocaleString()}</strong>
+                  </div>
+                </div>
+                <div className="responsibleGamingActions">
+                  <button
+                    className="welcomeButton compactPrimary"
+                    onClick={handleRealityCheckContinue}
+                    type="button"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    className="welcomeButton compactPrimary secondaryRgAction"
+                    onClick={handleRealityCheckBreak}
+                    type="button"
+                  >
+                    Take a break
+                  </button>
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <OverlayModal
         onClose={() => toggleModal("infoOpen")}

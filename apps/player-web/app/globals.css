@@ -1721,6 +1721,89 @@ p {
   gap: 8px;
 }
 
+.responsibleGamingPanel {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 190, 112, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.responsibleGamingIntro {
+  margin: 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.responsibleGamingStatusGrid,
+.responsibleGamingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.responsibleGamingStatusGrid div {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.responsibleGamingStatusGrid span {
+  color: rgba(244, 239, 230, 0.58);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.responsibleGamingStatusGrid strong {
+  color: rgba(244, 239, 230, 0.9);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.responsibleGamingFeedback strong {
+  color: var(--gold-bright);
+}
+
+.responsibleGamingActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.secondaryRgAction {
+  background: linear-gradient(180deg, rgba(244, 239, 230, 0.18), rgba(244, 239, 230, 0.08));
+  color: rgba(244, 239, 230, 0.92);
+}
+
+.dangerRgAction {
+  border-color: rgba(255, 112, 112, 0.42);
+  background: linear-gradient(180deg, rgba(150, 44, 44, 0.9), rgba(84, 26, 26, 0.92));
+  color: rgba(255, 238, 230, 0.96);
+}
+
+.responsibleGamingRealityModal {
+  max-width: min(520px, 92vw);
+}
+
+.responsibleGamingRealityBody {
+  display: grid;
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .responsibleGamingStatusGrid,
+  .responsibleGamingGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .modalFeedback {
   display: grid;
   gap: 4px;
@@ -2385,8 +2468,12 @@ p {
   order: 4;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+.overlayModal[aria-label="Menu"] .menuSectionResponsibleGaming {
   order: 5;
+}
+
+.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+  order: 6;
 }
 
 .overlayModal[aria-label="Game Info"] .menuSectionRules {

@@ -13,7 +13,37 @@ export type AuthModePublicConfig = {
   fallbackEnabled: boolean;
   mockModeEnabled: boolean;
   turnstileSiteKey?: string | null;
+  rgToolsEnabled?: boolean;
 };
+
+export type ResponsibleGamingSettings = {
+  depositLimitDaily: number | null;
+  depositLimitWeekly: number | null;
+  depositLimitMonthly: number | null;
+  lossLimitDaily: number | null;
+  lossLimitWeekly: number | null;
+  lossLimitMonthly: number | null;
+  sessionTimeLimitMinutes: number | null;
+  realityCheckIntervalMinutes: number | null;
+  selfExclusionUntil: string | null;
+  cooloffUntil: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type ResponsibleGamingSettingsUpdate = Partial<
+  Pick<
+    ResponsibleGamingSettings,
+    | "depositLimitDaily"
+    | "depositLimitWeekly"
+    | "depositLimitMonthly"
+    | "lossLimitDaily"
+    | "lossLimitWeekly"
+    | "lossLimitMonthly"
+    | "sessionTimeLimitMinutes"
+    | "realityCheckIntervalMinutes"
+  >
+>;
 
 export type PlatformExchangeResult = {
   user: { id: string; email: string; displayName: string };
@@ -158,6 +188,27 @@ export const logoutPlayer = () =>
 
 export const fetchPlayerBootstrap = () =>
   requestJson<PlayerSnapshotDto>("/player/bootstrap", { method: "GET" });
+
+export const fetchResponsibleGamingSettings = () =>
+  requestJson<ResponsibleGamingSettings>("/player/responsible-gaming", { method: "GET" });
+
+export const updateResponsibleGamingSettings = (payload: ResponsibleGamingSettingsUpdate) =>
+  requestJson<ResponsibleGamingSettings>("/player/responsible-gaming", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+
+export const startResponsibleGamingCooloff = (durationHours: number) =>
+  requestJson<ResponsibleGamingSettings>("/player/responsible-gaming/cooloff", {
+    method: "POST",
+    body: JSON.stringify({ durationHours })
+  });
+
+export const startResponsibleGamingSelfExclusion = (durationHours: number) =>
+  requestJson<ResponsibleGamingSettings>("/player/responsible-gaming/self-exclude", {
+    method: "POST",
+    body: JSON.stringify({ durationHours })
+  });
 
 export const claimPlayerWelcomeBonus = () =>
   requestJson<PlayerSnapshotDto>("/player/welcome-bonus/claim", { method: "POST" });
