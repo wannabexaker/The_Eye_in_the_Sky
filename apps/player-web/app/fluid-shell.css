@@ -604,6 +604,21 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
   min-height: 24px;
 }
 
+.fluidShell .supportRailAccountAction {
+  z-index: var(--z-dock-popover);
+  max-width: min(112px, 52%);
+  height: 24px;
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: clamp(0.48rem, 1.4vw, 0.58rem);
+  letter-spacing: 0.06em;
+}
+
+.fluidShell .supportRailAccountIcon {
+  width: 11px;
+  height: 11px;
+}
+
 .fluidShell .audioControlWrap {
   position: relative;
   display: inline-flex;
@@ -1041,6 +1056,29 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     display: none;
   }
 
+  .fluidShell .supportStatusBlock .panelHeader {
+    display: none;
+  }
+
+  .fluidShell .supportStatusStrip {
+    grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 0.95fr));
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .fluidShell .supportStatusBottomRow {
+    display: contents;
+  }
+
+  .fluidShell .supportMiniStat {
+    min-height: 30px;
+    padding: 3px 4px;
+  }
+
+  .fluidShell .supportHistory {
+    height: clamp(58px, 15dvh, 78px);
+  }
+
   .fluidShell .floatingGameDockInner {
     min-height: calc(var(--dock-crown-overhang) + var(--dock-bar-height) + 14px);
     padding-inline: 8px;
@@ -1095,6 +1133,12 @@ Replaces the old per-breakpoint mobile/desktop shell patches.
     width: clamp(96px, 15vw, 150px);
     height: auto;
     aspect-ratio: 16 / 7;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 899.98px) and (max-height: 520px) {
+  .fluidShell .brandingRail {
+    display: none !important;
   }
 }
 

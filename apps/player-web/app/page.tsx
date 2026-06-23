@@ -166,6 +166,7 @@ export default function HomePage() {
   const [authMode, setAuthMode] = useState<AuthModePublicConfig | null>(null);
   // True when mode is EXTERNAL_ONLY and platform exchange has failed — show blocked screen
   const [authModeBlocked, setAuthModeBlocked] = useState(false);
+  const [accountPromptOpen, setAccountPromptOpen] = useState(false);
 
   // Keep screen awake while game is active
   const wakeLock = useScreenWakeLock();
@@ -289,7 +290,8 @@ export default function HomePage() {
     withdrawOpen ||
     paymentMethodsOpen ||
     walletHistoryOpen ||
-    analyticsOpen;
+    analyticsOpen ||
+    accountPromptOpen;
   const inputAllowed = !authBlocked && !presentationBlocked && !blockingModalOpen;
   const spinInteractionAllowed = useMemo(
     () =>
@@ -966,6 +968,7 @@ export default function HomePage() {
         persistedRoundIdRef.current = null;
         await loginPlayer(payload);
         await refreshServerBackedPlayerState();
+        setAccountPromptOpen(false);
       } catch (error) {
         applyAuthError(error, "Login failed.");
         throw error;
@@ -986,6 +989,7 @@ export default function HomePage() {
         persistedRoundIdRef.current = null;
         await registerPlayer(payload);
         await refreshServerBackedPlayerState();
+        setAccountPromptOpen(false);
       } catch (error) {
         applyAuthError(error, "Registration failed.");
         throw error;
@@ -1047,16 +1051,30 @@ export default function HomePage() {
     setAuthUser(null);
   }, [allowSkipLogin, clearAuthError, enterSimulatorMode, slot]);
 
-  const handleSwitchToLogin = useCallback(() => {
-    persistedRoundIdRef.current = null;
-    exitSimulatorMode();
-    slot.reset();
+  const handleOpenAccountPrompt = useCallback(() => {
+    if (authMode?.mode === "EXTERNAL_ONLY") {
+      return;
+    }
+
+    setModal("settingsOpen", false);
     setAuthBusy(false);
     setAuthLoading(false);
     clearAuthError();
-    setIsAuthenticated(false);
-    setAuthUser(null);
-  }, [clearAuthError, exitSimulatorMode, slot]);
+    setAccountPromptOpen(true);
+  }, [authMode?.mode, clearAuthError, setModal]);
+
+  const handleCloseAccountPrompt = useCallback(() => {
+    setAccountPromptOpen(false);
+    setAuthBusy(false);
+    setAuthLoading(false);
+    clearAuthError();
+
+    if (!isAuthenticated && runtimeMode !== "simulator") {
+      ensureGuestSession();
+      enterSimulatorMode();
+      slot.reset();
+    }
+  }, [clearAuthError, enterSimulatorMode, isAuthenticated, runtimeMode, slot]);
 
   const handleLogout = useCallback(async () => {
     setAuthBusy(true);
@@ -1288,6 +1306,7 @@ export default function HomePage() {
             freeSpins={visibleBonusSpins}
             history={slot.history}
             musicVolume={musicVolume}
+            onCreateAccount={handleOpenAccountPrompt}
             onDeposit={() => toggleModal("depositOpen")}
             onOpenAnalytics={() => toggleModal("analyticsOpen")}
             onSetMusicVolume={setMusicVolume}
@@ -1300,6 +1319,7 @@ export default function HomePage() {
             roundWin={latestRound?.totalWin ?? 0}
             scatterRewards={activeGameConfig.scatterRewards}
             sfxVolume={sfxVolume}
+            showCreateAccount={isSimulatorMode}
             symbolAssetSources={activeSymbolAssetSources}
             fullscreenEnabled={fullscreenEnabled}
             soundEnabled={soundEnabled}
@@ -1321,6 +1341,7 @@ export default function HomePage() {
             meterRatio={slot.meterRatio}
             meterTarget={activeGameConfig.bonusMeterTarget}
             musicVolume={musicVolume}
+            onCreateAccount={handleOpenAccountPrompt}
             onDeposit={() => toggleModal("depositOpen")}
             onOpenAnalytics={() => toggleModal("analyticsOpen")}
             onSetMusicVolume={setMusicVolume}
@@ -1332,6 +1353,7 @@ export default function HomePage() {
             onWithdraw={() => toggleModal("withdrawOpen")}
             roundWin={latestRound?.totalWin ?? 0}
             sfxVolume={sfxVolume}
+            showCreateAccount={isSimulatorMode}
             fullscreenEnabled={fullscreenEnabled}
             soundEnabled={soundEnabled}
           />
@@ -1483,8 +1505,13 @@ export default function HomePage() {
                   <button className="welcomeButton compactPrimary" onClick={handleRenameGuest} type="button">
                     Rename Guest
                   </button>
-                  <button className="welcomeButton compactPrimary" onClick={handleSwitchToLogin} type="button">
-                    Create Account
+                  <button
+                    className="welcomeButton compactPrimary"
+                    onClick={handleOpenAccountPrompt}
+                    title="Save your progress, wallet, and bonuses across devices."
+                    type="button"
+                  >
+                    Create Account / Save Progress
                   </button>
                 </>
               ) : authUser ? (
@@ -1764,8 +1791,27 @@ export default function HomePage() {
           </section>
         </div>
       ) : null}
-      {/* Internal login overlay — shown for INTERNAL_ONLY and HYBRID (when not blocked) */}
-      {!authLoading && !authModeBlocked && !canPlayWithoutAuth && authMode?.mode !== "EXTERNAL_ONLY" ? (
+      {/* Guest account conversion prompt. */}
+      {!authLoading && !authModeBlocked && accountPromptOpen && authMode?.mode !== "EXTERNAL_ONLY" ? (
+        <AuthOverlay
+          allowSkipLogin={false}
+          busy={authBusy}
+          error={authError}
+          errorCode={authErrorCode}
+          fieldErrors={authFieldErrors}
+          initialMode="register"
+          logoSrc={activeShellAssets.logo}
+          onClose={handleCloseAccountPrompt}
+          onForgotPassword={handleForgotPassword}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onResetPassword={handleResetPassword}
+          onSkipLogin={handleSkipLogin}
+          turnstileSiteKey={authMode?.turnstileSiteKey ?? null}
+        />
+      ) : null}
+      {/* Internal login overlay for non-guest play. */}
+      {!authLoading && !authModeBlocked && !accountPromptOpen && !canPlayWithoutAuth && authMode?.mode !== "EXTERNAL_ONLY" ? (
         <AuthOverlay
           allowSkipLogin={allowSkipLogin}
           busy={authBusy}

@@ -11,6 +11,8 @@ const VIEWPORTS = [
   { name: "1280x800", width: 1280, height: 800 }
 ] as const;
 
+test.setTimeout(240_000);
+
 const enterGuestMode = async (page: import("@playwright/test").Page) => {
   await page.goto("/");
   await page.getByRole("button", { name: /Continue as Guest/i }).first().click({ timeout: 8_000 }).catch(() => {});

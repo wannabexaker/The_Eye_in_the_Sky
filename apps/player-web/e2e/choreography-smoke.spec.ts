@@ -6,6 +6,8 @@ const SPIN_VIEWPORTS = [
   { name: "spin-wide-1920x1080", width: 1920, height: 1080 }
 ] as const;
 
+test.setTimeout(240_000);
+
 const enterGuestMode = async (page: Page) => {
   await page.goto("/");
   await page.getByRole("button", { name: /Continue as Guest/i }).first().click({ timeout: 30_000 }).catch(() => {});

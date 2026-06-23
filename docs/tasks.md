@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-23` **Guest account conversion prompt**
+  - Intent: add a tasteful guest-only account creation path so simulator players can save progress without losing instant play.
+  - Hypothesis: the conversion mechanism already exists in `handleRegister`, but guests never see an in-game entry point because `canPlayWithoutAuth` hides the mandatory auth overlay.
+  - Code change: added dismissible register-mode support to `AuthOverlay`, wired a local `accountPromptOpen` overlay in `apps/player-web/app/page.tsx`, added guest-only support rail CTAs for both active and Constellation rails, and changed the guest Menu session action to open the same prompt.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, and `corepack pnpm --filter player-web exec playwright test` passed locally. Lint still reports existing `<img>` and Pixi hook dependency warnings.
+  - Rollback note: revert the auth overlay props, account prompt wiring, support rail CTA props/styles, and auth e2e addition to return guests to the previous no-conversion-path simulator flow.
 - `2026-06-09` **Phone portrait spin dock/support rail separation**
   - Intent: fix the mobile portrait UI issue where the SPIN button could render behind the lower support rail in Brave/phone view.
   - Hypothesis: the active `fluid-shell.css` phone portrait layer used only a 4px row gap and placed `.supportRail.is-handheld-portrait` above the dock, so the spin CTA overhang was visually clipped by `Round Status`.

@@ -27,6 +27,9 @@ declare global {
 const TURNSTILE_SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 let turnstileScriptPromise: Promise<void> | null = null;
 
+type AuthEntryMode = "login" | "register";
+type AuthOverlayMode = AuthEntryMode | "forgot" | "reset";
+
 const loadTurnstileScript = (): Promise<void> => {
   if (typeof window === "undefined") {
     return Promise.resolve();
@@ -60,6 +63,7 @@ type AuthOverlayProps = {
   error: string;
   errorCode?: string;
   fieldErrors?: PlayerApiFieldErrors;
+  initialMode?: AuthEntryMode;
   onForgotPassword: (payload: { email: string }) => Promise<{ ok: boolean; resetToken?: string }>;
   onLogin: (payload: { email: string; password: string }) => Promise<void>;
   onRegister: (payload: {
@@ -68,6 +72,7 @@ type AuthOverlayProps = {
     displayName: string;
     turnstileToken?: string;
   }) => Promise<void>;
+  onClose?: () => void;
   onResetPassword: (payload: { token: string; newPassword: string }) => Promise<void>;
   onSkipLogin: () => void;
   logoSrc?: string;
@@ -80,6 +85,8 @@ export function AuthOverlay({
   error,
   errorCode,
   fieldErrors = {},
+  initialMode = "login",
+  onClose,
   onForgotPassword,
   onLogin,
   onRegister,
@@ -88,7 +95,7 @@ export function AuthOverlay({
   logoSrc = "/assets/ui/logo-eye-in-the-sky.png",
   turnstileSiteKey = null
 }: AuthOverlayProps) {
-  const [mode, setMode] = useState<"login" | "register" | "forgot" | "reset">("login");
+  const [mode, setMode] = useState<AuthOverlayMode>(() => initialMode);
   const [displayName, setDisplayName] = useState(() => generateRandomDisplayName());
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,6 +109,11 @@ export function AuthOverlay({
   const turnstileWidgetIdRef = useRef<string | null>(null);
 
   const turnstileRequired = Boolean(turnstileSiteKey);
+
+  useEffect(() => {
+    setMode(initialMode);
+    setLocalError("");
+  }, [initialMode]);
 
   // Render the Turnstile widget while on the register tab. It is invisible/managed
   // and produces a one-time token the API verifies. No-op when no site key.
@@ -262,11 +274,12 @@ export function AuthOverlay({
   const displayNameError = fieldErrors.displayName;
   const resetTokenError = fieldErrors.token;
   const newPasswordError = fieldErrors.newPassword;
+  const registerValueCopy = "Save your progress, wallet, and bonuses across devices.";
 
   return (
     <div className="overlayBackdrop welcomeBackdrop" role="presentation">
       <section aria-label="Authentication" className="overlayModal welcomeModal authModal">
-        <header className="overlayHeader welcomeHeader">
+        <header className={`overlayHeader welcomeHeader authHeader ${onClose ? "is-dismissible" : ""}`}>
           <div className="welcomeLogoStack">
             <div
               aria-hidden="true"
@@ -275,9 +288,25 @@ export function AuthOverlay({
             />
             <div className="overlayTitleBlock welcomeTitleBlock">
               <h2>{title}</h2>
-              <span className="overlayEyebrow">Server-backed session required</span>
+              <span className="overlayEyebrow">
+                {onClose ? "Save progress with a real account" : "Server-backed session required"}
+              </span>
             </div>
           </div>
+          {onClose ? (
+            <button
+              aria-label="Close create account prompt"
+              className="authCloseButton"
+              onClick={onClose}
+              title="Maybe later"
+              type="button"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M6 6l12 12" />
+                <path d="M18 6L6 18" />
+              </svg>
+            </button>
+          ) : null}
         </header>
 
         <div className="overlayBody welcomeBody authBody">
@@ -285,7 +314,7 @@ export function AuthOverlay({
             {mode === "login"
               ? "Sign in to restore wallet, rounds, and active bonus state."
               : mode === "register"
-                ? "Register a new player profile with secure cookie-based sessions."
+                ? registerValueCopy
                 : mode === "forgot"
                   ? "Enter the account email to issue a reset token."
                   : "Paste the reset token and choose a new password."}
@@ -407,7 +436,9 @@ export function AuthOverlay({
           <div className="modalFeedback authFeedback">
             <strong>{error || localError || (busy ? "Authorizing..." : "Secure session required")}</strong>
             <span>
-              First rollout persists wallet, rounds, welcome bonus, and resumable session state on the API.
+              {onClose && mode === "register"
+                ? "Guest play stays available until you submit this form."
+                : "First rollout persists wallet, rounds, welcome bonus, and resumable session state on the API."}
             </span>
           </div>
 
@@ -418,6 +449,12 @@ export function AuthOverlay({
           <button className="welcomeButton" disabled={busy} onClick={() => void runSubmit()} type="button">
             {busy ? "Please wait..." : primaryLabel}
           </button>
+
+          {onClose ? (
+            <button className="authInlineAction authMaybeLaterAction" onClick={onClose} type="button">
+              Maybe later
+            </button>
+          ) : null}
 
           {mode === "login" ? (
             <button className="authInlineAction" disabled={busy} onClick={() => setMode("forgot")} type="button">

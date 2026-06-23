@@ -76,6 +76,7 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Non-production forgot-password responses may include the raw reset token for local dev verification; production must deliver the token out of band and must not echo it to the caller.
 - Guest mode is client-only, backed by `sessionStorage`, and must not call wallet, round-persistence, welcome-bonus, or bootstrap write endpoints.
 - Guest mode may reuse the internal `simulator` runtime branch, but user-facing copy must say `Guest` and persisted guest wallet state must not be stored in localStorage.
+- Guest mode exposes an opt-in, dismissible `Create Account / Save Progress` conversion path. It must never gate instant guest play, and converting starts a fresh server-backed account without migrating session-only guest analytics or wallet state.
 
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker

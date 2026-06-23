@@ -32,8 +32,10 @@ type LeftSupportRailProps = {
   musicVolume: number;
   sfxVolume: number;
   fullscreenEnabled: boolean;
+  showCreateAccount: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
+  onCreateAccount: () => void;
   onToggleSound: () => void;
   onSetMusicVolume: (volume: number) => void;
   onSetSfxVolume: (volume: number) => void;
@@ -90,8 +92,10 @@ export function LeftSupportRail({
   musicVolume,
   sfxVolume,
   fullscreenEnabled,
+  showCreateAccount,
   onDeposit,
   onWithdraw,
+  onCreateAccount,
   onToggleSound,
   onSetMusicVolume,
   onSetSfxVolume,
@@ -335,6 +339,24 @@ export function LeftSupportRail({
       </section>
 
       <div className="supportRailUtilityBar">
+        {showCreateAccount ? (
+          <button
+            aria-label="Create Account"
+            className="walletAction walletActionPrimary supportRailAccountAction"
+            onClick={onCreateAccount}
+            title="Save your progress, wallet, and bonuses across devices."
+            type="button"
+          >
+            <svg aria-hidden="true" className="supportRailAccountIcon" viewBox="0 0 24 24">
+              <path d="M15 6.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+              <path d="M3.5 21a7.5 7.5 0 0 1 15 0" />
+              <path d="M19 8v6" />
+              <path d="M16 11h6" />
+            </svg>
+            <span>Create Account</span>
+          </button>
+        ) : null}
+
         <button
           aria-label="Menu"
           className="secondaryAction compactBottomAction iconOnlyAction supportRailUtilityButton"

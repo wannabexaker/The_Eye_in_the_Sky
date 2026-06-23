@@ -27,7 +27,14 @@
   }
 
   .authModal .welcomeHeader {
-    padding: 14px 16px 6px;
+    padding: 14px 56px 6px 16px;
+  }
+
+  .authCloseButton {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
   }
 
   .authModal .welcomeBody {
