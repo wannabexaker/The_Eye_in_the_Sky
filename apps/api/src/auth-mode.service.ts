@@ -169,12 +169,16 @@ export class AuthModeService {
    * Get sanitized config for public API response (excludes secrets).
    */
   async getPublicConfig(): Promise<
-    Omit<AuthModeConfig, "jwksUrl" | "introspectionUrl"> & { turnstileSiteKey: string | null }
+    Omit<AuthModeConfig, "jwksUrl" | "introspectionUrl"> & {
+      turnstileSiteKey: string | null;
+      rgToolsEnabled: boolean;
+    }
   > {
     const config = await this.getConfig();
     const { jwksUrl: _, introspectionUrl: __, ...publicConfig } = config;
     // Public Turnstile site key (safe to expose). Empty/unset → null = disabled.
     const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY?.trim() || null;
-    return { ...publicConfig, turnstileSiteKey };
+    const rgToolsEnabled = process.env.RG_TOOLS_ENABLED === "true";
+    return { ...publicConfig, turnstileSiteKey, rgToolsEnabled };
   }
 }

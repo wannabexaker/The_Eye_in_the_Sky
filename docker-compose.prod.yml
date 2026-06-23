@@ -52,6 +52,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      RG_TOOLS_ENABLED: ${RG_TOOLS_ENABLED:-false}
     ports:
       - "3200:3200"
     volumes:

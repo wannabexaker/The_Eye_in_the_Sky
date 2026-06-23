@@ -19,6 +19,8 @@ import { AuthNonceReplayService } from "./auth-nonce-replay.service";
 import { SessionAuthGuard, AdminGuard, InternalAuthPolicyGuard, ExternalAuthPolicyGuard } from "./auth.guard";
 import { PlayerController } from "./player.controller";
 import { PlayerService } from "./player.service";
+import { ResponsibleGamingController } from "./responsible-gaming.controller";
+import { ResponsibleGamingService } from "./responsible-gaming.service";
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { PlayerService } from "./player.service";
     HealthController,
     AuthController,
     PlayerController,
+    ResponsibleGamingController,
     GameConfigController,
     AnalyticsController,
     AdminSimulationController
@@ -51,6 +54,7 @@ import { PlayerService } from "./player.service";
     PlatformExchangeValidatorService,
     AuthNonceReplayService,
     PlayerService,
+    ResponsibleGamingService,
     SessionAuthGuard,
     AdminGuard,
     InternalAuthPolicyGuard,

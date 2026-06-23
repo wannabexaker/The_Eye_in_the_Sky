@@ -78,6 +78,13 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - Guest mode may reuse the internal `simulator` runtime branch, but user-facing copy must say `Guest` and persisted guest wallet state must not be stored in localStorage.
 - Guest mode exposes an opt-in, dismissible `Create Account / Save Progress` conversion path. It must never gate instant guest play, and converting starts a fresh server-backed account without migrating session-only guest analytics or wallet state.
 
+## Responsible Gaming Flag Contract
+- Responsible Gaming tools are compliance-ready but disabled by default behind `RG_TOOLS_ENABLED=false`.
+- `GET /auth/mode` exposes `rgToolsEnabled` as public config so `player-web` can hide all Responsible Gaming UI unless the operator explicitly enables the flag.
+- When `RG_TOOLS_ENABLED` is not exactly `true`, Responsible Gaming API enforcement is inert: deposits and rounds keep the current behavior, and the player UI does not render Responsible Gaming controls.
+- When enabled, Responsible Gaming settings apply to authenticated players only. Guest/simulator play remains client-local and is not migrated into server-side limits.
+- Enforced limits use rolling 24-hour, 7-day, and 30-day windows for deposits and net losses. Active cool-off/self-exclusion and session time limits block authenticated round persistence with typed client-facing error codes.
+
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)

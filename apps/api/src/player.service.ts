@@ -14,6 +14,7 @@ import type { Prisma, User } from "@prisma/client";
 import { PRIMARY_GAME_KEY } from "./bootstrap-data";
 import type { CurrentAuthUser } from "./auth.types";
 import { PrismaService } from "./prisma.service";
+import { ResponsibleGamingService } from "./responsible-gaming.service";
 
 const WELCOME_BONUS_AMOUNT = 500;
 const DEFAULT_PAYMENT_METHOD = {
@@ -92,7 +93,10 @@ const mapWalletTransaction = (
 
 @Injectable()
 export class PlayerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly responsibleGamingService: ResponsibleGamingService
+  ) {}
 
   private async getPrimaryGame() {
     const game = await this.prisma.game.findUnique({ where: { key: PRIMARY_GAME_KEY } });
@@ -208,6 +212,12 @@ export class PlayerService {
         throw new InternalServerErrorException("Player wallet is unavailable.");
       }
 
+      await this.responsibleGamingService.enforceDepositLimit(
+        transaction,
+        currentUser.id,
+        amount
+      );
+
       const balanceAfter = roundCurrency(Number(wallet.balance) + amount);
 
       await transaction.wallet.update({
@@ -316,6 +326,14 @@ export class PlayerService {
       if (!wallet) {
         throw new InternalServerErrorException("Player wallet is unavailable.");
       }
+
+      await this.responsibleGamingService.enforceRoundLimits(
+        transaction,
+        currentUser.id,
+        currentUser.sessionId,
+        chargedBetValue,
+        totalWinValue
+      );
 
       const profileId = payload.profileId?.trim() || "math_base_v2_0";
       const existingSession = await transaction.gameSession.findUnique({
