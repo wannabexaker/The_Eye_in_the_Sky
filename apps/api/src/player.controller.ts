@@ -51,4 +51,18 @@ export class PlayerController {
     const validatedBody = parseOrBadRequest(validators.persistRound, body);
     return this.playerService.persistRound(currentUser, validatedBody as never);
   }
+
+  /**
+   * Server-authoritative provably-fair spin. Gated by PROVABLY_FAIR_ENABLED
+   * (404 when disabled) — the legacy client-resolved /rounds path stays default.
+   */
+  @Post("spin")
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
+  resolveServerRound(
+    @CurrentUser() currentUser: CurrentAuthUser,
+    @Body() body: { bet?: number; profileId?: string }
+  ) {
+    const validatedBody = parseOrBadRequest(validators.serverSpin, body);
+    return this.playerService.resolveServerRound(currentUser, validatedBody);
+  }
 }

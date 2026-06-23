@@ -21,6 +21,8 @@ import { PlayerController } from "./player.controller";
 import { PlayerService } from "./player.service";
 import { ResponsibleGamingController } from "./responsible-gaming.controller";
 import { ResponsibleGamingService } from "./responsible-gaming.service";
+import { FairnessController } from "./fairness.controller";
+import { FairnessService } from "./fairness.service";
 
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { ResponsibleGamingService } from "./responsible-gaming.service";
     AuthController,
     PlayerController,
     ResponsibleGamingController,
+    FairnessController,
     GameConfigController,
     AnalyticsController,
     AdminSimulationController
@@ -55,6 +58,7 @@ import { ResponsibleGamingService } from "./responsible-gaming.service";
     AuthNonceReplayService,
     PlayerService,
     ResponsibleGamingService,
+    FairnessService,
     SessionAuthGuard,
     AdminGuard,
     InternalAuthPolicyGuard,

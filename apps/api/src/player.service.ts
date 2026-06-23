@@ -1,8 +1,15 @@
-import { initialGameState, type BonusState, type GameState, type SpinResult } from "@eye/game-engine";
+import {
+  initialGameState,
+  resolveSpin,
+  type BonusState,
+  type GameState,
+  type SpinResult
+} from "@eye/game-engine";
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException
+  InternalServerErrorException,
+  NotFoundException
 } from "@nestjs/common";
 import type {
   AuthUserDto,
@@ -15,6 +22,9 @@ import { PRIMARY_GAME_KEY } from "./bootstrap-data";
 import type { CurrentAuthUser } from "./auth.types";
 import { PrismaService } from "./prisma.service";
 import { ResponsibleGamingService } from "./responsible-gaming.service";
+import { FairnessService } from "./fairness.service";
+import { GameConfigService } from "./game-config.service";
+import { isProvablyFairEnabled } from "./provably-fair";
 
 const WELCOME_BONUS_AMOUNT = 500;
 const DEFAULT_PAYMENT_METHOD = {
@@ -95,7 +105,9 @@ const mapWalletTransaction = (
 export class PlayerService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly responsibleGamingService: ResponsibleGamingService
+    private readonly responsibleGamingService: ResponsibleGamingService,
+    private readonly fairnessService: FairnessService,
+    private readonly gameConfigService: GameConfigService
   ) {}
 
   private async getPrimaryGame() {
@@ -468,5 +480,226 @@ export class PlayerService {
     });
 
     return this.buildPlayerSnapshot(currentUser.id);
+  }
+
+  /**
+   * Shared persistence for an already-resolved spin (round + ledger + wallet +
+   * session + bonus state), with optional provably-fair seed commitment. Used by
+   * the server-authoritative spin path.
+   */
+  private async applyResolvedRoundTx(
+    transaction: Prisma.TransactionClient,
+    currentUser: CurrentAuthUser,
+    gameId: string,
+    result: SpinResult,
+    profileIdInput: string | undefined,
+    seedCommitment?: { clientSeed: string; serverSeedHash: string; nonce: number }
+  ): Promise<void> {
+    const betValue = roundCurrency(Number(result.bet));
+    const chargedBet = roundCurrency(Number(result.debugMetadata?.chargedBet ?? 0));
+    const totalWin = roundCurrency(Number(result.totalWin));
+
+    const existingRound = await transaction.round.findUnique({
+      where: { id: result.roundSummary.roundId }
+    });
+    if (existingRound) {
+      if (existingRound.userId !== currentUser.id) {
+        throw new BadRequestException("Round ID already belongs to a different user.");
+      }
+      return;
+    }
+
+    const wallet = await transaction.wallet.findUnique({ where: { userId: currentUser.id } });
+    if (!wallet) {
+      throw new InternalServerErrorException("Player wallet is unavailable.");
+    }
+
+    await this.responsibleGamingService.enforceRoundLimits(
+      transaction,
+      currentUser.id,
+      currentUser.sessionId,
+      chargedBet,
+      totalWin
+    );
+
+    const profileId = profileIdInput?.trim() || "math_base_v2_0";
+    const existingSession = await transaction.gameSession.findUnique({
+      where: { userId_gameId: { userId: currentUser.id, gameId } }
+    });
+
+    const previousBalance = Number(wallet.balance);
+    const balanceAfterBet = roundCurrency(previousBalance - chargedBet);
+    const finalBalance = roundCurrency(balanceAfterBet + totalWin);
+
+    const seedFields = {
+      seedUsed: String(result.seedUsed),
+      clientSeed: seedCommitment?.clientSeed ?? null,
+      serverSeedHash: seedCommitment?.serverSeedHash ?? null,
+      nonce: seedCommitment?.nonce ?? null
+    };
+
+    const round = await transaction.round.upsert({
+      where: { id: result.roundSummary.roundId },
+      update: {
+        profileId,
+        configVersion: result.configVersion,
+        ...seedFields,
+        mode: result.mode,
+        chargedBet,
+        bet: betValue,
+        totalWin,
+        walletDelta: roundCurrency(Number(result.walletDelta)),
+        initialBoardJson: JSON.stringify(result.initialBoard),
+        resultJson: JSON.stringify(result),
+        gameSessionId: existingSession?.id ?? null
+      },
+      create: {
+        id: result.roundSummary.roundId,
+        userId: currentUser.id,
+        gameId,
+        gameSessionId: existingSession?.id ?? null,
+        profileId,
+        configVersion: result.configVersion,
+        ...seedFields,
+        mode: result.mode,
+        chargedBet,
+        bet: betValue,
+        totalWin,
+        walletDelta: roundCurrency(Number(result.walletDelta)),
+        initialBoardJson: JSON.stringify(result.initialBoard),
+        resultJson: JSON.stringify(result),
+        createdAt: new Date(result.roundSummary.timestamp)
+      }
+    });
+
+    await transaction.ledgerEntry.deleteMany({
+      where: { roundId: round.id, reason: { in: ["round_bet", "round_win"] } }
+    });
+
+    if (chargedBet > 0) {
+      await transaction.ledgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          roundId: round.id,
+          reason: "round_bet",
+          amount: -chargedBet,
+          balanceAfter: balanceAfterBet,
+          metadataJson: JSON.stringify({ label: `Bet x${result.appliedWinMultiplier}` })
+        }
+      });
+    }
+
+    if (totalWin > 0) {
+      await transaction.ledgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          roundId: round.id,
+          reason: "round_win",
+          amount: totalWin,
+          balanceAfter: finalBalance,
+          metadataJson: JSON.stringify({
+            label: result.bonusTriggered ? "Win | Bonus Triggered" : "Win"
+          })
+        }
+      });
+    }
+
+    await transaction.wallet.update({
+      where: { id: wallet.id },
+      data: { balance: finalBalance }
+    });
+
+    const sessionData = {
+      activeProfileId: profileId,
+      configVersion: result.configVersion,
+      stateJson: JSON.stringify(result.nextState),
+      lastRoundId: round.id,
+      lastActiveAt: new Date()
+    };
+
+    if (existingSession) {
+      await transaction.gameSession.update({ where: { id: existingSession.id }, data: sessionData });
+    } else {
+      await transaction.gameSession.create({
+        data: { userId: currentUser.id, gameId, ...sessionData }
+      });
+    }
+
+    await transaction.bonusState.create({
+      data: {
+        userId: currentUser.id,
+        roundId: round.id,
+        mode: result.nextState.bonusState?.mode ?? "sky_opens",
+        freeSpinsRemaining: result.nextState.bonusState?.freeSpinsRemaining ?? 0,
+        stickyMultiplier: result.nextState.bonusState?.stickyMultiplier ?? 0,
+        totalBonusWin: roundCurrency(result.nextState.bonusState?.totalBonusWin ?? 0),
+        betPerSpin: roundCurrency(result.nextState.bonusState?.betPerSpin ?? 0),
+        initialBonusBudget: roundCurrency(result.nextState.bonusState?.initialBonusBudget ?? 0),
+        remainingBonusBudget: roundCurrency(result.nextState.bonusState?.remainingBonusBudget ?? 0),
+        preBonusBet: roundCurrency(result.nextState.bonusState?.preBonusBet ?? 0),
+        stateJson: JSON.stringify(result.nextState.bonusState ?? null)
+      }
+    });
+  }
+
+  /**
+   * Server-authoritative provably-fair spin: the server resolves the outcome
+   * with a commit-reveal seed, validates the wallet, and persists. Gated by
+   * PROVABLY_FAIR_ENABLED (404 when disabled).
+   */
+  async resolveServerRound(
+    currentUser: CurrentAuthUser,
+    payload: { bet?: number; profileId?: string }
+  ) {
+    if (!isProvablyFairEnabled()) {
+      throw new NotFoundException({
+        code: "PROVABLY_FAIR_DISABLED",
+        message: "Server-authoritative spins are not enabled."
+      });
+    }
+
+    const bet = roundCurrency(Number(payload.bet));
+    if (!Number.isFinite(bet) || bet <= 0) {
+      throw new BadRequestException("Bet must be greater than zero.");
+    }
+
+    const { activeConfig, activeProfileId } = await this.gameConfigService.getActiveConfig();
+    const game = await this.getPrimaryGame();
+
+    const result = await this.prisma.$transaction(async (transaction) => {
+      const wallet = await transaction.wallet.findUnique({ where: { userId: currentUser.id } });
+      if (!wallet) {
+        throw new InternalServerErrorException("Player wallet is unavailable.");
+      }
+      const balance = Number(wallet.balance);
+
+      const existingSession = await transaction.gameSession.findUnique({
+        where: { userId_gameId: { userId: currentUser.id, gameId: game.id } }
+      });
+      const state =
+        parseJsonValue<GameState>(existingSession?.stateJson ?? null) ?? initialGameState(balance);
+
+      const fairness = await this.fairnessService.consumeSpinSeed(transaction, currentUser.id);
+      const spin = resolveSpin({ bet, state, seed: fairness.seed }, activeConfig);
+
+      const chargedBet = roundCurrency(Number(spin.debugMetadata?.chargedBet ?? 0));
+      if (chargedBet > balance + 0.000001) {
+        throw new BadRequestException({
+          code: "INSUFFICIENT_BALANCE",
+          message: "Insufficient balance for this bet."
+        });
+      }
+
+      await this.applyResolvedRoundTx(transaction, currentUser, game.id, spin, activeProfileId, {
+        clientSeed: fairness.clientSeed,
+        serverSeedHash: fairness.serverSeedHash,
+        nonce: fairness.nonce
+      });
+
+      return spin;
+    });
+
+    const snapshot = await this.buildPlayerSnapshot(currentUser.id);
+    return { result, snapshot };
   }
 }

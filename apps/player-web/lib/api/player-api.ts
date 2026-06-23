@@ -14,6 +14,22 @@ export type AuthModePublicConfig = {
   mockModeEnabled: boolean;
   turnstileSiteKey?: string | null;
   rgToolsEnabled?: boolean;
+  provablyFairEnabled?: boolean;
+};
+
+export type FairnessCommitment = {
+  serverSeedHash: string;
+  clientSeed: string;
+  nonce: number;
+  previousServerSeed: string | null;
+  previousServerSeedHash: string | null;
+};
+
+export type FairnessRotation = FairnessCommitment & { revealedServerSeed: string };
+
+export type ServerSpinResponse = {
+  result: SpinResult;
+  snapshot: PlayerSnapshotDto;
 };
 
 export type ResponsibleGamingSettings = {
@@ -230,3 +246,22 @@ export const persistPlayerRound = (profileId: string, result: SpinResult) =>
     method: "POST",
     body: JSON.stringify({ profileId, result })
   });
+
+// Provably-fair / server-authoritative spins (active only when the API flag is on).
+export const resolveServerSpin = (payload: { bet: number; profileId?: string }) =>
+  requestJson<ServerSpinResponse>("/player/spin", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+export const fetchFairnessCommitment = () =>
+  requestJson<FairnessCommitment>("/player/fairness", { method: "GET" });
+
+export const setFairnessClientSeed = (clientSeed: string) =>
+  requestJson<FairnessCommitment>("/player/fairness/client-seed", {
+    method: "POST",
+    body: JSON.stringify({ clientSeed })
+  });
+
+export const rotateFairnessSeed = () =>
+  requestJson<FairnessRotation>("/player/fairness/rotate", { method: "POST" });
