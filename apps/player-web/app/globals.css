@@ -1777,6 +1777,88 @@ p {
   align-items: center;
 }
 
+.fairnessPanel {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 190, 112, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fairnessIntro {
+  margin: 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.fairnessStatusGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(96px, 0.4fr);
+  gap: 10px;
+}
+
+.fairnessStatusGrid div,
+.fairnessReveal {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(226, 190, 112, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.fairnessStatusGrid span,
+.fairnessReveal span {
+  color: rgba(244, 239, 230, 0.58);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fairnessStatusGrid strong,
+.fairnessReveal strong {
+  color: rgba(244, 239, 230, 0.9);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.fairnessCodeValue {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.fairnessReveal p {
+  margin: 6px 0 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.fairnessReveal a {
+  color: var(--gold-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fairnessFeedback strong {
+  color: var(--gold-bright);
+}
+
+.fairnessActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.fairnessSecondaryAction {
+  background: linear-gradient(180deg, rgba(244, 239, 230, 0.18), rgba(244, 239, 230, 0.08));
+  color: rgba(244, 239, 230, 0.92);
+}
+
 .secondaryRgAction {
   background: linear-gradient(180deg, rgba(244, 239, 230, 0.18), rgba(244, 239, 230, 0.08));
   color: rgba(244, 239, 230, 0.92);
@@ -1799,7 +1881,8 @@ p {
 
 @media (max-width: 640px) {
   .responsibleGamingStatusGrid,
-  .responsibleGamingGrid {
+  .responsibleGamingGrid,
+  .fairnessStatusGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -2515,12 +2598,16 @@ p {
   order: 4;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionResponsibleGaming {
+.overlayModal[aria-label="Menu"] .menuSectionProvablyFair {
   order: 5;
 }
 
-.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+.overlayModal[aria-label="Menu"] .menuSectionResponsibleGaming {
   order: 6;
+}
+
+.overlayModal[aria-label="Menu"] .menuSectionWakeLock {
+  order: 7;
 }
 
 .overlayModal[aria-label="Game Info"] .menuSectionRules {

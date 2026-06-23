@@ -39,6 +39,7 @@ import {
   exchangePlatformToken,
   fetchAuthMode,
   fetchAuthSession,
+  fetchFairnessCommitment,
   fetchPlayerBootstrap,
   fetchResponsibleGamingSettings,
   forgotPlayerPassword,
@@ -48,11 +49,15 @@ import {
   persistPlayerRound,
   registerPlayer,
   resetPlayerPassword,
+  rotateFairnessSeed,
+  setFairnessClientSeed,
   startResponsibleGamingCooloff,
   startResponsibleGamingSelfExclusion,
   updateResponsibleGamingSettings,
   withdrawPlayerWallet,
   type AuthModePublicConfig,
+  type FairnessCommitment,
+  type FairnessRotation,
   type ResponsibleGamingSettings,
   type ResponsibleGamingSettingsUpdate
 } from "@/lib/api/player-api";
@@ -136,6 +141,11 @@ type RealityCheckSnapshot = {
   roundsPlayed: number;
 };
 
+type FairnessReveal = Pick<
+  FairnessRotation,
+  "previousServerSeedHash" | "revealedServerSeed"
+>;
+
 const createResponsibleGamingDraft = (
   settings?: ResponsibleGamingSettings | null
 ): ResponsibleGamingDraft => ({
@@ -216,6 +226,9 @@ const DEFAULT_RUNTIME_GRAPHICS_HINTS: RuntimeGraphicsHints = {
   viewportWidth: 0
 };
 
+const PROVABLY_FAIR_DOCS_URL =
+  "https://github.com/wannabexaker/The_Eye_in_the_Sky/blob/main/docs/PROVABLY_FAIR.md#how-to-verify-a-round";
+
 const readRuntimeGraphicsHints = (): RuntimeGraphicsHints => {
   if (typeof window === "undefined") {
     return DEFAULT_RUNTIME_GRAPHICS_HINTS;
@@ -268,6 +281,14 @@ export default function HomePage() {
   const [responsibleGamingMessage, setResponsibleGamingMessage] = useState("");
   const [realityCheckSnapshot, setRealityCheckSnapshot] =
     useState<RealityCheckSnapshot | null>(null);
+  const [fairnessCommitment, setFairnessCommitment] =
+    useState<FairnessCommitment | null>(null);
+  const [fairnessClientSeedDraft, setFairnessClientSeedDraft] = useState("");
+  const [fairnessReveal, setFairnessReveal] = useState<FairnessReveal | null>(null);
+  const [fairnessLoading, setFairnessLoading] = useState(false);
+  const [fairnessBusy, setFairnessBusy] = useState(false);
+  const [fairnessError, setFairnessError] = useState("");
+  const [fairnessMessage, setFairnessMessage] = useState("");
   const responsibleGamingSessionStartedAtRef = useRef(Date.now());
   const lastRealityCheckAtRef = useRef(Date.now());
 
@@ -337,7 +358,18 @@ export default function HomePage() {
     finishWithdrawalProcessing
   } = usePlayerUiStore();
   const { activeGameConfig, activeGameConfigProfile, usingRemoteConfig } = useRuntimeGameConfig();
-  const slot = useSlotMachine(activeGameConfig);
+  const isSimulatorMode = runtimeMode === "simulator";
+  const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
+  const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
+  const rgToolsEnabled = authMode?.rgToolsEnabled === true;
+  const canUseResponsibleGamingTools = rgToolsEnabled && canUseServerPersistence;
+  const provablyFairEnabled = authMode?.provablyFairEnabled === true;
+  const canUseProvablyFairTools = provablyFairEnabled && canUseServerPersistence;
+  const slot = useSlotMachine(activeGameConfig, {
+    serverSpinEnabled: canUseProvablyFairTools,
+    serverSpinProfileId: activeGameConfigProfile.profileId,
+    onServerSpinSnapshot: applyServerSnapshot
+  });
   const viewport = useViewport();
   const [runtimeGraphicsHints, setRuntimeGraphicsHints] = useState<RuntimeGraphicsHints>(
     DEFAULT_RUNTIME_GRAPHICS_HINTS
@@ -376,11 +408,6 @@ export default function HomePage() {
     () => getOuroborosRingAsset(graphicsQuality),
     [graphicsQuality]
   );
-  const isSimulatorMode = runtimeMode === "simulator";
-  const canUseServerPersistence = runtimeMode === "authenticated" && isAuthenticated;
-  const canPlayWithoutAuth = isSimulatorMode || canUseServerPersistence;
-  const rgToolsEnabled = authMode?.rgToolsEnabled === true;
-  const canUseResponsibleGamingTools = rgToolsEnabled && canUseServerPersistence;
   const presentationBlocked =
     slot.bonusEntryPending || slot.bonusAnnouncementLocked || slot.bonusSummaryLocked;
   const authBlocked = authLoading || !canPlayWithoutAuth;
@@ -552,6 +579,60 @@ export default function HomePage() {
       disposed = true;
     };
   }, [canUseServerPersistence, rgToolsEnabled]);
+
+  useEffect(() => {
+    if (!canUseProvablyFairTools) {
+      setFairnessCommitment(null);
+      setFairnessClientSeedDraft("");
+      setFairnessReveal(null);
+      setFairnessError("");
+      setFairnessMessage("");
+      setFairnessLoading(false);
+      setFairnessBusy(false);
+      return;
+    }
+
+    if (!settingsOpen) {
+      return;
+    }
+
+    let disposed = false;
+    setFairnessLoading(true);
+    setFairnessError("");
+    setFairnessMessage("");
+
+    const loadFairnessCommitment = async () => {
+      try {
+        const commitment = await fetchFairnessCommitment();
+        if (disposed) {
+          return;
+        }
+        setFairnessCommitment(commitment);
+        setFairnessClientSeedDraft(commitment.clientSeed);
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        setFairnessError(
+          error instanceof PlayerApiError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Fairness commitment failed to load."
+        );
+      } finally {
+        if (!disposed) {
+          setFairnessLoading(false);
+        }
+      }
+    };
+
+    void loadFairnessCommitment();
+
+    return () => {
+      disposed = true;
+    };
+  }, [authUser?.id, canUseProvablyFairTools, settingsOpen]);
 
   useEffect(() => {
     const now = Date.now();
@@ -867,7 +948,8 @@ export default function HomePage() {
           fallbackEnabled: false,
           mockModeEnabled: false,
           turnstileSiteKey: null,
-          rgToolsEnabled: false
+          rgToolsEnabled: false,
+          provablyFairEnabled: false
         };
         try {
           mode = await fetchAuthMode();
@@ -1005,7 +1087,7 @@ export default function HomePage() {
   }, [canPlayWithoutAuth, depositOpen, hasHydrated, setModal, slot.needsDepositPrompt, welcomeOpen]);
 
   useEffect(() => {
-    if (!canUseServerPersistence || !slot.lastResult) {
+    if (!canUseServerPersistence || canUseProvablyFairTools || !slot.lastResult) {
       return;
     }
 
@@ -1027,7 +1109,13 @@ export default function HomePage() {
           error
         );
       });
-  }, [activeGameConfigProfile.profileId, applyServerSnapshot, canUseServerPersistence, slot.lastResult]);
+  }, [
+    activeGameConfigProfile.profileId,
+    applyServerSnapshot,
+    canUseProvablyFairTools,
+    canUseServerPersistence,
+    slot.lastResult
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1440,6 +1528,78 @@ export default function HomePage() {
     setRealityCheckSnapshot(null);
     void handleLogout();
   }, [handleLogout]);
+
+  const handleFairnessClientSeedChange = useCallback((value: string) => {
+    setFairnessClientSeedDraft(value);
+    setFairnessError("");
+    setFairnessMessage("");
+  }, []);
+
+  const handleFairnessClientSeedSave = useCallback(async () => {
+    if (!canUseProvablyFairTools) {
+      return;
+    }
+
+    const clientSeed = fairnessClientSeedDraft.trim();
+    if (!clientSeed) {
+      setFairnessError("Client seed is required.");
+      setFairnessMessage("");
+      return;
+    }
+
+    setFairnessBusy(true);
+    setFairnessError("");
+    setFairnessMessage("");
+
+    try {
+      const commitment = await setFairnessClientSeed(clientSeed);
+      setFairnessCommitment(commitment);
+      setFairnessClientSeedDraft(commitment.clientSeed);
+      setFairnessReveal(null);
+      setFairnessMessage("Client seed saved.");
+    } catch (error) {
+      setFairnessError(
+        error instanceof PlayerApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Client seed failed to save."
+      );
+    } finally {
+      setFairnessBusy(false);
+    }
+  }, [canUseProvablyFairTools, fairnessClientSeedDraft]);
+
+  const handleFairnessRotate = useCallback(async () => {
+    if (!canUseProvablyFairTools) {
+      return;
+    }
+
+    setFairnessBusy(true);
+    setFairnessError("");
+    setFairnessMessage("");
+
+    try {
+      const rotation = await rotateFairnessSeed();
+      setFairnessCommitment(rotation);
+      setFairnessClientSeedDraft(rotation.clientSeed);
+      setFairnessReveal({
+        previousServerSeedHash: rotation.previousServerSeedHash,
+        revealedServerSeed: rotation.revealedServerSeed
+      });
+      setFairnessMessage("Server seed rotated. The revealed seed verifies prior rounds.");
+    } catch (error) {
+      setFairnessError(
+        error instanceof PlayerApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Server seed rotation failed."
+      );
+    } finally {
+      setFairnessBusy(false);
+    }
+  }, [canUseProvablyFairTools]);
 
   const handleRenameGuest = useCallback(() => {
     const nextName = window.prompt("Guest display name", guestDisplayName);
@@ -1882,6 +2042,90 @@ export default function HomePage() {
             Open Session Analytics
           </button>
         </section>
+
+        {canUseProvablyFairTools ? (
+          <section className="modalSection menuSectionProvablyFair">
+            <p className="eyebrow">Provably Fair</p>
+            <div className="fairnessPanel">
+              <p className="fairnessIntro">
+                Server spins use a committed server seed plus your client seed. Rotate to reveal the prior seed.
+              </p>
+
+              <div className="fairnessStatusGrid">
+                <div>
+                  <span>Server Seed Hash</span>
+                  <strong className="fairnessCodeValue">
+                    {fairnessCommitment?.serverSeedHash ??
+                      (fairnessLoading ? "Loading commitment..." : "Unavailable")}
+                  </strong>
+                </div>
+                <div>
+                  <span>Nonce</span>
+                  <strong>{fairnessCommitment?.nonce.toLocaleString() ?? "0"}</strong>
+                </div>
+              </div>
+
+              <label className="inputGroup">
+                <span>Client Seed</span>
+                <input
+                  maxLength={128}
+                  onChange={(event) => handleFairnessClientSeedChange(event.target.value)}
+                  placeholder="Set your client seed"
+                  type="text"
+                  value={fairnessClientSeedDraft}
+                />
+              </label>
+
+              {fairnessReveal ? (
+                <div className="fairnessReveal">
+                  <span>Revealed Server Seed</span>
+                  <strong className="fairnessCodeValue">{fairnessReveal.revealedServerSeed}</strong>
+                  <span>Previous Server Seed Hash</span>
+                  <strong className="fairnessCodeValue">
+                    {fairnessReveal.previousServerSeedHash ?? "Unavailable"}
+                  </strong>
+                  <p>
+                    Use these values with the prior round nonce and client seed to verify past rounds in{" "}
+                    <a href={PROVABLY_FAIR_DOCS_URL} rel="noreferrer" target="_blank">
+                      docs/PROVABLY_FAIR.md
+                    </a>
+                    .
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="modalFeedback fairnessFeedback" aria-live="polite">
+                <strong>
+                  {fairnessError ||
+                    fairnessMessage ||
+                    (fairnessLoading ? "Loading fairness commitment..." : "Server commitment active")}
+                </strong>
+                <span>
+                  Active server seed stays hidden until rotation; the hash is the public commitment.
+                </span>
+              </div>
+
+              <div className="fairnessActions">
+                <button
+                  className="welcomeButton compactPrimary"
+                  disabled={fairnessBusy || fairnessLoading}
+                  onClick={() => void handleFairnessClientSeedSave()}
+                  type="button"
+                >
+                  {fairnessBusy ? "Saving..." : "Save Client Seed"}
+                </button>
+                <button
+                  className="welcomeButton compactPrimary fairnessSecondaryAction"
+                  disabled={fairnessBusy || fairnessLoading}
+                  onClick={() => void handleFairnessRotate()}
+                  type="button"
+                >
+                  Rotate & Reveal Seed
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {rgToolsEnabled ? (
           <section className="modalSection menuSectionResponsibleGaming">

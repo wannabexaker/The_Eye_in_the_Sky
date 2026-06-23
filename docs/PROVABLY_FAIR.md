@@ -76,7 +76,7 @@ Set on the API (e.g. RPi `.env`):
 PROVABLY_FAIR_ENABLED=true
 ```
 
-Recreate the API container. The Fairness panel appears in the player Menu and the
-`/player/spin` + `/player/fairness` endpoints become live. Routing the in-game
-spin button through `/player/spin` is the final client integration step (see
-`apps/player-web/hooks/gameplay/use-slot-machine.ts`).
+Recreate the API container. For authenticated, server-backed sessions the
+Fairness panel appears in the player Menu and the in-game spin button routes
+through `/player/spin`. Guest/simulator play and flag-off sessions keep the
+legacy local client-resolved path.

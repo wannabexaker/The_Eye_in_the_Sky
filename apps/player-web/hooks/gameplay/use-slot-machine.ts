@@ -13,8 +13,10 @@ import {
   type GameState,
   type SpinResult
 } from "@eye/game-engine";
+import type { PlayerSnapshotDto } from "@eye/shared-types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { soundManager } from "@/lib/audio/sound-manager";
+import { PlayerApiError, resolveServerSpin } from "@/lib/api/player-api";
 import {
   buildSpinChoreography,
   type SpinChoreographyEvent,
@@ -32,6 +34,14 @@ import type {
   WinPresentationEntry
 } from "@/lib/presentation/win-presentation-types";
 import { usePlayerUiStore } from "@/lib/state/player-store";
+
+type UseSlotMachineOptions = {
+  serverSpinEnabled?: boolean;
+  serverSpinProfileId?: string;
+  onServerSpinSnapshot?: (snapshot: PlayerSnapshotDto) => void;
+};
+
+type SpinRunResult = SpinResult | null | Promise<SpinResult | null>;
 
 const MIN_BET = 0.1;
 const DEFAULT_AUTOSPIN_COUNT = 10;
@@ -144,6 +154,18 @@ const pushRoundAnalytics = async (result: SpinResult, gameConfig: GameConfig) =>
 };
 
 const roundCurrency = (value: number) => Number(value.toFixed(2));
+
+const describeServerSpinError = (error: unknown) => {
+  if (error instanceof PlayerApiError) {
+    if (error.code === "INSUFFICIENT_BALANCE") {
+      return "Server balance is too low for that bet. Deposit or lower the bet.";
+    }
+
+    return error.message;
+  }
+
+  return error instanceof Error ? error.message : "Server spin failed.";
+};
 
 const getRecommendedRiskThreshold = (balance: number) =>
   Math.max(0, Math.floor((balance / 10) * 100) / 100);
@@ -507,7 +529,7 @@ const buildWinPresentation = (
   };
 };
 
-export function useSlotMachine(gameConfig: GameConfig) {
+export function useSlotMachine(gameConfig: GameConfig, options: UseSlotMachineOptions = {}) {
   const {
     soundEnabled,
     sfxVolume,
@@ -580,6 +602,10 @@ export function useSlotMachine(gameConfig: GameConfig) {
   );
   const bonusModeActive = Boolean(gameState.bonusState);
   const areBetControlsLocked = isAutoSpinning || autospinStopRequested;
+  const serverSpinEnabled =
+    options.serverSpinEnabled === true && Boolean(options.onServerSpinSnapshot);
+  const serverSpinProfileId = options.serverSpinProfileId;
+  const onServerSpinSnapshot = options.onServerSpinSnapshot;
 
   useEffect(() => {
     if (previousConfigVersionRef.current === gameConfig.version) {
@@ -1225,7 +1251,21 @@ const validateAutospinCount = useCallback(
     soundManager.setVolume(sfxVolume);
   }, [sfxVolume]);
 
-  const runSpin = useCallback(() => {
+  const applyResolvedSpin = useCallback(
+    (result: SpinResult) => {
+      gameStateRef.current = result.nextState;
+      setGameState(result.nextState);
+      applyRoundResult(result);
+      setLastResult(result);
+      setHistory((current) => [result, ...current].slice(0, 10));
+      scheduleRoundFeedback(result);
+      void pushRoundAnalytics(result, gameConfig);
+      return result;
+    },
+    [applyRoundResult, gameConfig, scheduleRoundFeedback]
+  );
+
+  const runSpin = useCallback((): SpinRunResult => {
     const currentState =
       gameStateRef.current.balance === availableBalance
         ? gameStateRef.current
@@ -1248,21 +1288,49 @@ const validateAutospinCount = useCallback(
     soundManager.prime();
     gameStateRef.current = currentState;
 
+    if (serverSpinEnabled) {
+      clearTimers();
+      setSpinPhase("SPIN_START");
+      setPhaseMessage("Resolving spin with the server.");
+
+      return resolveServerSpin({
+        bet: currentBet,
+        ...(serverSpinProfileId ? { profileId: serverSpinProfileId } : {})
+      })
+        .then(({ result, snapshot }) => {
+          const appliedResult = applyResolvedSpin(result);
+          onServerSpinSnapshot?.(snapshot);
+          return appliedResult;
+        })
+        .catch((error: unknown) => {
+          const message = describeServerSpinError(error);
+          setSpinPhase("IDLE");
+          setPhaseMessage(message);
+          setBetValidationMessage(message);
+          setBetValidationTooltip(message);
+          setIsAutoSpinning(false);
+          setAutospinStopRequested(false);
+          setAutoSpinRemaining(0);
+          return null;
+        });
+    }
+
     const result = resolveSpin({
       bet: currentBet,
       state: currentState,
       winMultiplier: currentWinMultiplier
     }, gameConfig);
 
-    gameStateRef.current = result.nextState;
-    setGameState(result.nextState);
-    applyRoundResult(result);
-    setLastResult(result);
-    setHistory((current) => [result, ...current].slice(0, 10));
-    scheduleRoundFeedback(result);
-    void pushRoundAnalytics(result, gameConfig);
-    return result;
-  }, [applyRoundResult, availableBalance, gameConfig, scheduleRoundFeedback]);
+    return applyResolvedSpin(result);
+  }, [
+    applyResolvedSpin,
+    availableBalance,
+    clearTimers,
+    gameConfig,
+    onServerSpinSnapshot,
+    serverSpinEnabled,
+    serverSpinProfileId
+  ]);
 
   const spin = useCallback(() => {
     if (bonusEntryPending || bonusAnnouncement || bonusSummary) {
@@ -1383,6 +1451,16 @@ const validateAutospinCount = useCallback(
 
     const timer = window.setTimeout(() => {
       const result = runSpin();
+
+      if (result instanceof Promise) {
+        void result.then((resolvedResult) => {
+          if (resolvedResult) {
+            setAutoSpinRemaining((current) => (Number.isFinite(current) ? current - 1 : current));
+          }
+        });
+        return;
+      }
+
       if (result) {
         setAutoSpinRemaining((current) => (Number.isFinite(current) ? current - 1 : current));
       }

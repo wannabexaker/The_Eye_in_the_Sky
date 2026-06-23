@@ -62,6 +62,12 @@
 - `todo` Add Prisma schema migrations setup
 
 ## Completed Tasks
+- `2026-06-23` **Provably Fair frontend wiring**
+  - Intent: complete the player-web side of the existing provably-fair backend without changing engine or API behavior.
+  - Hypothesis: `authMode.provablyFairEnabled` can gate both the Menu Fairness panel and the spin resolver path, keeping guest/flag-off play on the current local `resolveSpin` + `/player/rounds` flow.
+  - Code change: added the authenticated-only Provably Fair Menu section, wired client-seed save and server-seed rotation/reveal actions, passed server-spin options into `useSlotMachine`, routed enabled authenticated spins through `resolveServerSpin`, applied the returned snapshot, and skipped legacy round persistence for server-resolved spins.
+  - Verification: `corepack pnpm --filter player-web exec tsc -p tsconfig.json --noEmit`, `corepack pnpm -r lint`, `corepack pnpm -r --if-present test`, and `corepack pnpm --filter player-web exec playwright test --reporter=line` passed. Manual flag-on smoke confirmed `/_api/player/spin` count `1`, `/_api/player/rounds` count `0`, returned wallet snapshot, Fairness client-seed save, rotate/reveal, and DB round seed fields (`seedUsed`, `clientSeed`, `serverSeedHash`, `nonce`). Manual flag-off smoke confirmed Fairness section count `0`, `/_api/player/spin` count `0`, and legacy `/_api/player/rounds` count `1`.
+  - Rollback note: revert the player-web page/hook/CSS changes and restore the previous `docs/PROVABLY_FAIR.md` pending-client note if server-authoritative spin routing needs a different frontend contract.
 - `2026-06-23` **Guest account conversion prompt**
   - Intent: add a tasteful guest-only account creation path so simulator players can save progress without losing instant play.
   - Hypothesis: the conversion mechanism already exists in `handleRegister`, but guests never see an in-game entry point because `canPlayWithoutAuth` hides the mandatory auth overlay.

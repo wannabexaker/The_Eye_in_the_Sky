@@ -85,6 +85,13 @@ This is explicitly **not** a real-money gambling product. Phase 1 contains no pa
 - When enabled, Responsible Gaming settings apply to authenticated players only. Guest/simulator play remains client-local and is not migrated into server-side limits.
 - Enforced limits use rolling 24-hour, 7-day, and 30-day windows for deposits and net losses. Active cool-off/self-exclusion and session time limits block authenticated round persistence with typed client-facing error codes.
 
+## Provably Fair Frontend Contract
+- Provably Fair play is disabled by default behind `PROVABLY_FAIR_ENABLED=false` and remains hidden from guests and flag-off sessions.
+- `GET /auth/mode` exposes `provablyFairEnabled`; `player-web` uses it only with authenticated server-backed sessions.
+- When enabled, player spins route through `POST /player/spin`, use the server-returned `SpinResult` for the existing presentation flow, and apply the returned player snapshot for wallet/session authority.
+- The enabled server-spin path must not also call the legacy `/player/rounds` persistence endpoint. Flag-off and guest/simulator sessions keep the local `resolveSpin` path unchanged.
+- The Menu Fairness panel shows the active server seed hash, client seed, nonce, client-seed update action, and seed rotation/reveal information for verifying prior rounds.
+
 ## UI Polish Standards
 - Support emotion widget: single-line hint text (no second line), compact 40px height, left-aligning dot marker
 - CSS class scoping: use dedicated class names to prevent style inheritance (e.g., `.supportEmotionHint` instead of generic `.supportEmotion span`)
