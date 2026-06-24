@@ -105,6 +105,8 @@ export function AuthOverlay({
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState("");
+  const [turnstileReloadKey, setTurnstileReloadKey] = useState(0);
   const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
   const turnstileWidgetIdRef = useRef<string | null>(null);
 
@@ -115,8 +117,10 @@ export function AuthOverlay({
     setLocalError("");
   }, [initialMode]);
 
-  // Render the Turnstile widget while on the register tab. It is invisible/managed
-  // and produces a one-time token the API verifies. No-op when no site key.
+  // Render the Turnstile widget while on the register tab. It produces a one-time
+  // token the API verifies. No-op when no site key. Any failure to load or render
+  // the widget surfaces a visible, actionable error + Retry instead of silently
+  // blocking the Create Account button.
   useEffect(() => {
     if (mode !== "register" || !turnstileSiteKey) {
       return;
@@ -124,24 +128,46 @@ export function AuthOverlay({
 
     let cancelled = false;
     setTurnstileToken("");
+    setTurnstileError("");
 
     loadTurnstileScript()
       .then(() => {
-        if (cancelled || !turnstileContainerRef.current || !window.turnstile) {
+        if (cancelled) {
+          return;
+        }
+        if (!turnstileContainerRef.current || !window.turnstile) {
+          setTurnstileError("Verification service is unavailable right now. Retry below.");
           return;
         }
         turnstileContainerRef.current.innerHTML = "";
-        turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
-          sitekey: turnstileSiteKey,
-          theme: "dark",
-          callback: (token) => setTurnstileToken(token),
-          "error-callback": () => setTurnstileToken(""),
-          "expired-callback": () => setTurnstileToken("")
-        });
+        try {
+          turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey: turnstileSiteKey,
+            theme: "dark",
+            callback: (token) => {
+              setTurnstileToken(token);
+              setTurnstileError("");
+            },
+            "error-callback": () => {
+              setTurnstileToken("");
+              setTurnstileError(
+                "Verification couldn't load. This domain may not be allowed in Cloudflare Turnstile. Retry below."
+              );
+            },
+            "expired-callback": () => {
+              setTurnstileToken("");
+              setTurnstileError("Verification expired — please complete it again.");
+            }
+          });
+        } catch {
+          setTurnstileError(
+            "Verification couldn't start (invalid site key or domain). Retry below."
+          );
+        }
       })
       .catch(() => {
         if (!cancelled) {
-          setLocalError("Could not load verification. Refresh and try again.");
+          setTurnstileError("Could not load verification. Check your connection and retry.");
         }
       });
 
@@ -156,7 +182,7 @@ export function AuthOverlay({
       }
       turnstileWidgetIdRef.current = null;
     };
-  }, [mode, turnstileSiteKey]);
+  }, [mode, turnstileSiteKey, turnstileReloadKey]);
 
   const resetTurnstile = () => {
     setTurnstileToken("");
@@ -167,6 +193,13 @@ export function AuthOverlay({
         // ignore
       }
     }
+  };
+
+  // Hard reload: fully re-mount the widget (re-fetches the script if it failed).
+  const reloadTurnstile = () => {
+    setTurnstileError("");
+    setTurnstileToken("");
+    setTurnstileReloadKey((key) => key + 1);
   };
 
   const submit = async () => {
@@ -219,7 +252,9 @@ export function AuthOverlay({
     }
 
     if (turnstileRequired && !turnstileToken) {
-      setLocalError("Please complete the verification below.");
+      setLocalError(
+        turnstileError || "Please complete the verification below before creating your account."
+      );
       return;
     }
 
@@ -443,7 +478,17 @@ export function AuthOverlay({
           </div>
 
           {mode === "register" && turnstileSiteKey ? (
-            <div className="authTurnstile" ref={turnstileContainerRef} />
+            <div className="authTurnstileWrap">
+              <div className="authTurnstile" ref={turnstileContainerRef} />
+              {turnstileError ? (
+                <div className="authTurnstileError" role="alert">
+                  <span>{turnstileError}</span>
+                  <button className="authInlineAction" onClick={reloadTurnstile} type="button">
+                    Retry verification
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           <button className="welcomeButton" disabled={busy} onClick={() => void runSubmit()} type="button">
