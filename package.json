@@ -23,6 +23,14 @@
     "lint": "corepack pnpm -r lint",
     "optimize:assets": "corepack pnpm --filter player-web optimize:assets",
     "typecheck": "corepack pnpm -r --if-present typecheck",
-    "simulate": "corepack pnpm --filter @eye/game-engine simulate"
+    "simulate": "corepack pnpm --filter @eye/game-engine simulate",
+    "par-report": "corepack pnpm --filter @eye/game-engine par-report"
+  },
+  "pnpm": {
+    "overrides": {
+      "path-to-regexp@8": ">=8.4.0",
+      "lodash@4": ">=4.18.0",
+      "@xmldom/xmldom@0.8": ">=0.8.13"
+    }
   }
 }
