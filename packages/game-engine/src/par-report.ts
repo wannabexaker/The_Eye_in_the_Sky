@@ -11,22 +11,14 @@ The output is fully reproducible: the profile id, spin count and base seed are
 printed in the header, and identical inputs always produce an identical report
 (the engine RNG is a pure LCG over the derived seed sequence).
 
-CLI (writes docs/par/PAR_<profile>.md + .json for every profile):
+CLI entry point: par-report-cli.ts (kept separate — this module stays free of
+node: imports so it is safe inside the browser bundle).
   corepack pnpm --filter @eye/game-engine par-report -- --spins 1000000 --seed 1337
 */
 
-import {
-  getGameConfigProfile,
-  listGameConfigProfiles,
-  type GameMathProfileId
-} from "./config";
+import { getGameConfigProfile, type GameMathProfileId } from "./config";
 import { simulateSpins } from "./simulation";
 import type { GameConfig, SimulationResult } from "./types";
-
-declare const process: {
-  argv: string[];
-  cwd: () => string;
-};
 
 export type ParReport = {
   generatedFor: {
@@ -224,49 +216,3 @@ ${cascadeRows}
 `;
 };
 
-const parseNumberArg = (flag: string, fallback: number): number => {
-  const index = process.argv.indexOf(flag);
-  if (index === -1) {
-    return fallback;
-  }
-  const value = Number(process.argv[index + 1]);
-  return Number.isFinite(value) ? value : fallback;
-};
-
-export const runParReportCli = async () => {
-  const { mkdir, writeFile } = await import("node:fs/promises");
-  const { join } = await import("node:path");
-
-  const spins = parseNumberArg("--spins", 200_000);
-  const seed = parseNumberArg("--seed", 1337);
-  const profileArgIndex = process.argv.indexOf("--profile");
-  const onlyProfile =
-    profileArgIndex === -1 ? null : (process.argv[profileArgIndex + 1] as GameMathProfileId);
-
-  const outDir = join(process.cwd(), "..", "..", "docs", "par");
-  await mkdir(outDir, { recursive: true });
-
-  const profiles = listGameConfigProfiles()
-    .map((profile) => profile.id)
-    .filter((id) => !onlyProfile || id === onlyProfile);
-
-  for (const profileId of profiles) {
-    const report = buildParReport(profileId, spins, seed);
-    const markdown = renderParReportMarkdown(report);
-    await writeFile(join(outDir, `PAR_${profileId}.md`), markdown, "utf8");
-    await writeFile(
-      join(outDir, `PAR_${profileId}.json`),
-      JSON.stringify(report, null, 2),
-      "utf8"
-    );
-    console.log(
-      `PAR_${profileId}: RTP ${(report.simulated.achievedRtp * 100).toFixed(4)}% ` +
-        `hit ${(report.simulated.hitRate * 100).toFixed(2)}% ` +
-        `bonus 1:${report.simulated.bonusTriggerRate > 0 ? (1 / report.simulated.bonusTriggerRate).toFixed(0) : "—"}`
-    );
-  }
-};
-
-if (process.argv[1]?.includes("par-report.ts")) {
-  void runParReportCli();
-}

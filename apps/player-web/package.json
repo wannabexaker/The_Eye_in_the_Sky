@@ -18,7 +18,7 @@
     "@eye/shared-types": "workspace:*",
     "@eye/ui": "workspace:*",
     "motion": "^12.40.0",
-    "next": "15.2.2",
+    "next": "15.5.18",
     "pixi.js": "8.10.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",

@@ -1,5 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -67,6 +68,11 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", 1);
   app.useGlobalFilters(new DatabaseErrorFilter());
 
+  // Baseline HTTP hardening (nosniff, frameguard, hidePoweredBy, HSTS behind
+  // an HTTPS proxy). CSP is disabled: this is a JSON API and the default CSP
+  // would only break the optional Swagger UI.
+  app.use(helmet({ contentSecurityPolicy: false }));
+
   app.enableCors({
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
       if (isAllowedOrigin(origin)) {
@@ -79,14 +85,20 @@ async function bootstrap() {
     credentials: true
   });
 
-  const config = new DocumentBuilder()
-    .setTitle("The Eye in the Sky API")
-    .setDescription("Fake-money prototype API")
-    .setVersion("0.1.0")
-    .build();
+  // Swagger stays on for local/dev work but is opt-in for production
+  // deployments (SWAGGER_ENABLED=true) so the API surface is not published.
+  const swaggerEnabled =
+    process.env.SWAGGER_ENABLED === "true" || process.env.NODE_ENV !== "production";
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle("The Eye in the Sky API")
+      .setDescription("Fake-money prototype API")
+      .setVersion("0.1.0")
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("swagger", app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup("swagger", app, document);
+  }
 
   const port = Number(process.env.PORT ?? 3200);
   const safePort = Number.isFinite(port) ? port : 3200;
@@ -94,7 +106,9 @@ async function bootstrap() {
 
   const baseUrl = `http://localhost:${safePort}`;
   console.log(`[api] running on ${baseUrl}`);
-  console.log(`[api] docs: ${baseUrl}/swagger`);
+  if (swaggerEnabled) {
+    console.log(`[api] docs: ${baseUrl}/swagger`);
+  }
   console.log(`[api] health: ${baseUrl}/health`);
 }
 

@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
     "simulate": "node --import tsx ./src/simulation.ts",
-    "par-report": "node --import tsx ./src/par-report.ts",
+    "par-report": "node --import tsx ./src/par-report-cli.ts",
     "test": "node --import tsx --test ./src/**/*.test.ts"
   },
   "devDependencies": {

@@ -9,8 +9,17 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           {
+            // frame-ancestors covers the olamov.com iframe integration; a full
+            // script-src CSP is deliberately omitted (PixiJS/Next inline
+            // bootstrapping) — revisit with nonces if the embed surface grows.
             key: "Content-Security-Policy",
             value: "frame-ancestors 'self' https://*.olamov.com https://olamov.com"
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), payment=()"
           }
         ]
       }
