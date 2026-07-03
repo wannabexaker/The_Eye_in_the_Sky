@@ -5,5 +5,6 @@ export * from "./symbol-weights";
 export * from "./payout-engine";
 export * from "./bonus-engine";
 export * from "./math-report";
+export * from "./par-report";
 export * from "./spin-resolver";
 export * from "./simulation";
