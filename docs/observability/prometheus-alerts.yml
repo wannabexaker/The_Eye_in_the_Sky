@@ -1,0 +1,54 @@
+# Prometheus alert rules for The Eye in the Sky API.
+# Wire into prometheus.yml:
+#   rule_files: ["prometheus-alerts.yml"]
+groups:
+  - name: eye-api
+    rules:
+      - alert: ApiDown
+        expr: up{job="eye-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API scrape target down"
+          description: "Prometheus has not been able to scrape the API for 2 minutes."
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(eye_api_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(eye_api_http_requests_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx error rate above 5%"
+          description: "More than 5% of requests are failing server-side over the last 5 minutes."
+
+      - alert: SlowRequestsP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(eye_api_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency above 1s"
+          description: "The 95th percentile request duration has exceeded 1 second for 10 minutes."
+
+      - alert: EventLoopLag
+        expr: eye_api_nodejs_eventloop_lag_p99_seconds > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node event loop lagging"
+          description: "p99 event-loop lag above 200ms — the process is CPU-starved or blocked."
+
+      - alert: HighMemory
+        expr: eye_api_process_resident_memory_bytes > 900 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API resident memory above 900MB"
+          description: "Possible leak or undersized host (RPi deployments run with ~1GB budget)."

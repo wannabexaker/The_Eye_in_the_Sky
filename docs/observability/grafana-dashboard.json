@@ -1,0 +1,92 @@
+{
+  "title": "Eye in the Sky — API",
+  "uid": "eye-api-overview",
+  "schemaVersion": 39,
+  "tags": ["eye-in-the-sky", "api"],
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Request rate by route",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(eye_api_http_requests_total[5m])) by (route)",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(eye_api_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(eye_api_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(eye_api_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Error rate (4xx / 5xx share)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } },
+      "targets": [
+        {
+          "expr": "sum(rate(eye_api_http_requests_total{status=~\"4..\"}[5m])) / clamp_min(sum(rate(eye_api_http_requests_total[5m])), 0.001)",
+          "legendFormat": "4xx"
+        },
+        {
+          "expr": "sum(rate(eye_api_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(eye_api_http_requests_total[5m])), 0.001)",
+          "legendFormat": "5xx"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Process — memory / CPU / event loop",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "eye_api_process_resident_memory_bytes",
+          "legendFormat": "RSS bytes"
+        },
+        {
+          "expr": "rate(eye_api_process_cpu_seconds_total[5m])",
+          "legendFormat": "CPU cores"
+        },
+        {
+          "expr": "eye_api_nodejs_eventloop_lag_p99_seconds",
+          "legendFormat": "event loop lag p99 (s)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Game traffic — spins & rounds",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(eye_api_http_requests_total{route=~\"/player/(spin|rounds)\"}[5m])) by (route, status)",
+          "legendFormat": "{{route}} {{status}}"
+        }
+      ]
+    }
+  ]
+}

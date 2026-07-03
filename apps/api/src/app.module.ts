@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { HealthController } from "./health.controller";
 import { GameConfigController } from "./game-config.controller";
@@ -23,6 +23,9 @@ import { ResponsibleGamingController } from "./responsible-gaming.controller";
 import { ResponsibleGamingService } from "./responsible-gaming.service";
 import { FairnessController } from "./fairness.controller";
 import { FairnessService } from "./fairness.service";
+import { MetricsController } from "./metrics.controller";
+import { MetricsService } from "./metrics.service";
+import { RequestLoggingInterceptor } from "./request-logging.interceptor";
 
 @Module({
   imports: [
@@ -44,7 +47,8 @@ import { FairnessService } from "./fairness.service";
     FairnessController,
     GameConfigController,
     AnalyticsController,
-    AdminSimulationController
+    AdminSimulationController,
+    MetricsController
   ],
   providers: [
     PrismaService,
@@ -63,9 +67,14 @@ import { FairnessService } from "./fairness.service";
     AdminGuard,
     InternalAuthPolicyGuard,
     ExternalAuthPolicyGuard,
+    MetricsService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggingInterceptor
     }
   ]
 })
