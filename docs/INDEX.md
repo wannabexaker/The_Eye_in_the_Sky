@@ -22,6 +22,7 @@
 - `game-math.md`: RTP, hit rate, and engine tuning notes
 - `MATH_SPEC.md`: audit-pack entry point — RNG spec, PAR reports, regression bands
 - `par/`: generated PAR reports per math profile (regenerate, never hand-edit)
+- `observability/`: structured logging, /metrics, Grafana dashboard, alert rules
 - `prd.md`: primary product requirements
 - `integration-olamov.md`: iframe integration notes for olamov.com
 - `variant-simple.md`: design brief for the simple count-anywhere Eye variant

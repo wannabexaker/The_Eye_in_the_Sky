@@ -55,6 +55,8 @@ services:
       RG_TOOLS_ENABLED: ${RG_TOOLS_ENABLED:-false}
       PROVABLY_FAIR_ENABLED: ${PROVABLY_FAIR_ENABLED:-false}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      METRICS_ENABLED: ${METRICS_ENABLED:-false}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
     ports:
       - "3200:3200"
     volumes:
