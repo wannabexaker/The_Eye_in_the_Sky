@@ -1,0 +1,289 @@
+{
+  "generatedFor": {
+    "profileId": "constellation_simple_v0_1",
+    "label": "Constellation Simple v0.1",
+    "configVersion": "eye-sky-constellation-v0.1",
+    "isLegacy": false
+  },
+  "reproducibility": {
+    "spins": 200000,
+    "bet": 1,
+    "baseSeed": 1337,
+    "command": "corepack pnpm --filter @eye/game-engine par-report -- --spins 200000 --seed 1337 --profile constellation_simple_v0_1"
+  },
+  "design": {
+    "targetRtp": 0.952,
+    "volatility": "high",
+    "grid": "6x5 (30 cells)",
+    "evaluationMode": "count_anywhere",
+    "clusterThreshold": 8,
+    "maxCascadeSteps": 12,
+    "cascadeMultiplierLadder": [
+      1
+    ],
+    "bonusTriggerMode": "scatter",
+    "bonusMeterTarget": 17,
+    "bonusSpinsAwarded": 7,
+    "symbolProbabilities": [
+      {
+        "symbol": "ashen_sigil",
+        "weight": 16,
+        "probability": 0.183276
+      },
+      {
+        "symbol": "broken_halo",
+        "weight": 15.1,
+        "probability": 0.172967
+      },
+      {
+        "symbol": "ritual_dagger",
+        "weight": 14.1,
+        "probability": 0.161512
+      },
+      {
+        "symbol": "sealed_scroll",
+        "weight": 13.5,
+        "probability": 0.154639
+      },
+      {
+        "symbol": "seraphim_feather",
+        "weight": 9.7,
+        "probability": 0.111111
+      },
+      {
+        "symbol": "burning_crown",
+        "weight": 7.3,
+        "probability": 0.08362
+      },
+      {
+        "symbol": "ophidian_relic",
+        "weight": 5.3,
+        "probability": 0.06071
+      },
+      {
+        "symbol": "celestial_gate",
+        "weight": 3.8,
+        "probability": 0.043528
+      },
+      {
+        "symbol": "seraphim_eye",
+        "weight": 0.9,
+        "probability": 0.010309
+      },
+      {
+        "symbol": "samsara",
+        "weight": 1.6,
+        "probability": 0.018328
+      }
+    ],
+    "paytable": [
+      {
+        "symbol": "ashen_sigil",
+        "payouts": {
+          "8": 0.2643,
+          "10": 0.659,
+          "12": 1.5723
+        }
+      },
+      {
+        "symbol": "broken_halo",
+        "payouts": {
+          "8": 0.3145,
+          "10": 0.7861,
+          "12": 1.8264
+        }
+      },
+      {
+        "symbol": "ritual_dagger",
+        "payouts": {
+          "8": 0.3947,
+          "10": 0.94,
+          "12": 2.2211
+        }
+      },
+      {
+        "symbol": "sealed_scroll",
+        "payouts": {
+          "8": 0.465,
+          "10": 1.1005,
+          "12": 2.609
+        }
+      },
+      {
+        "symbol": "seraphim_feather",
+        "payouts": {
+          "8": 0.7259,
+          "10": 1.8264,
+          "12": 4.7132
+        }
+      },
+      {
+        "symbol": "burning_crown",
+        "payouts": {
+          "8": 1.1005,
+          "10": 2.7463,
+          "12": 6.8107
+        }
+      },
+      {
+        "symbol": "ophidian_relic",
+        "payouts": {
+          "8": 1.6925,
+          "10": 4.1812,
+          "12": 10.4496
+        }
+      },
+      {
+        "symbol": "celestial_gate",
+        "payouts": {
+          "8": 2.482,
+          "10": 6.2684,
+          "12": 15.6711
+        }
+      }
+    ]
+  },
+  "simulated": {
+    "totalSpins": 200000,
+    "configVersion": "eye-sky-constellation-v0.1",
+    "achievedRtp": 0.9573483312785059,
+    "confidenceInterval95": {
+      "low": 0.9433854756080374,
+      "high": 0.9713111869489587
+    },
+    "baseRtpContribution": 0.9181596518360349,
+    "bonusRtpContribution": 0.039188679442436314,
+    "hitRate": 0.462855,
+    "averageWin": 0.9162015000001558,
+    "bonusTriggerRate": 0.006003009341497566,
+    "averageBonusPayout": 6.5281723237597875,
+    "maxObservedWin": 391.76,
+    "symbolFrequencyTable": {
+      "ashen_sigil": 2015032,
+      "broken_halo": 1945529,
+      "ritual_dagger": 1867214,
+      "sealed_scroll": 1816383,
+      "seraphim_feather": 1436363,
+      "burning_crown": 1128342,
+      "ophidian_relic": 833662,
+      "celestial_gate": 600040,
+      "seraphim_eye": 109261,
+      "samsara": 248174,
+      "ouroboros": 0,
+      "panepoptis_ophthalmos": 0,
+      "wild": 0
+    },
+    "cascadeDepthDistribution": {
+      "0": 107429,
+      "1": 44235,
+      "2": 22985,
+      "3": 13541,
+      "4": 6927,
+      "5": 2850,
+      "6": 1188,
+      "7": 511,
+      "8": 199,
+      "9": 85,
+      "10": 32,
+      "11": 9,
+      "12": 9
+    },
+    "multiplierContributionDistribution": {
+      "seraphim_eye:x25": 3640,
+      "seraphim_eye:x4": 8598.639999999992,
+      "seraphim_eye:x2": 6387.999999999963,
+      "seraphim_eye:x8": 5958.23999999998,
+      "seraphim_eye:x5": 8006.350000000161,
+      "seraphim_eye:x3": 7569.419999999888,
+      "seraphim_eye:x40": 3358.4000000000037,
+      "seraphim_eye:x7": 6492.709999999911,
+      "seraphim_eye:x6": 7048.140000000037,
+      "seraphim_eye:x12": 5165.5199999999895,
+      "seraphim_eye:x9": 1091.2500000000005,
+      "seraphim_eye:x11": 800.0300000000001,
+      "seraphim_eye:x15": 4590.450000000004,
+      "seraphim_eye:x50": 2200,
+      "seraphim_eye:x30": 3727.200000000002,
+      "seraphim_eye:x14": 627.4799999999997,
+      "seraphim_eye:x10": 5789.199999999999,
+      "seraphim_eye:x29": 171.67999999999995,
+      "seraphim_eye:x37": 44.4,
+      "seraphim_eye:x22": 423.2800000000001,
+      "seraphim_eye:x20": 4052.3999999999965,
+      "seraphim_eye:x75": 1785.75,
+      "seraphim_eye:x19": 236.92999999999992,
+      "seraphim_eye:x23": 354.89000000000004,
+      "seraphim_eye:x17": 559.8099999999998,
+      "seraphim_eye:x102": 143.82,
+      "seraphim_eye:x18": 409.49999999999994,
+      "seraphim_eye:x16": 320.3200000000001,
+      "seraphim_eye:x27": 271.61999999999995,
+      "seraphim_eye:x28": 268.52000000000004,
+      "seraphim_eye:x44": 134.64,
+      "seraphim_eye:x31": 120.28,
+      "seraphim_eye:x36": 36.36,
+      "seraphim_eye:x100": 1834,
+      "seraphim_eye:x150": 1620,
+      "seraphim_eye:x200": 832,
+      "seraphim_eye:x45": 144.44999999999996,
+      "seraphim_eye:x41": 19.27,
+      "seraphim_eye:x32": 179.83999999999997,
+      "seraphim_eye:x34": 152.99999999999997,
+      "seraphim_eye:x13": 724.8799999999995,
+      "seraphim_eye:x56": 82.88000000000001,
+      "seraphim_eye:x60": 133.2,
+      "seraphim_eye:x26": 76.7,
+      "seraphim_eye:x33": 182.49000000000004,
+      "seraphim_eye:x24": 155.28,
+      "seraphim_eye:x43": 233.06,
+      "seraphim_eye:x82": 54.12,
+      "seraphim_eye:x46": 54.739999999999995,
+      "seraphim_eye:x42": 139.01999999999998,
+      "seraphim_eye:x53": 135.68,
+      "seraphim_eye:x21": 101.63999999999999,
+      "seraphim_eye:x70": 76.3,
+      "seraphim_eye:x38": 112.1,
+      "seraphim_eye:x55": 212.85000000000002,
+      "seraphim_eye:x35": 130.2,
+      "seraphim_eye:x77": 424.27,
+      "seraphim_eye:x202": 78.78,
+      "seraphim_eye:x115": 29.9,
+      "seraphim_eye:x79": 206.19,
+      "seraphim_eye:x103": 31.93,
+      "seraphim_eye:x153": 39.78,
+      "seraphim_eye:x52": 81.11999999999999,
+      "seraphim_eye:x110": 51.7,
+      "seraphim_eye:x64": 42.24,
+      "seraphim_eye:x65": 16.9,
+      "seraphim_eye:x78": 20.28,
+      "seraphim_eye:x48": 31.2,
+      "seraphim_eye:x58": 17.98,
+      "seraphim_eye:x57": 22.23,
+      "seraphim_eye:x85": 56.1,
+      "seraphim_eye:x80": 20.8,
+      "seraphim_eye:x107": 100.58,
+      "seraphim_eye:x62": 29.14,
+      "seraphim_eye:x154": 47.74,
+      "seraphim_eye:x240": 62.4,
+      "seraphim_eye:x54": 158.22,
+      "seraphim_eye:x156": 48.36
+    },
+    "percentileWinDistribution": {
+      "p50": 0,
+      "p90": 2.42,
+      "p95": 3.89,
+      "p99": 9.93
+    },
+    "evContributionBySpecialSymbolFamily": {
+      "seraphim_eye": 0.4969538499999944,
+      "samsara": 0.0143277,
+      "ouroboros": 0,
+      "panepoptis_ophthalmos": 0
+    },
+    "totalWagered": 191404,
+    "totalReturned": 183240.30000003116,
+    "totalBonusTriggers": 1149,
+    "totalBonusRounds": 8596,
+    "averageWinOnHit": 1.9794568493376021
+  }
+}

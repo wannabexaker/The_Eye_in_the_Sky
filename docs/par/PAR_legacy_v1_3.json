@@ -1,0 +1,264 @@
+{
+  "generatedFor": {
+    "profileId": "legacy_v1_3",
+    "label": "Legacy Math v1.3",
+    "configVersion": "eye-sky-math-v1.3",
+    "isLegacy": true
+  },
+  "reproducibility": {
+    "spins": 200000,
+    "bet": 1,
+    "baseSeed": 1337,
+    "command": "corepack pnpm --filter @eye/game-engine par-report -- --spins 200000 --seed 1337 --profile legacy_v1_3"
+  },
+  "design": {
+    "targetRtp": 0.955,
+    "volatility": "medium",
+    "grid": "6x5 (30 cells)",
+    "evaluationMode": "cluster",
+    "clusterThreshold": 4,
+    "maxCascadeSteps": 12,
+    "cascadeMultiplierLadder": [
+      1,
+      1.25,
+      1.5,
+      2,
+      2.5
+    ],
+    "bonusTriggerMode": "meter",
+    "bonusMeterTarget": 17,
+    "bonusSpinsAwarded": 7,
+    "symbolProbabilities": [
+      {
+        "symbol": "ashen_sigil",
+        "weight": 14.5,
+        "probability": 0.186232
+      },
+      {
+        "symbol": "broken_halo",
+        "weight": 13.8,
+        "probability": 0.177241
+      },
+      {
+        "symbol": "ritual_dagger",
+        "weight": 13.1,
+        "probability": 0.168251
+      },
+      {
+        "symbol": "sealed_scroll",
+        "weight": 13.1,
+        "probability": 0.168251
+      },
+      {
+        "symbol": "seraphim_feather",
+        "weight": 8.2,
+        "probability": 0.105317
+      },
+      {
+        "symbol": "burning_crown",
+        "weight": 6.4,
+        "probability": 0.082199
+      },
+      {
+        "symbol": "ophidian_relic",
+        "weight": 4.7,
+        "probability": 0.060365
+      },
+      {
+        "symbol": "celestial_gate",
+        "weight": 3.4,
+        "probability": 0.043668
+      },
+      {
+        "symbol": "seraphim_eye",
+        "weight": 0.34,
+        "probability": 0.004367
+      },
+      {
+        "symbol": "samsara",
+        "weight": 0.08,
+        "probability": 0.001027
+      },
+      {
+        "symbol": "ouroboros",
+        "weight": 0.16,
+        "probability": 0.002055
+      },
+      {
+        "symbol": "panepoptis_ophthalmos",
+        "weight": 0.08,
+        "probability": 0.001027
+      }
+    ],
+    "paytable": [
+      {
+        "symbol": "ashen_sigil",
+        "payouts": {
+          "4": 0.3829,
+          "5": 0.467,
+          "6": 0.7472,
+          "7": 1.1208,
+          "8": 1.6812,
+          "10": 3.0355,
+          "12": 5.137
+        }
+      },
+      {
+        "symbol": "broken_halo",
+        "payouts": {
+          "4": 0.4595,
+          "5": 0.5604,
+          "6": 0.8406,
+          "7": 1.3076,
+          "8": 1.868,
+          "10": 3.5025,
+          "12": 5.8375
+        }
+      },
+      {
+        "symbol": "ritual_dagger",
+        "payouts": {
+          "4": 0.5361,
+          "5": 0.6538,
+          "6": 1.0274,
+          "7": 1.4944,
+          "8": 2.2416,
+          "10": 4.1096,
+          "12": 6.7715
+        }
+      },
+      {
+        "symbol": "sealed_scroll",
+        "payouts": {
+          "4": 0.6127,
+          "5": 0.7472,
+          "6": 1.1208,
+          "7": 1.6812,
+          "8": 2.6152,
+          "10": 4.67,
+          "12": 7.7055
+        }
+      },
+      {
+        "symbol": "seraphim_feather",
+        "payouts": {
+          "4": 0.8425,
+          "5": 1.0274,
+          "6": 1.5878,
+          "7": 2.335,
+          "8": 3.4558,
+          "10": 6.3045,
+          "12": 9.807
+        }
+      },
+      {
+        "symbol": "burning_crown",
+        "payouts": {
+          "4": 1.2254,
+          "5": 1.4944,
+          "6": 2.2416,
+          "7": 3.3624,
+          "8": 4.8568,
+          "10": 8.873,
+          "12": 13.7765
+        }
+      },
+      {
+        "symbol": "ophidian_relic",
+        "payouts": {
+          "4": 1.7615,
+          "5": 2.1482,
+          "6": 3.269,
+          "7": 4.67,
+          "8": 6.8182,
+          "10": 12.3755,
+          "12": 19.147
+        }
+      },
+      {
+        "symbol": "celestial_gate",
+        "payouts": {
+          "4": 2.3742,
+          "5": 2.8954,
+          "6": 4.3898,
+          "7": 6.2578,
+          "8": 9.1532,
+          "10": 16.5785,
+          "12": 25.685
+        }
+      }
+    ]
+  },
+  "simulated": {
+    "totalSpins": 200000,
+    "configVersion": "eye-sky-math-v1.3",
+    "achievedRtp": 0.9563627617054098,
+    "confidenceInterval95": {
+      "low": 0.92821448356299,
+      "high": 0.9845110398478223
+    },
+    "baseRtpContribution": 0.8223375008316076,
+    "bonusRtpContribution": 0.1340252608737928,
+    "hitRate": 0.47821,
+    "averageWin": 0.9343711999999939,
+    "bonusTriggerRate": 0.0033623164671623992,
+    "averageBonusPayout": 39.86098934550991,
+    "maxObservedWin": 914.59,
+    "symbolFrequencyTable": {
+      "ashen_sigil": 2157316,
+      "broken_halo": 2070321,
+      "ritual_dagger": 1980781,
+      "sealed_scroll": 1981462,
+      "seraphim_feather": 1298094,
+      "burning_crown": 1024736,
+      "ophidian_relic": 757865,
+      "celestial_gate": 550567,
+      "seraphim_eye": 56197,
+      "samsara": 13237,
+      "ouroboros": 26427,
+      "panepoptis_ophthalmos": 13207,
+      "wild": 69790
+    },
+    "cascadeDepthDistribution": {
+      "0": 104358,
+      "1": 63733,
+      "2": 19742,
+      "3": 6391,
+      "4": 2392,
+      "5": 1065,
+      "6": 601,
+      "7": 394,
+      "8": 288,
+      "9": 189,
+      "10": 141,
+      "11": 119,
+      "12": 587
+    },
+    "multiplierContributionDistribution": {
+      "cascade_ladder:x1.25": 32251.36999999777,
+      "cascade_ladder:x1.5": 17278.57000000031,
+      "cascade_ladder:x2": 14055.580000000411,
+      "cascade_ladder:x2.5": 45028.69000000063,
+      "seraphim_eye:x1": 1554.46,
+      "ouroboros:x1": 1716.5500000000022,
+      "panepoptis_ophthalmos:x1": 14887.449999999993
+    },
+    "percentileWinDistribution": {
+      "p50": 0,
+      "p90": 1.83,
+      "p95": 3.01,
+      "p99": 12.82
+    },
+    "evContributionBySpecialSymbolFamily": {
+      "seraphim_eye": 0.2873810499999653,
+      "samsara": 0.0015836500000000015,
+      "ouroboros": 0.00858275000000001,
+      "panepoptis_ophthalmos": 0.34784739999998937
+    },
+    "totalWagered": 195401,
+    "totalReturned": 186874.23999999877,
+    "totalBonusTriggers": 657,
+    "totalBonusRounds": 4599,
+    "averageWinOnHit": 1.9538930595345012
+  }
+}
