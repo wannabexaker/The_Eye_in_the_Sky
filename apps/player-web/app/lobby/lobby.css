@@ -1,0 +1,199 @@
+/* Lobby — standalone route; reuses the global token palette. The global
+   html/body overflow is hidden, so the lobby scrolls inside its own shell. */
+
+.lobbyShell {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(24px, 5vh, 64px) clamp(16px, 4vw, 48px);
+  gap: clamp(20px, 3vh, 36px);
+}
+
+.lobbyHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobbyKicker {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-sm);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lobbyTitle {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  font-weight: 600;
+  color: var(--gold-bright);
+  text-shadow: 0 0 34px rgba(226, 190, 112, 0.22);
+}
+
+.lobbySubtitle {
+  margin: 0;
+  font-size: var(--font-md);
+  color: var(--muted);
+}
+
+.lobbyGrid {
+  width: min(1080px, 100%);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
+}
+
+.gameCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.gameCard[data-status="live"]:hover,
+.gameCard[data-status="variant"]:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.gameCardArt {
+  align-self: center;
+  width: clamp(84px, 9vw, 118px);
+  height: auto;
+  filter: drop-shadow(0 8px 22px rgba(226, 190, 112, 0.18));
+}
+
+.gameCard[data-status="coming_soon"] .gameCardArt {
+  filter: grayscale(0.85) brightness(0.6);
+}
+
+.gameCardTitle {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-lg);
+  color: var(--text);
+  text-align: center;
+}
+
+.gameCardTagline {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--muted);
+  text-align: center;
+  min-height: 2.2em;
+}
+
+.gameCardMeta {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gameCardChip {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-chip);
+  font-size: var(--font-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.gameCardFeatures {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+
+.gameCardFeatures li::before {
+  content: "◈ ";
+  color: var(--gold);
+}
+
+.gameCardAction {
+  margin-top: auto;
+  align-self: center;
+  padding: 10px 26px;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #131017;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  box-shadow: 0 6px 22px rgba(226, 190, 112, 0.24);
+  transition: filter 160ms ease;
+}
+
+.gameCardAction:hover {
+  filter: brightness(1.08);
+}
+
+.gameCardActionLocked {
+  margin-top: auto;
+  align-self: center;
+  padding: 10px 26px;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--line);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+}
+
+.gameStatusBadge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 3px 10px;
+  border-radius: var(--radius-chip);
+  font-size: var(--font-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gameStatusBadge[data-status="live"] {
+  color: #9fe6b0;
+  border: 1px solid rgba(120, 220, 150, 0.35);
+  background: rgba(40, 90, 55, 0.25);
+}
+
+.gameStatusBadge[data-status="variant"] {
+  color: var(--gold-bright);
+  border: 1px solid var(--line-strong);
+  background: rgba(226, 190, 112, 0.1);
+}
+
+.gameStatusBadge[data-status="coming_soon"] {
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: rgba(20, 19, 24, 0.6);
+}
+
+.lobbyFootnote {
+  font-size: var(--font-xs);
+  color: var(--muted);
+  text-align: center;
+  max-width: 560px;
+}
