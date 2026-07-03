@@ -3,7 +3,7 @@
 Notable changes to The Eye in the Sky. Versions are git tags; images on GHCR
 carry the same tags. Dates use the tag's commit date.
 
-## [Unreleased] — ready-to-sell hardening (targets v0.2.0)
+## v0.2.0 — ready-to-sell hardening
 
 ### Added
 - **Test depth for flag-locked features**: ~90 new API tests (181 total) —
