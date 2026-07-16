@@ -2473,6 +2473,32 @@ p {
   margin: 2px 0;
 }
 
+.menuLegalLinks {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.menuLegalLink {
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 9px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: var(--font-sm);
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+  text-decoration: none;
+  background: var(--panel-soft);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.menuLegalLink:hover {
+  border-color: var(--gold);
+  background: rgba(226, 190, 112, 0.1);
+}
+
 .authTermsRow {
   display: flex;
   align-items: flex-start;
