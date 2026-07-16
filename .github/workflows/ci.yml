@@ -73,5 +73,8 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # npm retired the classic audit endpoints (410) and pnpm audit still
+      # depends on them — scripts/audit-bulk.mjs queries the supported bulk
+      # advisory endpoint directly and fails on high/critical.
       - name: Audit production dependencies (fail on high+)
-        run: pnpm audit --prod --audit-level high
+        run: node scripts/audit-bulk.mjs
