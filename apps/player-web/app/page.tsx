@@ -1276,7 +1276,13 @@ export default function HomePage() {
   );
 
   const handleRegister = useCallback(
-    async (payload: { email: string; password: string; displayName: string; turnstileToken?: string }) => {
+    async (payload: {
+      email: string;
+      password: string;
+      displayName: string;
+      turnstileToken?: string;
+      termsAccepted: boolean;
+    }) => {
       setAuthBusy(true);
       clearAuthError();
       try {

@@ -118,8 +118,11 @@ describe("Security: Validation Layer (e2e)", () => {
           provide: BootstrapService,
           useValue: {}
         },
-        // ── Rate limiting: unlimited during tests ───────────────────────────
-        { provide: APP_GUARD, useClass: ThrottlerGuard }
+        // ── Rate limiting: fully disabled during tests. Note: binding the
+        // real ThrottlerGuard here and relying on overrideGuard() does NOT
+        // work for APP_GUARD-bound instances — per-route @Throttle limits
+        // (register 10/min) stay live and 429 the suite once it grows.
+        { provide: APP_GUARD, useValue: mockAllow }
       ]
     })
       // Override guards — no DB lookups, all pass
@@ -149,8 +152,41 @@ describe("Security: Validation Layer (e2e)", () => {
     it("accepts valid registration input", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "valid@example.com", password: "SecurePass1!", displayName: "Player" });
+        .send({
+          email: "valid@example.com",
+          password: "SecurePass1!",
+          displayName: "Player",
+          termsAccepted: true
+        });
       expect([200, 201]).toContain(res.status);
+    });
+
+    it("returns 400 when the terms are not accepted", async () => {
+      const missing = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({ email: "valid@example.com", password: "SecurePass1!", displayName: "Player" });
+      expect(missing.status).toBe(400);
+
+      const declined = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({
+          email: "valid@example.com",
+          password: "SecurePass1!",
+          displayName: "Player",
+          termsAccepted: false
+        });
+      expect(declined.status).toBe(400);
+
+      // truthy-but-not-true values must not pass the literal check
+      const coerced = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({
+          email: "valid@example.com",
+          password: "SecurePass1!",
+          displayName: "Player",
+          termsAccepted: "true"
+        });
+      expect(coerced.status).toBe(400);
     });
 
     it("returns 400 for SQL injection in email: single quote", async () => {

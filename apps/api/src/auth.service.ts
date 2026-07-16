@@ -65,13 +65,21 @@ export class AuthService {
   }
 
   async registerPlayer(
-    payload: { email?: string; password?: string; displayName?: string },
+    payload: { email?: string; password?: string; displayName?: string; termsAccepted?: boolean },
     request: RequestWithAuth,
     response: any
   ): Promise<AuthSessionDto> {
     const email = normalizeEmail(payload.email ?? "");
     const password = payload.password?.trim() ?? "";
     const displayName = payload.displayName?.trim() || "Temple Initiate";
+
+    // Validator already enforces this; kept here so the service is safe on its
+    // own — the acceptance timestamp below is the operator's proof of consent.
+    if (payload.termsAccepted !== true) {
+      throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
+        termsAccepted: "You must accept the Terms of Use and Privacy Policy."
+      });
+    }
 
     if (!email || !email.includes("@")) {
       throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
@@ -104,7 +112,8 @@ export class AuthService {
           displayName,
           role: "player",
           isActive: true,
-          welcomeBonusClaimed: false
+          welcomeBonusClaimed: false,
+          acceptedTermsAt: new Date()
         }
       });
 
