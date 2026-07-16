@@ -100,7 +100,10 @@ describe("Flagged features (e2e)", () => {
             setSelfExclusion: jest.fn().mockResolvedValue({})
           }
         },
-        { provide: APP_GUARD, useClass: ThrottlerGuard }
+        // Rate limiting fully disabled — overrideGuard() does not neutralize
+        // APP_GUARD-bound ThrottlerGuard, so per-route @Throttle limits would
+        // stay live and 429 the suite as it grows.
+        { provide: APP_GUARD, useValue: mockAllow }
       ]
     })
       .overrideGuard(ThrottlerGuard).useValue(mockAllow)

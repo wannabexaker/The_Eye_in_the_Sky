@@ -172,6 +172,7 @@ export const registerPlayer = (payload: {
   password: string;
   displayName: string;
   turnstileToken?: string;
+  termsAccepted: boolean;
 }) =>
   requestJson<AuthSessionDto>("/auth/register", {
     method: "POST",

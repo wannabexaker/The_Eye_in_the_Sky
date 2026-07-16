@@ -71,6 +71,7 @@ type AuthOverlayProps = {
     password: string;
     displayName: string;
     turnstileToken?: string;
+    termsAccepted: boolean;
   }) => Promise<void>;
   onClose?: () => void;
   onResetPassword: (payload: { token: string; newPassword: string }) => Promise<void>;
@@ -104,6 +105,7 @@ export function AuthOverlay({
   const [devResetHint, setDevResetHint] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileError, setTurnstileError] = useState("");
   const [turnstileReloadKey, setTurnstileReloadKey] = useState(0);
@@ -251,6 +253,11 @@ export function AuthOverlay({
       return;
     }
 
+    if (!termsAccepted) {
+      setLocalError("Please accept the Terms of Use and Privacy Policy to create an account.");
+      return;
+    }
+
     if (turnstileRequired && !turnstileToken) {
       setLocalError(
         turnstileError || "Please complete the verification below before creating your account."
@@ -262,6 +269,7 @@ export function AuthOverlay({
       email,
       password,
       displayName: displayName.trim() || generateRandomDisplayName(),
+      termsAccepted,
       ...(turnstileToken ? { turnstileToken } : {})
     });
   };
@@ -476,6 +484,34 @@ export function AuthOverlay({
                 : "First rollout persists wallet, rounds, welcome bonus, and resumable session state on the API."}
             </span>
           </div>
+
+          {mode === "register" ? (
+            <label className="authTermsRow">
+              <input
+                checked={termsAccepted}
+                className="authTermsCheckbox"
+                onChange={(event) => {
+                  setTermsAccepted(event.target.checked);
+                  if (event.target.checked) {
+                    setLocalError("");
+                  }
+                }}
+                type="checkbox"
+              />
+              <span>
+                I have read and accept the{" "}
+                <a href="/terms" rel="noopener noreferrer" target="_blank">
+                  Terms of Use
+                </a>{" "}
+                and the{" "}
+                <a href="/privacy" rel="noopener noreferrer" target="_blank">
+                  Privacy Policy
+                </a>
+                , and I understand this is a free demonstration game with virtual
+                credits of no monetary value.
+              </span>
+            </label>
+          ) : null}
 
           {mode === "register" && turnstileSiteKey ? (
             <div className="authTurnstileWrap">

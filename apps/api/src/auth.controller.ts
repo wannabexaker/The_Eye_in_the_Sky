@@ -80,7 +80,14 @@ export class AuthController {
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post("register")
   async register(
-    @Body() body: { email?: string; password?: string; displayName?: string; turnstileToken?: string },
+    @Body()
+    body: {
+      email?: string;
+      password?: string;
+      displayName?: string;
+      turnstileToken?: string;
+      termsAccepted?: boolean;
+    },
     @Req() request: RequestWithAuth,
     @Res({ passthrough: true }) response: any
   ) {

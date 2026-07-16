@@ -40,7 +40,10 @@ export const validators = {
   authRegister: z.object({
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),
     password: z.string().min(8).max(100),
-    displayName: z.string().trim().min(2).max(50).regex(/^[\p{L}\p{N}_\s-]+$/u, "Invalid display name")
+    displayName: z.string().trim().min(2).max(50).regex(/^[\p{L}\p{N}_\s-]+$/u, "Invalid display name"),
+    // Registration is only valid with an explicit acceptance of the Terms of
+    // Use and Privacy Policy — the acceptance timestamp is persisted.
+    termsAccepted: z.literal(true, "You must accept the Terms of Use and Privacy Policy.")
   }),
   authLogin: z.object({
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),

@@ -7,8 +7,16 @@ describe("validators.authRegister", () => {
   const valid = {
     email: "player@example.com",
     password: "SecurePass1!",
-    displayName: "TestPlayer"
+    displayName: "TestPlayer",
+    termsAccepted: true
   };
+
+  it("rejects missing or non-true terms acceptance", () => {
+    const { termsAccepted: _termsAccepted, ...withoutTerms } = valid;
+    expect(validators.authRegister.safeParse(withoutTerms).success).toBe(false);
+    expect(validators.authRegister.safeParse({ ...valid, termsAccepted: false }).success).toBe(false);
+    expect(validators.authRegister.safeParse({ ...valid, termsAccepted: "true" }).success).toBe(false);
+  });
 
   it("accepts valid input", () => {
     expect(validators.authRegister.safeParse(valid).success).toBe(true);
