@@ -2321,6 +2321,21 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="modalSection menuSectionLegal">
+          <p className="eyebrow">Legal</p>
+          <p style={{ margin: "2px 0 10px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
+            Free demonstration game — virtual credits of no monetary value.
+          </p>
+          <div className="menuLegalLinks">
+            <a className="menuLegalLink" href="/terms" rel="noopener noreferrer" target="_blank">
+              Terms of Use
+            </a>
+            <a className="menuLegalLink" href="/privacy" rel="noopener noreferrer" target="_blank">
+              Privacy Policy
+            </a>
+          </div>
+        </section>
+
       </OverlayModal>
 
       {rgToolsEnabled && realityCheckSnapshot ? (
