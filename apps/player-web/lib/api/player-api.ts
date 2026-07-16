@@ -161,7 +161,11 @@ export const exchangePlatformToken = (payload: {
     body: JSON.stringify(payload)
   });
 
-export const loginPlayer = (payload: { email: string; password: string }) =>
+export const loginPlayer = (payload: {
+  email: string;
+  password: string;
+  termsAccepted: boolean;
+}) =>
   requestJson<AuthSessionDto>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload)

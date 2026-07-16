@@ -132,12 +132,20 @@ export class AuthService {
   }
 
   async login(
-    payload: { email?: string; password?: string },
+    payload: { email?: string; password?: string; termsAccepted?: boolean },
     request: RequestWithAuth,
     response: any
   ): Promise<AuthSessionDto> {
     const email = normalizeEmail(payload.email ?? "");
     const password = payload.password?.trim() ?? "";
+
+    // Validator already enforces this; kept here so the service is safe on
+    // its own — no session is ever created without asserted acceptance.
+    if (payload.termsAccepted !== true) {
+      throw authError(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", {
+        termsAccepted: "You must accept the Terms of Use and Privacy Policy."
+      });
+    }
 
     if (!email || !password) {
       const fieldErrors: Record<string, string> = {};
@@ -164,6 +172,15 @@ export class AuthService {
     if (!validPassword) {
       throw authError(HttpStatus.UNAUTHORIZED, "WRONG_PASSWORD", "Wrong password.", {
         password: "Wrong password."
+      });
+    }
+
+    // Accounts created before the acceptance gate: record their first
+    // asserted acceptance. Existing timestamps are never overwritten.
+    if (!user.acceptedTermsAt) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { acceptedTermsAt: new Date() }
       });
     }
 

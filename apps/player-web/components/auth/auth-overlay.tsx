@@ -30,6 +30,33 @@ let turnstileScriptPromise: Promise<void> | null = null;
 type AuthEntryMode = "login" | "register";
 type AuthOverlayMode = AuthEntryMode | "forgot" | "reset";
 
+/**
+ * Guests have no server identity, so their one-time terms acceptance is
+ * remembered in localStorage — returning guests are not re-prompted, while
+ * first-time guests cannot enter play without ticking the box.
+ */
+const GUEST_TERMS_STORAGE_KEY = "eye_terms_accepted_at";
+
+const readStoredGuestAcceptance = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    return Boolean(window.localStorage.getItem(GUEST_TERMS_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+};
+
+const storeGuestAcceptance = () => {
+  try {
+    window.localStorage.setItem(GUEST_TERMS_STORAGE_KEY, new Date().toISOString());
+  } catch {
+    // Storage unavailable (private mode etc.) — acceptance was still asserted
+    // in this session; the user will simply be asked again next visit.
+  }
+};
+
 const loadTurnstileScript = (): Promise<void> => {
   if (typeof window === "undefined") {
     return Promise.resolve();
@@ -65,7 +92,7 @@ type AuthOverlayProps = {
   fieldErrors?: PlayerApiFieldErrors;
   initialMode?: AuthEntryMode;
   onForgotPassword: (payload: { email: string }) => Promise<{ ok: boolean; resetToken?: string }>;
-  onLogin: (payload: { email: string; password: string }) => Promise<void>;
+  onLogin: (payload: { email: string; password: string; termsAccepted: boolean }) => Promise<void>;
   onRegister: (payload: {
     email: string;
     password: string;
@@ -248,13 +275,17 @@ export function AuthOverlay({
     }
 
     setLocalError("");
-    if (mode === "login") {
-      await onLogin({ email, password });
+    if (!termsAccepted) {
+      setLocalError(
+        mode === "login"
+          ? "Please accept the Terms of Use and Privacy Policy to sign in."
+          : "Please accept the Terms of Use and Privacy Policy to create an account."
+      );
       return;
     }
 
-    if (!termsAccepted) {
-      setLocalError("Please accept the Terms of Use and Privacy Policy to create an account.");
+    if (mode === "login") {
+      await onLogin({ email, password, termsAccepted });
       return;
     }
 
@@ -292,6 +323,21 @@ export function AuthOverlay({
       setDisplayName(generateRandomDisplayName());
     }
     setLocalError("");
+  };
+
+  // Guest entry requires the same acceptance as accounts. A previously stored
+  // acceptance (returning guest) passes without re-ticking the box.
+  const handleGuestEntry = () => {
+    if (!termsAccepted && !readStoredGuestAcceptance()) {
+      setLocalError(
+        "Please accept the Terms of Use and Privacy Policy below to continue as guest."
+      );
+      return;
+    }
+    if (termsAccepted) {
+      storeGuestAcceptance();
+    }
+    onSkipLogin();
   };
 
   const title =
@@ -485,7 +531,7 @@ export function AuthOverlay({
             </span>
           </div>
 
-          {mode === "register" ? (
+          {mode === "register" || mode === "login" ? (
             <label className="authTermsRow">
               <input
                 checked={termsAccepted}
@@ -544,7 +590,7 @@ export function AuthOverlay({
           ) : null}
 
           {allowSkipLogin ? (
-            <button className="authSecondaryAction" disabled={busy} onClick={onSkipLogin} type="button">
+            <button className="authSecondaryAction" disabled={busy} onClick={handleGuestEntry} type="button">
               Continue as Guest
             </button>
           ) : null}

@@ -260,28 +260,45 @@ describe("Security: Validation Layer (e2e)", () => {
     it("accepts valid login", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "player@example.com", password: "anypassword" });
+        .send({ email: "player@example.com", password: "anypassword", termsAccepted: true });
       expect([200, 201]).toContain(res.status);
+    });
+
+    it("returns 400 when the terms are not accepted (no bypass via login)", async () => {
+      const missing = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({ email: "player@example.com", password: "anypassword" });
+      expect(missing.status).toBe(400);
+
+      const declined = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({ email: "player@example.com", password: "anypassword", termsAccepted: false });
+      expect(declined.status).toBe(400);
+
+      const coerced = await request(app.getHttpServer())
+        .post(endpoint)
+        .send({ email: "player@example.com", password: "anypassword", termsAccepted: "true" });
+      expect(coerced.status).toBe(400);
     });
 
     it("returns 400 for SQL injection in login email: OR 1=1", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "' OR '1'='1", password: "anything" });
+        .send({ email: "' OR '1'='1", password: "anything", termsAccepted: true });
       expect(res.status).toBe(400);
     });
 
     it("returns 400 for UNION SELECT in email", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "admin'--@x.com UNION SELECT NULL--", password: "x" });
+        .send({ email: "admin'--@x.com UNION SELECT NULL--", password: "x", termsAccepted: true });
       expect(res.status).toBe(400);
     });
 
     it("returns 400 for empty password", async () => {
       const res = await request(app.getHttpServer())
         .post(endpoint)
-        .send({ email: "player@example.com", password: "" });
+        .send({ email: "player@example.com", password: "", termsAccepted: true });
       expect(res.status).toBe(400);
     });
   });

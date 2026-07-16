@@ -80,10 +80,17 @@ describe("validators.authRegister", () => {
 // ─── authLogin ───────────────────────────────────────────────────────────────
 
 describe("validators.authLogin", () => {
-  const valid = { email: "player@example.com", password: "anypassword" };
+  const valid = { email: "player@example.com", password: "anypassword", termsAccepted: true };
 
   it("accepts valid login", () => {
     expect(validators.authLogin.safeParse(valid).success).toBe(true);
+  });
+
+  it("rejects missing or non-true terms acceptance", () => {
+    const { termsAccepted: _termsAccepted, ...withoutTerms } = valid;
+    expect(validators.authLogin.safeParse(withoutTerms).success).toBe(false);
+    expect(validators.authLogin.safeParse({ ...valid, termsAccepted: false }).success).toBe(false);
+    expect(validators.authLogin.safeParse({ ...valid, termsAccepted: "true" }).success).toBe(false);
   });
 
   it("rejects SQL injection in email", () => {
