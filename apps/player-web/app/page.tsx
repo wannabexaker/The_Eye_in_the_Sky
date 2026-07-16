@@ -1255,7 +1255,7 @@ export default function HomePage() {
   };
 
   const handleLogin = useCallback(
-    async (payload: { email: string; password: string }) => {
+    async (payload: { email: string; password: string; termsAccepted: boolean }) => {
       setAuthBusy(true);
       clearAuthError();
       try {

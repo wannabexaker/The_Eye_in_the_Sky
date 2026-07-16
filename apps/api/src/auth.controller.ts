@@ -102,7 +102,7 @@ export class AuthController {
   @Throttle({ default: { ttl: 60_000, limit: 15 } })
   @Post("login")
   login(
-    @Body() body: { email?: string; password?: string },
+    @Body() body: { email?: string; password?: string; termsAccepted?: boolean },
     @Req() request: RequestWithAuth,
     @Res({ passthrough: true }) response: any
   ) {

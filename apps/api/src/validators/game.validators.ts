@@ -47,7 +47,11 @@ export const validators = {
   }),
   authLogin: z.object({
     email: z.email().max(255).transform((value) => value.trim().toLowerCase()),
-    password: z.string().min(1).max(100)
+    password: z.string().min(1).max(100),
+    // Every authenticated entry asserts acceptance of the Terms of Use and
+    // Privacy Policy — accounts created before the acceptance gate get their
+    // acceptedTermsAt stamped on first login.
+    termsAccepted: z.literal(true, "You must accept the Terms of Use and Privacy Policy.")
   }),
   authChangePassword: z.object({
     currentPassword: z.string().min(1).max(100),
