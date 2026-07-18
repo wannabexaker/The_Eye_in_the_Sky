@@ -27,6 +27,9 @@ env:
   AUTH_MODE: INTERNAL_ONLY
   COOKIE_SECURE: "false"
   DATABASE_URL: postgresql://app_user:app_password@localhost:5432/eye_db?schema=public
+  # build-push-action uploads a .dockerbuild record artifact per image by
+  # default. They are never read back and accumulate one per build.
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NEXT_TELEMETRY_DISABLED: "1"
   OWNER: wannabexaker
