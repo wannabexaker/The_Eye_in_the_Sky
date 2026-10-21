@@ -6,3 +6,6 @@ Rules:
 - Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
 - After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current
+
+## Local-only files (`.scratch/`)
+`.scratch/` holds this project's local-only working files (plans, logs, backups, rescued files, local config). It is git-ignored; `.scratch/README.md` is the index. Never copy its contents into tracked files.
