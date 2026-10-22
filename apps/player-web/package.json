@@ -18,7 +18,7 @@
     "@eye/shared-types": "workspace:*",
     "@eye/ui": "workspace:*",
     "motion": "^12.40.0",
-    "next": "15.5.18",
+    "next": "15.5.28",
     "pixi.js": "8.10.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -31,7 +31,7 @@
     "@types/react-dom": "19.0.4",
     "eslint": "9.22.0",
     "eslint-config-next": "15.2.2",
-    "sharp": "0.33.5",
+    "sharp": "0.35.5",
     "tailwindcss": "4.1.1",
     "tsx": "4.19.3",
     "typescript": "5.8.2"
