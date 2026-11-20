@@ -79,8 +79,8 @@ are plain env vars on the API container; a container recreate applies them.
 
 | Task | How |
 |---|---|
-| Update to latest release | `./update.sh` on the host (pulls `:latest`, recreates, healthchecks) |
-| Pin to a specific version | edit compose image tags to the release tag, `docker compose up -d` |
+| Update to latest release | `./deploy-pi.sh` on the host (fetches the release compose, pins `EYE_VERSION`, pulls, waits for `/healthz`) |
+| Pin / roll back to a version | `./deploy-pi.sh vX.Y.Z` |
 | DB migration | runs automatically on API start (`prisma migrate deploy`) |
 | Verify a player round | Fairness rotate → `verify-fairness.ts` (section 2) |
 | Rotate Turnstile secret | dashboard rotate → update env → recreate API |

@@ -28,17 +28,17 @@ edge (Cloudflare tunnel / nginx / caddy, HTTPS)
 ## Fresh install (any Linux host)
 
 ```bash
-mkdir eye && cd eye
-curl -O https://raw.githubusercontent.com/wannabexaker/The_Eye_in_the_Sky/main/docker-compose.prod.yml
-cat > .env <<'ENV'
-POSTGRES_PASSWORD=<strong-random>
-AUTH_COOKIE_SECRET=<long-random>
-COOKIE_SECURE=true
-# optional flags — see docs/OPERATOR_GUIDE.md
-ENV
-docker compose -f docker-compose.prod.yml up -d
-curl -s http://localhost:3200/health   # {"status":"ok",...,"database":"up"}
+mkdir -p ~/projects/eye-in-the-sky && cd ~/projects/eye-in-the-sky
+curl -fsSLO https://raw.githubusercontent.com/wannabexaker/The_Eye_in_the_Sky/main/scripts/deploy-pi.sh
+curl -fsSL https://raw.githubusercontent.com/wannabexaker/The_Eye_in_the_Sky/main/.env.example -o .env
+chmod +x deploy-pi.sh && chmod 600 .env
+nano .env                 # POSTGRES_PASSWORD, AUTH_COOKIE_SECRET, …
+./deploy-pi.sh            # latest release; or ./deploy-pi.sh v0.2.2
 ```
+
+The script fetches `docker-compose.prod.yml` for the release, pins
+`EYE_VERSION` in `.env`, pulls, starts, and waits until `/healthz` reports
+that version. One `.env` holds all configuration; compose loads it itself.
 
 Prisma migrations run automatically on API start. First boot seeds the
 primary game row and default settings.
@@ -59,10 +59,10 @@ Any reverse proxy works; requirements:
 
 | Action | Command |
 |---|---|
-| Upgrade to latest | `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d` (the reference host wraps this in `update.sh` with healthchecks) |
-| Pin a version | change image tags `:latest` → `:v0.2.0`, `up -d` |
-| Rollback | pin the previous tag, `up -d` — migrations are additive; no destructive rollbacks have shipped |
-| Verify after deploy | `GET /health`, `GET /auth/mode`, one guest spin on the site |
+| Upgrade to the latest release | `./deploy-pi.sh` |
+| Deploy a specific release | `./deploy-pi.sh v0.2.2` (pins `EYE_VERSION` in `.env`) |
+| Rollback | `./deploy-pi.sh <previous tag>` — migrations are additive; no destructive rollbacks have shipped |
+| Verify after deploy | the script waits for `/healthz`; then one guest spin on the site |
 
 ## Sizing
 
