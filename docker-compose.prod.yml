@@ -11,6 +11,11 @@
 #   docker compose -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.prod.yml up -d
 
+# Compose project name. Without it the project takes the parent folder name
+# ("projects" on the Pi). Changing it creates new containers, network and
+# volume (eye_postgres_data): the database starts empty.
+name: eye
+
 services:
   postgres:
     image: postgres:15-alpine
