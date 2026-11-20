@@ -58,7 +58,7 @@ services:
       METRICS_ENABLED: ${METRICS_ENABLED:-false}
       LOG_FORMAT: ${LOG_FORMAT:-json}
     ports:
-      - "3200:3200"
+      - "127.0.0.1:3200:3200"
     volumes:
       - ./data/analytics:/app/data/analytics
     healthcheck:
@@ -87,7 +87,7 @@ services:
       API_INTERNAL_URL: http://api:3200
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -115,7 +115,7 @@ services:
       API_INTERNAL_URL: http://api:3200
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3100"]
       interval: 30s

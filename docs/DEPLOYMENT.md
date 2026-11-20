@@ -19,6 +19,11 @@ edge (Cloudflare tunnel / nginx / caddy, HTTPS)
   server-side using `API_INTERNAL_URL` (runtime env, not baked at build).
 - Images are multi-arch (amd64 + arm64), published to GHCR by the Build
   workflow on every push to `main` (`:latest`) and on tags (`:vX.Y.Z`).
+- Every published port is bound to `127.0.0.1`. Docker bypasses the host
+  firewall, so `0.0.0.0` would mean "open to the whole local network"; the
+  reverse proxy / tunnel on the host is the only way in. The admin panel is
+  therefore reachable only from the host — from another machine use an SSH
+  tunnel: `ssh -L 3100:127.0.0.1:3100 <host>` and open `http://localhost:3100`.
 
 ## Fresh install (any Linux host)
 
