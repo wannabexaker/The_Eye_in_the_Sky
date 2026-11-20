@@ -80,6 +80,9 @@ services:
       api:
         condition: service_healthy
     environment:
+      # Docker sets HOSTNAME to the container id; Next standalone would then
+      # listen only on the container IP and the localhost healthcheck fails.
+      HOSTNAME: "0.0.0.0"
       NODE_ENV: ${NODE_ENV:-production}
       API_INTERNAL_URL: http://api:3200
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3200}
@@ -104,6 +107,9 @@ services:
       api:
         condition: service_healthy
     environment:
+      # Docker sets HOSTNAME to the container id; Next standalone would then
+      # listen only on the container IP and the localhost healthcheck fails.
+      HOSTNAME: "0.0.0.0"
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3100
       API_INTERNAL_URL: http://api:3200
