@@ -256,6 +256,7 @@ jobs:
             fi
             echo "EOF"
             echo "created=${created}"
+            echo "version=$(node -p "require('./package.json').version")"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Build and optionally push image
@@ -265,6 +266,10 @@ jobs:
           cache-to: type=gha,scope=${{ matrix.cacheScope }},mode=max
           context: .
           file: ${{ matrix.dockerfile }}
+          # Reported by /healthz. Images without these ARGs ignore them.
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/wannabexaker/tsogos
             org.opencontainers.image.revision=${{ github.sha }}

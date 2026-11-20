@@ -60,6 +60,11 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 USER nodejs
 
 # Expose API port
+# Build identity, reported by /healthz (passed by the Build workflow).
+ARG APP_VERSION=dev
+ARG GIT_COMMIT=unknown
+ENV APP_VERSION=${APP_VERSION} GIT_COMMIT=${GIT_COMMIT}
+
 EXPOSE 3200
 
 # Health check: verify API is responding

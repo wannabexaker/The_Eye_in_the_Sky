@@ -50,6 +50,7 @@ scrape_configs:
 | `GET /health/live` | process serving, no dependencies | container liveness |
 | `GET /health/ready` | database reachable (503 when not) | load-balancer readiness |
 | `GET /health` | combined legacy report | existing docker-compose healthcheck |
+| `GET /healthz` | public: `{status, version, commit, database}`, 503 when unhealthy | external uptime monitoring (`https://eye.olamov.com/healthz` via player-web, which adds the web image build under `web`) |
 
 ## Dashboards & alerts
 

@@ -43,3 +43,30 @@ export class HealthController {
     };
   }
 }
+
+/** Build identity baked into the image (Dockerfile ARG → ENV); "dev" locally. */
+export const getBuildInfo = () => ({
+  version: process.env.APP_VERSION?.trim() || "dev",
+  commit: process.env.GIT_COMMIT?.trim() || "unknown"
+});
+
+/**
+ * Public monitoring endpoint: no auth, checks the database, reports the
+ * running build. Exposed to the internet through player-web's /healthz.
+ */
+@ApiTags("health")
+@Controller("healthz")
+export class HealthzController {
+  constructor(private readonly prisma: PrismaService) {}
+
+  @Get()
+  async getHealthz() {
+    const build = getBuildInfo();
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return { status: "ok", ...build, database: "up" };
+    } catch {
+      throw new ServiceUnavailableException({ status: "degraded", ...build, database: "down" });
+    }
+  }
+}

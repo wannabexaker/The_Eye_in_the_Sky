@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
-import { HealthController } from "./health.controller";
+import { HealthController, HealthzController } from "./health.controller";
 import { GameConfigController } from "./game-config.controller";
 import { GameConfigService } from "./game-config.service";
 import { AnalyticsController } from "./analytics.controller";
@@ -41,6 +41,7 @@ import { RequestLoggingInterceptor } from "./request-logging.interceptor";
   controllers: [
     AppController,
     HealthController,
+    HealthzController,
     AuthController,
     PlayerController,
     ResponsibleGamingController,

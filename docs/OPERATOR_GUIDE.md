@@ -67,6 +67,9 @@ are plain env vars on the API container; a container recreate applies them.
 
 - `GET /health/live` (process), `GET /health/ready` (DB), `GET /health`
   (combined; used by the compose healthcheck).
+- Public `GET https://eye.olamov.com/healthz` → `{status, version, commit,
+  database, web}`, 503 when the API or database is down. No login; use it for
+  external uptime monitoring.
 - `GET /metrics` + importable Grafana dashboard + alert rules:
   [observability/](observability/).
 - Request logs are single-line JSON with `requestId` correlation; every
