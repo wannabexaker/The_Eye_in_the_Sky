@@ -1,7 +1,7 @@
 {
   "name": "the-eye-in-the-sky",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.1",
   "packageManager": "pnpm@10.6.3",
   "scripts": {
     "dev": "corepack pnpm --filter player-web dev",

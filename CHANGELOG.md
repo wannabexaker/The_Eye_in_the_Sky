@@ -3,6 +3,20 @@
 Notable changes to The Eye in the Sky. Versions are git tags; images on GHCR
 carry the same tags. Dates use the tag's commit date.
 
+## v0.2.1 — dependency security patch
+
+### Security
+- Cleared the high/critical advisories that began failing the CI dependency
+  audit (code unchanged): `next` 15.5.18 → 15.5.28 (two critical RCEs,
+  SSRF/DoS), `sharp` 0.35.5, and pnpm overrides for `proxy-addr`,
+  `@xmldom/xmldom`, `js-yaml`, `nanoid`, `postcss`, `source-map-js`.
+  Production audit: 0 critical, 0 high.
+
+### Added (shipped between v0.2.0 and v0.2.1)
+- Terms of Use and Privacy Policy pages; acceptance required on register,
+  login and guest entry, enforced server-side for accounts and recorded as
+  `User.acceptedTermsAt`. Legal links in the in-game menu.
+
 ## v0.2.0 — ready-to-sell hardening
 
 ### Added
