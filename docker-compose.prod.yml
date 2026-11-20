@@ -17,7 +17,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-__SET_POSTGRES_PASSWORD__}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"   # host only: was open to every LAN subnet
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
