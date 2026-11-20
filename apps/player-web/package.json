@@ -1,7 +1,7 @@
 {
   "name": "player-web",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "scripts": {
     "dev": "next dev",
     "dev:clean": "node -e \"const fs = require('fs'); fs.rmSync('.next', {recursive: true, force: true});\" && next dev",

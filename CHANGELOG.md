@@ -3,6 +3,30 @@
 Notable changes to The Eye in the Sky. Versions are git tags; images on GHCR
 carry the same tags. Dates use the tag's commit date.
 
+## v0.2.2 — host hardening, /healthz, release-pinned deploys
+
+### Added
+- Public `GET /healthz` (`https://eye.olamov.com/healthz`): `{status, version,
+  commit, database}` plus the web image's build under `web`; 503 when the API
+  or the database is down. Version and commit are baked into the images at
+  build time.
+- `scripts/deploy-pi.sh`: deploys a release tag (fetch compose, pin
+  `EYE_VERSION`, pull, `up -d`, wait for `/healthz`); rollback = same command
+  with an older tag. `.env.example` is the single template for all variables.
+- Images published as `eye-*` (legacy `tsogos-*` names still pushed during the
+  transition); compose pulls `eye-*:${EYE_VERSION}`.
+
+### Security
+- Every published port (postgres, API, player, admin) bound to `127.0.0.1`;
+  the host tunnel is the only way in. Admin is host-only (SSH tunnel).
+- `AUTH_COOKIE_SECRET` is now actually passed to the API container.
+- Dependency audit back to 0 high/critical: `zod` ^4.6.7, `body-parser`
+  override >=2.4.0.
+
+### Fixed
+- Next listens on `0.0.0.0` inside the web containers (`HOSTNAME`), so the
+  in-container healthcheck works with the repo compose.
+
 ## v0.2.1 — dependency security patch
 
 ### Security
