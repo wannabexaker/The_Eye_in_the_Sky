@@ -2,9 +2,14 @@
 # Uses pre-built images from GitHub Container Registry (ghcr.io)
 # instead of building from source.
 #
-# Usage on RPi:
-#   docker-compose -f docker-compose.prod.yml pull
-#   docker-compose -f docker-compose.prod.yml up -d
+# Configuration comes from a single .env next to this file (see .env.example);
+# compose loads it automatically. EYE_VERSION pins the image tag (vX.Y.Z) so
+# a deploy can be rolled back; unset means :latest.
+#
+# Deploy a tagged release on the Pi: scripts/deploy-pi.sh [vX.Y.Z]
+# Manual equivalent:
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
 
 services:
   postgres:
@@ -32,7 +37,7 @@ services:
     cpus: "1.0"
 
   api:
-    image: ghcr.io/wannabexaker/tsogos-api:latest
+    image: ghcr.io/wannabexaker/eye-api:${EYE_VERSION:-latest}
     container_name: eye-api
     restart: unless-stopped
     depends_on:
@@ -76,7 +81,7 @@ services:
     cpus: "0.5"
 
   player-web:
-    image: ghcr.io/wannabexaker/tsogos-player-web:latest
+    image: ghcr.io/wannabexaker/eye-player-web:${EYE_VERSION:-latest}
     container_name: eye-player-web
     restart: unless-stopped
     depends_on:
@@ -103,7 +108,7 @@ services:
     cpus: "1.0"
 
   admin-web:
-    image: ghcr.io/wannabexaker/tsogos-admin-web:latest
+    image: ghcr.io/wannabexaker/eye-admin-web:${EYE_VERSION:-latest}
     container_name: eye-admin-web
     restart: unless-stopped
     depends_on:
